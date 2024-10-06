@@ -1,12 +1,37 @@
 /*  !Instructions!
   1. Follow instructions on GetAnswers.js then continue with step 2
-  2. Run script on start of game (If you miss it just change CurrentQuestion 
-  to the current question number and try again)
+  2. Run script in console
 */
 
-let AnswerTable = [[], [0, 1, 2], [1, 2], [1], [0]]
-let CurrentQuestion = 0
-let AddedHumanDelay = 0 // In milliseconds
+let AnswerTable = [
+  [
+      "Question 4",
+      [
+          0,
+          1,
+          2
+      ]
+  ],
+  [
+      "aeea",
+      [
+          1,
+          2
+      ]
+  ],
+  [
+      "Question 1",
+      [
+          1
+      ]
+  ],
+  [
+      "qwertyuiop",
+      [
+          0
+      ]
+  ]
+]
 
 // Don't ANYTHIN Bellow Unless You Know What You Are Doing!
 function Wait(Time) {
@@ -22,7 +47,6 @@ async function WaitUntilElementPresent(ClassNames) {
   while (!Element) {
     for (let i = 0; i < ClassNames.length; i++) {
       Element = document.getElementsByClassName(ClassNames[i])[0]
-      console.log(Element)
       if (Element) {
         break
       }
@@ -31,45 +55,47 @@ async function WaitUntilElementPresent(ClassNames) {
   }
 }
 
+let CurrentQuestion = 0
+
 async function Main() {
   console.log("Script Running!")
   while (true) {
 
     // Waits For New Question
-    console.log("NEW QUESTION")
-    await WaitUntilElementPresent(["styles__TopContent-sc-468pf5-0 kicgDn question-top-content__QuestionTopContent-sc-16zbque-0 kCdodc top-bar__TopContent-sc-9qma4q-1 kNHfze", "status-bar__ContentBar-sc-ivth8h-0 status-bar__TopBar-sc-ivth8h-1 gJtoGe gVQKSO content-block-styles__ChallengeStatusBar-sc-zu8u0s-31 gFOVnJ"])
+    await WaitUntilElementPresent(["unscrollable-wrapper__UnscrollableWrapper-sc-1yr9vot-0 kqQAkl quiz__Wrapper-sc-13pi6nh-0 Osnxh"])
+    await WaitUntilElementPresent(["question-title__TitleWrapper-sc-12qj0yr-0 jNIHOs"])
+    //question-title__Title-sc-12qj0yr-1 fewGjL
+    let QuestionText = document.getElementsByClassName("question-title__TitleWrapper-sc-12qj0yr-0 jNIHOs")[0].children[0].textContent
+    let NatrualNextData = AnswerTable[CurrentQuestion]
+    let Answers = NatrualNextData[1]
 
-    let Answers = AnswerTable[CurrentQuestion]
-    console.log("AHHHHHHHH!")
-    console.log(Answers[0])
-    if (Answers[0]) { // Runs Only If Question Has Answer(s)
-      // Waits For "Human Delay"
-      if (AddedHumanDelay > 0) {
-        await Wait(AddedHumanDelay)
+    if (QuestionText != NatrualNextData[0]) {
+      while (QuestionText != NatrualNextData[0]) {
+        CurrentQuestion += 1
+        NatrualNextData = AnswerTable[CurrentQuestion]
       }
-
-      // Answers Question
-      const MainHolder = document.getElementsByClassName("unscrollable-wrapper__UnscrollableWrapper-sc-1yr9vot-0 kqQAkl quiz__Wrapper-sc-13pi6nh-0 Osnxh")[0].children
-      const QuestionHolder = MainHolder[MainHolder.length - 1]
-      const Questions = QuestionHolder.children
-      for (let i = 0; i < Questions.length; i++) {
-        const UseQuestion = Questions[i]
-        let AnswerIndex = parseInt(UseQuestion.getAttribute("data-mapped-index"))
-        if (Answers.includes(AnswerIndex)) {
-          UseQuestion.click()
-        }
-      }
-      const SubmitButton = document.getElementsByClassName("button__Button-sc-c6mvr2-0 hyBcTR quiz__SubmitButton-sc-ndm6ik-0 ithUoL")[0]
-      if (SubmitButton) {
-        SubmitButton.click()
-      }
+    } else {
+      CurrentQuestion += 1
     }
 
-    MAKE IT WAIT UNTIL QUESTION NUMBER # out of #
+    // Answers Question
+    const MainHolder = document.getElementsByClassName("unscrollable-wrapper__UnscrollableWrapper-sc-1yr9vot-0 kqQAkl quiz__Wrapper-sc-13pi6nh-0 Osnxh")[0].children
+    const QuestionHolder = MainHolder[MainHolder.length - 1]
+    const Questions = QuestionHolder.children
+    for (let i = 0; i < Questions.length; i++) {
+      const UseQuestion = Questions[i]
+      let AnswerIndex = parseInt(UseQuestion.getAttribute("data-mapped-index"))
+      if (Answers.includes(AnswerIndex)) {
+        UseQuestion.click()
+      }
+    }
+    const SubmitButton = document.getElementsByClassName("button__Button-sc-c6mvr2-0 hyBcTR quiz__SubmitButton-sc-ndm6ik-0 ithUoL")[0]
+    if (SubmitButton) {
+      SubmitButton.click()
+    }
+
     // Waits Until Scoreboard Shows Up
     await WaitUntilElementPresent(["styles__TopContent-sc-468pf5-0 kicgDn scoreboard__TopContent-sc-ryzpjh-2 eDIkMC"])
-
-    CurrentQuestion += 1
   }
 }
 Main()

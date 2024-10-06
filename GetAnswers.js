@@ -14,6 +14,7 @@ let AnswerTable = []
 const QuestionList = document.getElementsByClassName("styles__QuestionBlock-sc-19vxqaz-0 cfqmkk")
 
 Array.from(QuestionList).forEach(QuestionHolder => {
+    const Question = QuestionHolder.children[0].getElementsByClassName("styles__Question-sc-19vxqaz-6 ejwdwI")[0]
     const AnswerHolder = QuestionHolder.children[1]
     let CorrectAnswers = []
     for (let i = 0; i < AnswerHolder.children.length; i++) {
@@ -27,7 +28,9 @@ Array.from(QuestionList).forEach(QuestionHolder => {
             CorrectAnswers.push(i)
         }
     }
-    AnswerTable.push(CorrectAnswers)
+    if (CorrectAnswers.length > 0) {
+        AnswerTable.push([Question.textContent,CorrectAnswers])
+    }
 })
 
 console.log(AnswerTable)
