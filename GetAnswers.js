@@ -19,6 +19,9 @@ Array.from(QuestionList).forEach(QuestionHolder => {
     for (let i = 0; i < AnswerHolder.children.length; i++) {
         const AnswerChoice = AnswerHolder.children[i]
         const Text = AnswerChoice.getAttribute("aria-label")
+        if (!Text) {
+            break
+        }
         const IsCorrect = (Text.slice(Text.length-9,Text.length)=="- correct")
         if (IsCorrect) {
             CorrectAnswers.push(i)
