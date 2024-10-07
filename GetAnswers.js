@@ -29,9 +29,9 @@ Array.from(QuestionList).forEach(QuestionHolder => {
                 CorrectAnswers.push(i)
             }
         }
-    }
-    if (CorrectAnswers.length > 0) {
-        AnswerTable.push([Question.textContent,CorrectAnswers])
+        if (CorrectAnswers.length > 0) {
+            AnswerTable.push([Question.textContent,CorrectAnswers])
+        }
     }
 })
 
