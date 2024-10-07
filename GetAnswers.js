@@ -1,6 +1,6 @@
 /*  !Instructions!
     1. Go to the quizlet page
-    2. Open up ALL questions(the answer choices must be visible)
+    2. Open up ALL questions(the answer choices must be visible) (MAKE SURE WINDOW IS FULL SCREEN)
     3. Open inspect element and open up console
     4. Enable pasting by typing "enable pasting"
     5. Copy and paste code into console and hit enter
@@ -26,12 +26,23 @@ Array.from(QuestionList).forEach(QuestionHolder => {
             }
             const IsCorrect = (Text.slice(Text.length-9,Text.length)=="- correct")
             if (IsCorrect) {
-                CorrectAnswers.push(i)
+                let AnswerImageSource = null
+                const AnswerImage = AnswerChoice.querySelector('[role="presentation"]')
+                if (AnswerImage) {
+                    AnswerImageSource = AnswerImage.getAttribute("title")
+                }
+                CorrectAnswers.push([i,AnswerImageSource])
             }
         }
+        // Gets Question Image
+        const QuestionImageHolder = QuestionHolder.getElementsByClassName("styles__MediaContainer-sc-19vxqaz-5 fkxzco")[0]
+        const QuestionImage = window.getComputedStyle(QuestionImageHolder.children[0]).backgroundImage
+        
+        // Adds Data To Table
         if (CorrectAnswers.length > 0) {
-            AnswerTable.push([Question.textContent,CorrectAnswers])
+            AnswerTable.push([[Question.textContent,QuestionImage],CorrectAnswers])
         }
+        REMEMBER QuestionImage has URL()
     }
 })
 
