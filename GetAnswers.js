@@ -17,15 +17,17 @@ Array.from(QuestionList).forEach(QuestionHolder => {
     const Question = QuestionHolder.children[0].getElementsByClassName("styles__Question-sc-19vxqaz-6 ejwdwI")[0]
     const AnswerHolder = QuestionHolder.children[1]
     let CorrectAnswers = []
-    for (let i = 0; i < AnswerHolder.children.length; i++) {
-        const AnswerChoice = AnswerHolder.children[i]
-        const Text = AnswerChoice.getAttribute("aria-label")
-        if (!Text) {
-            break
-        }
-        const IsCorrect = (Text.slice(Text.length-9,Text.length)=="- correct")
-        if (IsCorrect) {
-            CorrectAnswers.push(i)
+    if (AnswerHolder) {
+        for (let i = 0; i < AnswerHolder.children.length; i++) {
+            const AnswerChoice = AnswerHolder.children[i]
+            const Text = AnswerChoice.getAttribute("aria-label")
+            if (!Text) {
+                break
+            }
+            const IsCorrect = (Text.slice(Text.length-9,Text.length)=="- correct")
+            if (IsCorrect) {
+                CorrectAnswers.push(i)
+            }
         }
     }
     if (CorrectAnswers.length > 0) {

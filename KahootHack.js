@@ -3,35 +3,7 @@
   2. Run script in console
 */
 
-let AnswerTable = [
-  [
-      "Question 4",
-      [
-          0,
-          1,
-          2
-      ]
-  ],
-  [
-      "aeea",
-      [
-          1,
-          2
-      ]
-  ],
-  [
-      "Question 1",
-      [
-          1
-      ]
-  ],
-  [
-      "qwertyuiop",
-      [
-          0
-      ]
-  ]
-]
+let AnswerTable = 
 
 // Don't ANYTHIN Bellow Unless You Know What You Are Doing!
 function Wait(Time) {
