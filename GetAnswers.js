@@ -36,13 +36,14 @@ Array.from(QuestionList).forEach(QuestionHolder => {
         }
         // Gets Question Image
         const QuestionImageHolder = QuestionHolder.getElementsByClassName("styles__MediaContainer-sc-19vxqaz-5 fkxzco")[0]
-        const QuestionImage = window.getComputedStyle(QuestionImageHolder.children[0]).backgroundImage
-        
+        let QuestionImage = String(window.getComputedStyle(QuestionImageHolder.children[0]).backgroundImage)
+        QuestionImage = QuestionImage.replace('url(\"',"")
+        QuestionImage = QuestionImage.replace('")',"")
+
         // Adds Data To Table
         if (CorrectAnswers.length > 0) {
             AnswerTable.push([[Question.textContent,QuestionImage],CorrectAnswers])
         }
-        REMEMBER QuestionImage has URL()
     }
 })
 
