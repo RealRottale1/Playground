@@ -12,14 +12,22 @@ let AnswerTable = [
       [
           [
               0,
-              null
+              "none"
+          ],
+          [
+              1,
+              "none"
+          ],
+          [
+              2,
+              "none"
           ]
       ]
   ],
   [
       [
           "e",
-          "https://images-cdn.kahoot.it/4e1d2b0a-b82b-415d-b21d-fd71dbcda746?auto=webp&width=400"
+          "https://images-cdn.kahoot.it/4e1d2b0a-b82b-415d-b21d-fd71dbcda746?auto=webp"
       ],
       [
           [
@@ -31,7 +39,19 @@ let AnswerTable = [
   [
       [
           "e",
-          "https://images-cdn.kahoot.it/9f2a3e79-03a6-49da-bf01-b8ddf76e190e?auto=webp&width=400"
+          "https://images-cdn.kahoot.it/0ab223bc-c5c1-4ba4-9a09-9229ca25ff0b?auto=webp"
+      ],
+      [
+          [
+              3,
+              "https://images-cdn.kahoot.it/19c052f7-cd0b-4bd0-a185-2c3797b42507?auto=webp&width=1200"
+          ]
+      ]
+  ],
+  [
+      [
+          "e",
+          "https://images-cdn.kahoot.it/9f2a3e79-03a6-49da-bf01-b8ddf76e190e?auto=webp"
       ],
       [
           [
@@ -48,7 +68,7 @@ let AnswerTable = [
       [
           [
               3,
-              null
+              "none"
           ]
       ]
   ],
@@ -60,7 +80,7 @@ let AnswerTable = [
       [
           [
               2,
-              null
+              "none"
           ]
       ]
   ]
@@ -98,36 +118,30 @@ async function Main() {
     await WaitUntilElementPresent(["unscrollable-wrapper__UnscrollableWrapper-sc-1yr9vot-0 kqQAkl quiz__Wrapper-sc-13pi6nh-0 Osnxh"])
     await WaitUntilElementPresent(["question-title__TitleWrapper-sc-12qj0yr-0 jNIHOs"])
 
+    let QuestionText = document.getElementsByClassName("question-title__TitleWrapper-sc-12qj0yr-0 jNIHOs")[0].children[0].textContent
     let QuestionImageHolder = document.getElementsByClassName("question-media__QuestionMedia-sc-137zdxa-1 biSjoe question-center-content__QuestionMedia-sc-1h0hm23-2")[0]
-    let QuestionImage = null
-    if (QuestionImageHolder) {
-      let ImageSRC = QuestionImageHolder.getElementsByClassName("question-base-image__StyledMediaImage-sc-kc8138-0 kxCyDB")
-      if (ImageSRC) {
-        QuestionImage = ImageSRC.src
-      }
+    let QuestionImage = "none"
+    if (QuestionImageHolder.children[0]) {
+      QuestionImage = QuestionImageHolder.getElementsByClassName("question-base-image__StyledMediaImage-sc-kc8138-0 kxCyDB")[0].src
     }
     
-    let QuestionText = document.getElementsByClassName("question-title__TitleWrapper-sc-12qj0yr-0 jNIHOs")[0].children[0].textContent
     let NatrualNextData = AnswerTable[CurrentQuestion]
-    let Answers = NatrualNextData[1][0]
-    let AnswerImage = NatrualNextData[1][1]
+    let NNDQuestionText = NatrualNextData[0][0]
+    let NNDQuestionImage = NatrualNextData[0][1]
+    let NNDAnswerIndex = NatrualNextData[1]
 
-    if (QuestionText != NatrualNextData[0][0] || ((QuestionImage && AnswerImage) && QuestionImage != AnswerImage)) {
-      while (true) {
-        if (QuestionText == NatrualNextData[0][0]) {
-          if (QuestionImage && AnswerImage) {
-            if (QuestionImage == AnswerImage) {
-              break
-            }
-          } else {
-            break
-          }
-        }
+    while (true) {
+      console.log(QuestionText+"\n"+NNDQuestionText+"\n"+QuestionImage+"\n"+NNDQuestionImage)
+      if (QuestionText == NNDQuestionText && QuestionImage == NNDQuestionImage) {
+        CurrentQuestion += 1
+        break
+      } else {
         CurrentQuestion += 1
         NatrualNextData = AnswerTable[CurrentQuestion]
+        NNDQuestionText = NatrualNextData[0][0]
+        NNDQuestionImage = NatrualNextData[0][1]
+        NNDAnswerIndex = NatrualNextData[1]
       }
-    } else {
-      CurrentQuestion += 1
     }
 
     // Answers Question
@@ -137,8 +151,11 @@ async function Main() {
     for (let i = 0; i < Questions.length; i++) {
       const UseQuestion = Questions[i]
       let AnswerIndex = parseInt(UseQuestion.getAttribute("data-mapped-index"))
-      if (Answers.includes(AnswerIndex)) {
-        UseQuestion.click()
+      for (let ii = 0 ; ii < NNDAnswerIndex.length; ii++) {
+        if (NNDAnswerIndex[ii][0] == AnswerIndex) {
+          UseQuestion.click()
+          break
+        }
       }
     }
     const SubmitButton = document.getElementsByClassName("button__Button-sc-c6mvr2-0 hyBcTR quiz__SubmitButton-sc-ndm6ik-0 ithUoL")[0]
