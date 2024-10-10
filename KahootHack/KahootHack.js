@@ -10,18 +10,9 @@ let AnswerTable = [
           "none"
       ],
       [
-          [
-              0,
-              "none"
-          ],
-          [
-              1,
-              "none"
-          ],
-          [
-              2,
-              "none"
-          ]
+          0,
+          1,
+          2
       ]
   ],
   [
@@ -30,10 +21,7 @@ let AnswerTable = [
           "https://images-cdn.kahoot.it/4e1d2b0a-b82b-415d-b21d-fd71dbcda746?auto=webp"
       ],
       [
-          [
-              1,
-              "https://images-cdn.kahoot.it/fd9bae0f-32ea-4de2-b16e-2f3d38eaac0b?auto=webp&width=1200"
-          ]
+          1
       ]
   ],
   [
@@ -42,10 +30,7 @@ let AnswerTable = [
           "https://images-cdn.kahoot.it/0ab223bc-c5c1-4ba4-9a09-9229ca25ff0b?auto=webp"
       ],
       [
-          [
-              3,
-              "https://images-cdn.kahoot.it/19c052f7-cd0b-4bd0-a185-2c3797b42507?auto=webp&width=1200"
-          ]
+          3
       ]
   ],
   [
@@ -54,10 +39,7 @@ let AnswerTable = [
           "https://images-cdn.kahoot.it/9f2a3e79-03a6-49da-bf01-b8ddf76e190e?auto=webp"
       ],
       [
-          [
-              2,
-              "https://images-cdn.kahoot.it/ef482d16-1228-4f56-8bea-c2d21b1bfb23?auto=webp&width=1200"
-          ]
+          2
       ]
   ],
   [
@@ -66,10 +48,7 @@ let AnswerTable = [
           "none"
       ],
       [
-          [
-              3,
-              "none"
-          ]
+          3
       ]
   ],
   [
@@ -78,13 +57,11 @@ let AnswerTable = [
           "none"
       ],
       [
-          [
-              2,
-              "none"
-          ]
+          2
       ]
   ]
 ]
+
 
 // Don't ANYTHIN Bellow Unless You Know What You Are Doing!
 function Wait(Time) {
@@ -131,7 +108,6 @@ async function Main() {
     let NNDAnswerIndex = NatrualNextData[1]
 
     while (true) {
-      console.log(QuestionText+"\n"+NNDQuestionText+"\n"+QuestionImage+"\n"+NNDQuestionImage)
       if (QuestionText == NNDQuestionText && QuestionImage == NNDQuestionImage) {
         CurrentQuestion += 1
         break
@@ -151,11 +127,9 @@ async function Main() {
     for (let i = 0; i < Questions.length; i++) {
       const UseQuestion = Questions[i]
       let AnswerIndex = parseInt(UseQuestion.getAttribute("data-mapped-index"))
-      for (let ii = 0 ; ii < NNDAnswerIndex.length; ii++) {
-        if (NNDAnswerIndex[ii][0] == AnswerIndex) {
-          UseQuestion.click()
-          break
-        }
+
+      if (NNDAnswerIndex.indexOf(AnswerIndex) != -1) {
+        UseQuestion.click()
       }
     }
     const SubmitButton = document.getElementsByClassName("button__Button-sc-c6mvr2-0 hyBcTR quiz__SubmitButton-sc-ndm6ik-0 ithUoL")[0]

@@ -26,12 +26,7 @@ Array.from(QuestionList).forEach(QuestionHolder => {
             }
             const IsCorrect = (Text.slice(Text.length-9,Text.length)=="- correct")
             if (IsCorrect) {
-                let AnswerImageSource = "none"
-                const AnswerImage = AnswerChoice.querySelector('[role="presentation"]')
-                if (AnswerImage) {
-                    AnswerImageSource = AnswerImage.getAttribute("title")
-                }
-                CorrectAnswers.push([i,AnswerImageSource])
+                CorrectAnswers.push(i)
             }
         }
         // Gets Question Image
