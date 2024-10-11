@@ -15,14 +15,14 @@ SnakeHead.style.backgroundColor = "green"
 //MainDiv.style.zIndex = "9999"
 SnakeHead.style.height = "25px"
 SnakeHead.style.width = "25px"
-SnakeHead.style.position = "relative"
+SnakeHead.style.position = "absolute"
 SnakeHead.style.top = "50%"
 SnakeHead.style.left = "50%"
 MainDiv.appendChild(SnakeHead)
 
 // Variables And Stuff
-const MoveBy = 5
-const TickRate = 100
+const MoveBy = 2.5
+const TickRate = 125
 
 let SnakePositions = [[50,50]]
 let SnakeParts = [SnakeHead]
@@ -39,9 +39,9 @@ function GetDirection(Key) {
         case "d":
             return([1,0])
         case "s":
-            return([-1,1])
-        case "w":
             return([1,1])
+        case "w":
+            return([-1,1])
         default:
             return([null, null])
     }
@@ -52,7 +52,8 @@ document.addEventListener("keydown", function(event) {
     console.log(event.key)
     const [Direction, Up] = GetDirection(event.key)
     if (Direction) {
-        DirUp[0], DirUp[1] = Direction, Up
+        DirUp[0] = Direction
+        DirUp[1] = Up
     }
 })
 
@@ -65,33 +66,63 @@ async function TickWait() {
 }
 
 function GrowSnake() {
+    const SnakeLength = SnakePositions.length
     const SnakeBody = document.createElement("div")
     SnakeBody.classList.add("SnakeBody")
     SnakeBody.style.backgroundColor = "green"
     SnakeBody.style.height = "25px"
     SnakeBody.style.width = "25px"
-    SnakeBody.style.position = "relative"
-    SnakeBody.style.top = "50%"
-    SnakeBody.style.left = "50%"
+    SnakeBody.style.position = "absolute"
+
+    const [XAxis, YAxis] = SnakePositions[SnakeLength-1]
+    SnakeBody.style.top = String(XAxis)+"%"
+    SnakeBody.style.left = String(YAxis)+"%"
+
+
     MainDiv.appendChild(SnakeBody)
+    SnakePositions.push([XAxis, YAxis])
+    SnakeParts.push(SnakeBody)
 }
 
-function HandleSnakePart(UseSnakePosition, UseSnakePart) {
-
-}
-
-// Game Loop
-while (true) {
-    await TickWait()
-    console.log(SnakePositions[0])
-    if (DirUp[0]) {
-        HandleSnakePart(SnakePositions[0], SnakeParts[0])
+function SetNewSnakePosition(SnakeLength) {
+    if (SnakeLength > 1) {
+        for (let i = 0; i < SnakeLength-1; i++) {
+            const UseIndex = (SnakeLength)-(i+1)
+            SnakePositions[UseIndex][0] = SnakePositions[UseIndex-1][0]
+            SnakePositions[UseIndex][1] = SnakePositions[UseIndex-1][1]
+        }
     }
-    const SnakeLength = SnakePositions.length
+    SnakePositions[0][DirUp[1]] += DirUp[0]*MoveBy
+}
+
+function MoveSnakeToPosition(SnakeLength) {
     for (let i = 0; i < SnakeLength; i++) {
         const UseSnakePosition = SnakePositions[i]
         const UseSnakePart = SnakeParts[i]
+        UseSnakePart.style.left = String(UseSnakePosition[0])+"%"
+        UseSnakePart.style.top = String(UseSnakePosition[1])+"%"
     }
 }
 
-//        SnakePositions[0][Up] += Direction*MoveBy
+async function StartGame() {
+    while (true) {
+        await TickWait()
+    
+        if (DirUp[0]) {
+            const SnakeLength = SnakePositions.length
+            SetNewSnakePosition(SnakeLength)
+            MoveSnakeToPosition(SnakeLength)
+        }
+    }
+}
+
+
+GrowSnake()
+GrowSnake()
+GrowSnake()
+GrowSnake()
+GrowSnake()
+GrowSnake()
+
+
+StartGame()
