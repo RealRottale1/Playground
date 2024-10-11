@@ -2,8 +2,8 @@
 const MainDiv = document.createElement("div")
 MainDiv.classList.add("MainDiv")
 MainDiv.style.zIndex = "0"
-MainDiv.style.height = "100%"
-MainDiv.style.width = "100%"
+MainDiv.style.height = "500px"
+MainDiv.style.width = "500px"
 MainDiv.style.position = "fixed"
 MainDiv.style.top = "0px"
 document.body.appendChild(MainDiv)
@@ -104,6 +104,15 @@ function MoveSnakeToPosition(SnakeLength) {
     }
 }
 
+function SnakeHitSelf(SnakeLength) {
+    if (SnakeLength < 2) {
+        return(false)
+    }
+    for (let i = 1; i < SnakeLength-1; i++) {
+        if 
+    }
+}
+
 async function StartGame() {
     while (true) {
         await TickWait()
@@ -112,6 +121,7 @@ async function StartGame() {
             const SnakeLength = SnakePositions.length
             SetNewSnakePosition(SnakeLength)
             MoveSnakeToPosition(SnakeLength)
+            SnakeHitSelf(SnakeLength)
         }
     }
 }
