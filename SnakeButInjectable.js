@@ -1,11 +1,13 @@
 // Creates MainDiv
 const MainDiv = document.createElement("div")
 MainDiv.classList.add("MainDiv")
+MainDiv.style.backgroundColor = "rgba(125, 125, 125, 0.5)"
 MainDiv.style.zIndex = "0"
 MainDiv.style.height = "500px"
 MainDiv.style.width = "500px"
 MainDiv.style.position = "fixed"
-MainDiv.style.top = "0px"
+MainDiv.style.top = "0%"
+MainDiv.style.left = "0%"
 document.body.appendChild(MainDiv)
 
 // Creates Original Snake
@@ -21,8 +23,8 @@ SnakeHead.style.left = "50%"
 MainDiv.appendChild(SnakeHead)
 
 // Variables And Stuff
-const MoveBy = 2.5
-const TickRate = 125
+const MoveBy = 5
+const TickRate = 250
 
 let SnakePositions = [[50,50]]
 let SnakeParts = [SnakeHead]
@@ -49,7 +51,6 @@ function GetDirection(Key) {
 
 // Controls
 document.addEventListener("keydown", function(event) {
-    console.log(event.key)
     const [Direction, Up] = GetDirection(event.key)
     if (Direction) {
         DirUp[0] = Direction
@@ -109,8 +110,23 @@ function SnakeHitSelf(SnakeLength) {
         return(false)
     }
     for (let i = 1; i < SnakeLength-1; i++) {
-        if 
+        const UseSnakePosition = SnakePositions[i]
+        if (UseSnakePosition[0] == SnakePositions[0][0] && UseSnakePosition[1] == SnakePositions[0][1]) {
+            return(true)
+        } 
     }
+}
+
+function SnakePastBorder(SnakeLength) {
+    for (let i = 0; i < SnakeLength; i++) {
+        const UseSnakePart = SnakeParts[i]
+        const Up = Number(String(UseSnakePart.style.top).replace("%",""))
+        const Left = Number(String(UseSnakePart.style.left).replace("%",""))
+        console.log(Up+","+Left)
+        if (Up <= 0 || Up >= 100 || Left <= 0 || Left >= 100) {
+            return(true)
+        }
+    }   
 }
 
 async function StartGame() {
@@ -121,12 +137,20 @@ async function StartGame() {
             const SnakeLength = SnakePositions.length
             SetNewSnakePosition(SnakeLength)
             MoveSnakeToPosition(SnakeLength)
-            SnakeHitSelf(SnakeLength)
+            if (SnakeHitSelf(SnakeLength) || SnakePastBorder(SnakeLength)) {
+                break
+            }
         }
     }
 }
 
 
+GrowSnake()
+GrowSnake()
+GrowSnake()
+GrowSnake()
+GrowSnake()
+GrowSnake()
 GrowSnake()
 GrowSnake()
 GrowSnake()
