@@ -3,65 +3,7 @@
   2. Run script in console
 */
 
-let AnswerTable = [
-  [
-      [
-          "Question2",
-          "none"
-      ],
-      [
-          0,
-          1,
-          2
-      ]
-  ],
-  [
-      [
-          "e",
-          "https://images-cdn.kahoot.it/4e1d2b0a-b82b-415d-b21d-fd71dbcda746?auto=webp"
-      ],
-      [
-          1
-      ]
-  ],
-  [
-      [
-          "e",
-          "https://images-cdn.kahoot.it/0ab223bc-c5c1-4ba4-9a09-9229ca25ff0b?auto=webp"
-      ],
-      [
-          3
-      ]
-  ],
-  [
-      [
-          "e",
-          "https://images-cdn.kahoot.it/9f2a3e79-03a6-49da-bf01-b8ddf76e190e?auto=webp"
-      ],
-      [
-          2
-      ]
-  ],
-  [
-      [
-          "Question2",
-          "none"
-      ],
-      [
-          3
-      ]
-  ],
-  [
-      [
-          "Question2",
-          "none"
-      ],
-      [
-          2
-      ]
-  ]
-]
-
+let AnswerTable = 
 
 // Don't ANYTHIN Bellow Unless You Know What You Are Doing!
 function Wait(Time) {
@@ -94,30 +36,18 @@ async function Main() {
     // Waits For New Question
     await WaitUntilElementPresent(["unscrollable-wrapper__UnscrollableWrapper-sc-1yr9vot-0 kqQAkl quiz__Wrapper-sc-13pi6nh-0 Osnxh"])
     await WaitUntilElementPresent(["question-title__TitleWrapper-sc-12qj0yr-0 jNIHOs"])
-
+    //question-title__Title-sc-12qj0yr-1 fewGjL
     let QuestionText = document.getElementsByClassName("question-title__TitleWrapper-sc-12qj0yr-0 jNIHOs")[0].children[0].textContent
-    let QuestionImageHolder = document.getElementsByClassName("question-media__QuestionMedia-sc-137zdxa-1 biSjoe question-center-content__QuestionMedia-sc-1h0hm23-2")[0]
-    let QuestionImage = "none"
-    if (QuestionImageHolder.children[0]) {
-      QuestionImage = QuestionImageHolder.getElementsByClassName("question-base-image__StyledMediaImage-sc-kc8138-0 kxCyDB")[0].src
-    }
-    
     let NatrualNextData = AnswerTable[CurrentQuestion]
-    let NNDQuestionText = NatrualNextData[0][0]
-    let NNDQuestionImage = NatrualNextData[0][1]
-    let NNDAnswerIndex = NatrualNextData[1]
+    let Answers = NatrualNextData[1]
 
-    while (true) {
-      if (QuestionText == NNDQuestionText && QuestionImage == NNDQuestionImage) {
-        CurrentQuestion += 1
-        break
-      } else {
+    if (QuestionText != NatrualNextData[0]) {
+      while (QuestionText != NatrualNextData[0]) {
         CurrentQuestion += 1
         NatrualNextData = AnswerTable[CurrentQuestion]
-        NNDQuestionText = NatrualNextData[0][0]
-        NNDQuestionImage = NatrualNextData[0][1]
-        NNDAnswerIndex = NatrualNextData[1]
       }
+    } else {
+      CurrentQuestion += 1
     }
 
     // Answers Question
@@ -127,8 +57,7 @@ async function Main() {
     for (let i = 0; i < Questions.length; i++) {
       const UseQuestion = Questions[i]
       let AnswerIndex = parseInt(UseQuestion.getAttribute("data-mapped-index"))
-
-      if (NNDAnswerIndex.indexOf(AnswerIndex) != -1) {
+      if (Answers.includes(AnswerIndex)) {
         UseQuestion.click()
       }
     }
