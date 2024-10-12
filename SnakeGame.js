@@ -1,7 +1,7 @@
 // Creates MainDiv
 const MainDiv = document.createElement("div")
 MainDiv.classList.add("MainDiv")
-MainDiv.style.backgroundColor = "rgba(125, 125, 125, 1)"
+MainDiv.style.backgroundColor = "rgba(187.5, 187.5, 187.5, 1)"
 MainDiv.style.zIndex = "999"
 MainDiv.style.height = "500px"
 MainDiv.style.width = "500px"
@@ -10,6 +10,7 @@ MainDiv.style.top = "50%"
 MainDiv.style.left = "50%"
 MainDiv.style.transform = "translate(-50%, -50%)"
 MainDiv.style.border = "solid black 25px"
+MainDiv.style.borderRadius = "10px"
 document.body.appendChild(MainDiv)
 
 // Creates Original Snake
@@ -30,6 +31,8 @@ SnakeFood.style.backgroundColor = "red"
 SnakeFood.style.height = "25px"
 SnakeFood.style.width = "25px"
 SnakeFood.style.position = "absolute"
+SnakeFood.style.backgroundImage = "radial-gradient(circle, red, rgba(225, 0, 0, 1))"
+SnakeFood.style.borderRadius = "25px"
 MainDiv.appendChild(SnakeFood)
 
 
@@ -51,6 +54,27 @@ for (i = 0; i < 20; i++) {
     }
     ValidPositions.set(i*5,Row)
 }
+
+// Creates Score Board
+const ScoreBoard = document.createElement("p")
+ScoreBoard.classList.add("ScoreBoard")
+ScoreBoard.style.opacity = "0"
+ScoreBoard.style.height = "100px"
+ScoreBoard.style.lineHeight = "100px"
+ScoreBoard.style.width = "300px"
+ScoreBoard.style.textAlign = "center"
+ScoreBoard.style.fontSize = "55px"
+ScoreBoard.style.position = "relative"
+ScoreBoard.style.margin = "0px"
+ScoreBoard.style.padding = "0px"
+ScoreBoard.style.top = "50%"
+ScoreBoard.style.left = "50%"
+ScoreBoard.style.transform = "translate(-50%, -50%)"
+ScoreBoard.style.border = "solid black 5px"
+ScoreBoard.style.borderRadius = "10px"
+ScoreBoard.style.backgroundColor = "rgba(125, 125, 125, 1)"
+MainDiv.appendChild(ScoreBoard)
+
 
 // Spawns Food()
 function SpawnFood() {
@@ -196,6 +220,12 @@ function SnakeAteFood() {
     }
 }
 
+// Handles Showing Score Board
+function ShowScoreBoard() {
+    ScoreBoard.textContent = "Score: "+String(SnakeParts.length)
+    ScoreBoard.style.opacity = "1"
+}
+
 // Main Game Loop
 async function StartGame() {
     while (true) {
@@ -207,11 +237,16 @@ async function StartGame() {
             console.log(SnakePositions)
             MoveSnakeToPosition(SnakeLength)
             if (SnakeHitSelf(SnakeLength) || SnakePastBorder(SnakeLength)) {
+                ShowScoreBoard()
                 break
             }
             if (SnakeAteFood()) {
                 GrowSnake()
-                SpawnFood()
+                const NoMoreFood = SpawnFood()
+                if (NoMoreFood) {
+                    ShowScoreBoard()
+                    break
+                }
             }
         }
     }
