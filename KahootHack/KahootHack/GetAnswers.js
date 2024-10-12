@@ -26,23 +26,20 @@ Array.from(QuestionList).forEach(QuestionHolder => {
             }
             const IsCorrect = (Text.slice(Text.length-9,Text.length)=="- correct")
             if (IsCorrect) {
-                let AnswerImageSource = null
-                const AnswerImage = AnswerChoice.querySelector('[role="presentation"]')
-                if (AnswerImage) {
-                    AnswerImageSource = AnswerImage.getAttribute("title")
-                }
-                CorrectAnswers.push([i,AnswerImageSource])
+                CorrectAnswers.push(i)
             }
         }
         // Gets Question Image
         const QuestionImageHolder = QuestionHolder.getElementsByClassName("styles__MediaContainer-sc-19vxqaz-5 fkxzco")[0]
-        const QuestionImage = window.getComputedStyle(QuestionImageHolder.children[0]).backgroundImage
-        
+        let QuestionImage = String(window.getComputedStyle(QuestionImageHolder.children[0]).backgroundImage)
+        QuestionImage = QuestionImage.replace('url(\"',"")
+        QuestionImage = QuestionImage.replace('")',"")
+        QuestionImage = QuestionImage.replace("&width=400","")
+
         // Adds Data To Table
         if (CorrectAnswers.length > 0) {
             AnswerTable.push([[Question.textContent,QuestionImage],CorrectAnswers])
         }
-        REMEMBER QuestionImage has URL()
     }
 })
 
