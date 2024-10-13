@@ -19,6 +19,7 @@ SnakeHead.classList.add("SnakeHead")
 SnakeHead.style.backgroundColor = "green"
 SnakeHead.style.height = "25px"
 SnakeHead.style.width = "25px"
+SnakeHead.style.borderRadius = "5px"
 SnakeHead.style.position = "absolute"
 SnakeHead.style.top = "50%"
 SnakeHead.style.left = "50%"
@@ -31,7 +32,7 @@ SnakeFood.style.backgroundColor = "red"
 SnakeFood.style.height = "25px"
 SnakeFood.style.width = "25px"
 SnakeFood.style.position = "absolute"
-SnakeFood.style.backgroundImage = "radial-gradient(circle, red, rgba(225, 0, 0, 1))"
+SnakeFood.style.backgroundImage = "radial-gradient(circle, red, rgba(200, 0, 0, 1))"
 SnakeFood.style.borderRadius = "25px"
 MainDiv.appendChild(SnakeFood)
 
@@ -58,6 +59,7 @@ for (i = 0; i < 20; i++) {
 // Creates Score Board
 const ScoreBoard = document.createElement("p")
 ScoreBoard.classList.add("ScoreBoard")
+ScoreBoard.style.zIndex = "100"
 ScoreBoard.style.opacity = "0"
 ScoreBoard.style.height = "100px"
 ScoreBoard.style.lineHeight = "100px"
@@ -155,6 +157,7 @@ function GrowSnake() {
     }
     SnakeBody.style.height = "25px"
     SnakeBody.style.width = "25px"
+    SnakeBody.style.borderRadius = "5px"
     SnakeBody.style.position = "absolute"
 
     const [XAxis, YAxis] = SnakePositions[SnakeLength-1]
@@ -254,3 +257,4 @@ async function StartGame() {
 
 SpawnFood()
 StartGame()
+
