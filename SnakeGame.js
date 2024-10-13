@@ -1,6 +1,6 @@
 // Creates MainDiv
 const MainDiv = document.createElement("div")
-MainDiv.classList.add("MainDiv")
+MainDiv.classList.add("MainSnakeGameDiv")
 MainDiv.style.backgroundColor = "rgba(187.5, 187.5, 187.5, 1)"
 MainDiv.style.zIndex = "999"
 MainDiv.style.height = "500px"
@@ -27,7 +27,7 @@ MainDiv.appendChild(SnakeHead)
 
 // Creates Snake Food
 const SnakeFood = document.createElement("div")
-SnakeFood.classList.add("SnakeHead")
+SnakeFood.classList.add("SnakeFood")
 SnakeFood.style.backgroundColor = "red"
 SnakeFood.style.height = "25px"
 SnakeFood.style.width = "25px"
@@ -39,21 +39,22 @@ MainDiv.appendChild(SnakeFood)
 
 // Variables And Stuff
 const MoveBy = 5 // Don't Edit!
-const TickRate = 187.5
+const TickRate = 150
 
-let SnakePositions = [[50,50]]
+let SnakePositions = [[50, 50]]
 let SnakeParts = [SnakeHead]
 
-const DirUp = [0,0] // Direction, Up
-const SnakeFoodPosition = [null,null]
+const DirUp = [null, null] // Direction, Up
+let CanChange = true
+const SnakeFoodPosition = [null, null]
 
 let ValidPositions = new Map() // Generates Map Of Valid Positions
 for (i = 0; i < 20; i++) {
     let Row = []
-    for (ii = 0; ii < 20;  ii++) {
-        Row.push(ii*5)
+    for (ii = 0; ii < 20; ii++) {
+        Row.push(ii * 5)
     }
-    ValidPositions.set(i*5,Row)
+    ValidPositions.set(i * 5, Row)
 }
 
 // Creates Score Board
@@ -88,51 +89,54 @@ function SpawnFood() {
         if (Row != null) {
             const Index = Row.indexOf(UseSnakePosition[1])
             if (Index != -1) {
-                Row.splice(Index,1)
                 if (Row.length < 1) {
                     UVP.delete(UseSnakePosition[0])
+                } else {
+                    Row.splice(Index, 1)
+                    UVP.set(UseSnakePosition[0], Row)
                 }
             }
         }
     }
     if (UVP.size == 0) {
-        return(true)
+        return (true)
     }
     const UseUVP = Array.from(UVP.entries())
-    const RanKey = Math.floor(Math.random()*(UseUVP.length-1))
+    const RanKey = Math.floor(Math.random() * (UseUVP.length - 1))
     const UseRandomKey = UseUVP[RanKey][0]
-    const UseRandomValue = UseUVP[RanKey][1][Math.floor(Math.random()*UseUVP[RanKey][1].length)]
-    SnakeFoodPosition[1] = UseRandomKey
-    SnakeFoodPosition[0] = UseRandomValue
-    SnakeFood.style.top = String(SnakeFoodPosition[1])+"%"
-    SnakeFood.style.left = String(SnakeFoodPosition[0])+"%"   
+    const UseRandomValue = UseUVP[RanKey][1][Math.floor(Math.random() * UseUVP[RanKey][1].length)]
+    SnakeFoodPosition[0] = UseRandomKey
+    SnakeFoodPosition[1] = UseRandomValue
+    SnakeFood.style.top = String(SnakeFoodPosition[1]) + "%"
+    SnakeFood.style.left = String(SnakeFoodPosition[0]) + "%"
 }
 
 // Handles Directions From Keyboard Input
 function GetDirection(Key) {
-    if (typeof(Key) != "string") {
-        return([null, null])
+    if (typeof (Key) != "string") {
+        return ([null, null])
     }
     switch (String(Key)) {
         case "a":
-            return([-1,0])
+            return ([-1, 0])
         case "d":
-            return([1,0])
+            return ([1, 0])
         case "s":
-            return([1,1])
+            return ([1, 1])
         case "w":
-            return([-1,1])
+            return ([-1, 1])
         default:
-            return([null, null])
+            return ([null, null])
     }
 }
 
 // Handles Keyboard Input
-document.addEventListener("keydown", function(event) {
+document.addEventListener("keydown", function (event) {
     const [Direction, Up] = GetDirection(event.key)
-    if (Direction) {
+    if (Direction && CanChange && Up != DirUp[1]) {
         DirUp[0] = Direction
         DirUp[1] = Up
+        CanChange = false
     }
 })
 
@@ -141,7 +145,7 @@ async function TickWait() {
     return new Promise(Results => {
         setTimeout(() => {
             Results()
-        },TickRate)
+        }, TickRate)
     })
 }
 
@@ -150,7 +154,7 @@ function GrowSnake() {
     const SnakeLength = SnakePositions.length
     const SnakeBody = document.createElement("div")
     SnakeBody.classList.add("SnakeBody")
-    if ((SnakeLength%2) == 0) {
+    if ((SnakeLength % 2) == 0) {
         SnakeBody.style.backgroundColor = "rgba(0, 128, 0, 1)"
     } else {
         SnakeBody.style.backgroundColor = "rgba(0, 184, 0, 1)"
@@ -160,9 +164,9 @@ function GrowSnake() {
     SnakeBody.style.borderRadius = "5px"
     SnakeBody.style.position = "absolute"
 
-    const [XAxis, YAxis] = SnakePositions[SnakeLength-1]
-    SnakeBody.style.top = String(YAxis)+"%"
-    SnakeBody.style.left = String(XAxis)+"%"
+    const [XAxis, YAxis] = SnakePositions[SnakeLength - 1]
+    SnakeBody.style.top = String(YAxis) + "%"
+    SnakeBody.style.left = String(XAxis) + "%"
 
     MainDiv.appendChild(SnakeBody)
     SnakePositions.push([XAxis, YAxis])
@@ -172,13 +176,13 @@ function GrowSnake() {
 // Handles Setting Snake To New Position
 function SetNewSnakePosition(SnakeLength) {
     if (SnakeLength > 1) {
-        for (let i = 0; i < SnakeLength-1; i++) {
-            const UseIndex = (SnakeLength)-(i+1)
-            SnakePositions[UseIndex][0] = SnakePositions[UseIndex-1][0]
-            SnakePositions[UseIndex][1] = SnakePositions[UseIndex-1][1]
+        for (let i = 0; i < SnakeLength - 1; i++) {
+            const UseIndex = (SnakeLength) - (i + 1)
+            SnakePositions[UseIndex][0] = SnakePositions[UseIndex - 1][0]
+            SnakePositions[UseIndex][1] = SnakePositions[UseIndex - 1][1]
         }
     }
-    SnakePositions[0][DirUp[1]] += DirUp[0]*MoveBy
+    SnakePositions[0][DirUp[1]] += DirUp[0] * MoveBy
 }
 
 // Handles CSS Update Of Snake Position
@@ -186,21 +190,21 @@ function MoveSnakeToPosition(SnakeLength) {
     for (let i = 0; i < SnakeLength; i++) {
         const UseSnakePosition = SnakePositions[i]
         const UseSnakePart = SnakeParts[i]
-        UseSnakePart.style.left = String(UseSnakePosition[0])+"%"
-        UseSnakePart.style.top = String(UseSnakePosition[1])+"%"
+        UseSnakePart.style.left = String(UseSnakePosition[0]) + "%"
+        UseSnakePart.style.top = String(UseSnakePosition[1]) + "%"
     }
 }
 
 // Detects If Snake Hit Itself
 function SnakeHitSelf(SnakeLength) {
     if (SnakeLength < 2) {
-        return(false)
+        return (false)
     }
     for (let i = 1; i < SnakeLength; i++) {
         const UseSnakePosition = SnakePositions[i]
         if (UseSnakePosition[0] == SnakePositions[0][0] && UseSnakePosition[1] == SnakePositions[0][1]) {
-            return(true)
-        } 
+            return (true)
+        }
     }
 }
 
@@ -208,24 +212,24 @@ function SnakeHitSelf(SnakeLength) {
 function SnakePastBorder(SnakeLength) {
     for (let i = 0; i < SnakeLength; i++) {
         const UseSnakePart = SnakeParts[i]
-        const Up = Number(String(UseSnakePart.style.top).replace("%",""))
-        const Left = Number(String(UseSnakePart.style.left).replace("%",""))
+        const Up = Number(String(UseSnakePart.style.top).replace("%", ""))
+        const Left = Number(String(UseSnakePart.style.left).replace("%", ""))
         if (Up < 0 || Up >= 100 || Left < 0 || Left >= 100) {
-            return(true)
+            return (true)
         }
-    }   
+    }
 }
 
 // Detects If Snake Ate Food
 function SnakeAteFood() {
     if (SnakeFoodPosition[0] == SnakePositions[0][0] && SnakeFoodPosition[1] == SnakePositions[0][1]) {
-        return(true)
+        return (true)
     }
 }
 
 // Handles Showing Score Board
 function ShowScoreBoard() {
-    ScoreBoard.textContent = "Score: "+String(SnakeParts.length)
+    ScoreBoard.textContent = "Score: " + String(SnakeParts.length)
     ScoreBoard.style.opacity = "1"
 }
 
@@ -233,11 +237,10 @@ function ShowScoreBoard() {
 async function StartGame() {
     while (true) {
         await TickWait()
-    
+
         if (DirUp[0]) {
             const SnakeLength = SnakePositions.length
             SetNewSnakePosition(SnakeLength)
-            console.log(SnakePositions)
             MoveSnakeToPosition(SnakeLength)
             if (SnakeHitSelf(SnakeLength) || SnakePastBorder(SnakeLength)) {
                 ShowScoreBoard()
@@ -251,10 +254,10 @@ async function StartGame() {
                     break
                 }
             }
+            CanChange = true
         }
     }
 }
 
 SpawnFood()
 StartGame()
-
