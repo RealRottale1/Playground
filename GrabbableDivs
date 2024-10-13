@@ -1,0 +1,46 @@
+const DragDiv = document.createElement("div")
+DragDiv.classList.add("DragDiv")
+DragDiv.style.position = "fixed"
+DragDiv.style.left = "0px"
+DragDiv.style.top = "0px"
+DragDiv.style.height = "100px"
+DragDiv.style.width = "100px"
+DragDiv.style.backgroundColor = "black"
+DragDiv.style.zIndex = "100"
+document.body.append(DragDiv)
+
+
+function MakeGrabbable(Div) {
+    const GrabbedAt = [null, null]
+
+    document.addEventListener("mousemove", function(event) {
+        if (GrabbedAt[0] && GrabbedAt[1]) {
+            event.preventDefault()
+            Div.style.left = `${event.pageX-GrabbedAt[0]}px`
+            Div.style.top = `${event.pageY-GrabbedAt[1]}px`
+        }
+    })
+
+    Div.addEventListener("mouseover", function() {
+        Div.style.cursor = "grab"
+    })
+    
+    Div.addEventListener("mousedown", function(event) {
+        event.preventDefault()
+        GrabbedAt[0] = event.pageX-Number(String(Div.style.left).replace("px",""))
+        GrabbedAt[1] = event.pageY-Number(String(Div.style.top).replace("px",""))
+        Div.style.cursor = "grabbing"
+    })
+    
+    Div.addEventListener("mouseup", function() {
+        GrabbedAt[0] = null
+        GrabbedAt[1] = null
+        Div.style.cursor = "grab"
+    })
+
+    Div.addEventListener("mouseleave", function() {
+        GrabbedAt[0] = null
+        GrabbedAt[1] = null
+        Div.style.cursor = "default"
+    })
+}
