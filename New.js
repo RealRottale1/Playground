@@ -5,8 +5,7 @@ DragDiv.style.left = "0px"
 DragDiv.style.top = "0px"
 DragDiv.style.height = "100px"
 DragDiv.style.width = "125px"
-DragDiv.style.border = "solid red 35px"
-DragDiv.style.backgroundColor = "black"
+DragDiv.style.backgroundColor = "rgba(125, 150, 125, 1)"
 DragDiv.style.zIndex = "100"
 document.body.append(DragDiv)
 
@@ -29,7 +28,7 @@ function SuperDiv(Div) {
             const YMax = (GrabbedAt[1] >= DivSize[1]-ResizeRange)
 
 
-            //console.log((DivSize[0]-NewGrabAtX)*-1)
+            
             if ((XMin || XMax) && !YMin && !YMax) {
                 console.log("XRange")
                 const XChange = (NewGrabAtX-GrabbedAt[0])*(XMin ? 1 : -1)
@@ -45,6 +44,22 @@ function SuperDiv(Div) {
                 if (YMin) {
                     Div.style.top = `${DivPos[1]-(YChange*-1)}px`
                 }
+
+            } else if ((XMin || XMax) && (YMin || YMax)) {
+                console.log("XY COMBO!")
+                console.log(XMin+","+XMax+","+YMin+","+YMax)
+                const XChange = (NewGrabAtX-GrabbedAt[0])*(XMin ? 1 : -1)
+                Div.style.width = `${DivSize[0]-XChange}px`
+                if (XMin) {
+                    Div.style.left = `${DivPos[0]-(XChange*-1)}px`
+                }
+                const YChange = (NewGrabAtY-GrabbedAt[1])*(YMin ? 1 : -1)
+                Div.style.height = `${DivSize[1]-YChange}px`
+                if (YMin) {
+                    Div.style.top = `${DivPos[1]-(YChange*-1)}px`
+                }
+
+
 
             } else {
                 console.log("DragRange")
