@@ -15,12 +15,15 @@ function AdjustableDiv(Div) {
     const ResizeRange = 30
 
     let InDiv = false
+    let HoveringInDiv = false
+
     const GrabbedAt = [null, null]
     const DivSize = [Div.style.width.replace("px", ""), Div.style.height.replace("px", "")]
     const DivPos = [Div.style.left.replace("px", ""), Div.style.top.replace("px", "")]
 
     function ResetVariables() {
         InDiv = false
+        HoveringDiv = false
         GrabbedAt[0] = null
         GrabbedAt[1] = null
         DivSize[0] = Div.style.width.replace("px", "")
@@ -70,40 +73,33 @@ function AdjustableDiv(Div) {
         } else {
             [XMin, XMax, YMin, YMax] = GetPositionalData(NewGrabAtX, NewGrabAtY)
         }
-
         if ((XMin || XMax) && !YMin && !YMax) {
             document.body.style.cursor = "e-resize"
             if (IsGrabbing) {
                 HandleXChange(XMin, NewGrabAtX)
             }
-
         } else if ((YMin || YMax) && !XMin && !XMax) {
             document.body.style.cursor = "n-resize"
             if (IsGrabbing) {
                 HandleYChange(YMin, NewGrabAtY)
             }
-
         } else if ((XMin || XMax) && (YMin || YMax)) {
             if (XMax && YMin || XMin && YMax) {
                 document.body.style.cursor = "ne-resize"
             } else if (XMin && YMin || XMax && YMax) {
                 document.body.style.cursor = "nw-resize"
             }
-
             if (IsGrabbing) {
                 HandleXChange(XMin, NewGrabAtX)
                 HandleYChange(YMin, NewGrabAtY)
             }
-
         } else if (InDiv)  {
-            if (IsGrabbing) {
-                document.body.style.cursor = "grabbing"
-                event.preventDefault()
-                Div.style.left = `${event.pageX - GrabbedAt[0]}px`
-                Div.style.top = `${event.pageY - GrabbedAt[1]}px`
-            } else {
-                document.body.style.cursor = "grab"
-            }
+            document.body.style.cursor = "grabbing"
+            event.preventDefault()
+            Div.style.left = `${event.pageX - GrabbedAt[0]}px`
+            Div.style.top = `${event.pageY - GrabbedAt[1]}px`
+        } else if (HoveringInDiv) {
+            document.body.style.cursor = "grab"
         } else {
             document.body.style.cursor = "default"
         }
@@ -114,6 +110,15 @@ function AdjustableDiv(Div) {
         ResetVariables()
     })*/
 
+    Div.addEventListener("mouseleave", function() {
+        HoveringInDiv = false
+    })
+    
+    
+    Div.addEventListener("mouseenter", function() {
+        HoveringInDiv = true
+    })
+
     document.addEventListener("mousedown", function (event) {
         event.preventDefault()
         GrabbedAt[0] = event.pageX - Number(String(Div.style.left).replace("px", ""))
@@ -122,10 +127,10 @@ function AdjustableDiv(Div) {
 
     Div.addEventListener("mousedown", function (event) {
        InDiv = true
+       document.body.style.cursor = "grabbing"
     })
 
     document.addEventListener("mouseup", function () {
-        Div.style.cursor = "default"
         ResetVariables()
     })
 
