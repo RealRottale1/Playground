@@ -11,12 +11,16 @@ document.body.append(DragDiv)
 
 
 function AdjustableDiv(Div) {
-    const ResizeRange = 35
+    const WithinRange = 30
+    const ResizeRange = 30
+
+    let InDiv = false
     const GrabbedAt = [null, null]
     const DivSize = [Div.style.width.replace("px", ""), Div.style.height.replace("px", "")]
     const DivPos = [Div.style.left.replace("px", ""), Div.style.top.replace("px", "")]
 
     function ResetVariables() {
+        InDiv = false
         GrabbedAt[0] = null
         GrabbedAt[1] = null
         DivSize[0] = Div.style.width.replace("px", "")
@@ -42,10 +46,12 @@ function AdjustableDiv(Div) {
     }
 
     function GetPositionalData(UseGrabX, UseGrabY) {
-        const XMin = (UseGrabX <= ResizeRange)
-        const XMax = (UseGrabX >= DivSize[0] - ResizeRange)
-        const YMin = (UseGrabY <= ResizeRange)
-        const YMax = (UseGrabY >= DivSize[1] - ResizeRange)
+        const XInBox = ((UseGrabY >= (ResizeRange*-1)) && (UseGrabY <= (Number(DivSize[1]) + ResizeRange)))
+        const YInBox = ((UseGrabX >= (ResizeRange*-1)) && (UseGrabX <= (Number(DivSize[0]) + ResizeRange)))
+        const XMin = ((UseGrabX <= WithinRange) && (UseGrabX >= (ResizeRange*-1)) && XInBox)
+        const XMax = ((UseGrabX >= DivSize[0] - WithinRange) && (UseGrabX <= (Number(DivSize[0]))+ResizeRange) && XInBox)
+        const YMin = ((UseGrabY <= WithinRange) && (UseGrabY >= (ResizeRange*-1)) && YInBox)
+        const YMax = (((UseGrabY >= DivSize[1] - WithinRange) && (UseGrabY <= (Number(DivSize[1]))+ResizeRange)) && YInBox)
         return ([XMin, XMax, YMin, YMax])
     }
 
@@ -66,22 +72,22 @@ function AdjustableDiv(Div) {
         }
 
         if ((XMin || XMax) && !YMin && !YMax) {
-            Div.style.cursor = "e-resize"
+            document.body.style.cursor = "e-resize"
             if (IsGrabbing) {
                 HandleXChange(XMin, NewGrabAtX)
             }
 
         } else if ((YMin || YMax) && !XMin && !XMax) {
-            Div.style.cursor = "n-resize"
+            document.body.style.cursor = "n-resize"
             if (IsGrabbing) {
                 HandleYChange(YMin, NewGrabAtY)
             }
 
         } else if ((XMin || XMax) && (YMin || YMax)) {
             if (XMax && YMin || XMin && YMax) {
-                Div.style.cursor = "ne-resize"
+                document.body.style.cursor = "ne-resize"
             } else if (XMin && YMin || XMax && YMax) {
-                Div.style.cursor = "nw-resize"
+                document.body.style.cursor = "nw-resize"
             }
 
             if (IsGrabbing) {
@@ -89,27 +95,33 @@ function AdjustableDiv(Div) {
                 HandleYChange(YMin, NewGrabAtY)
             }
 
-        } else  {
+        } else if (InDiv)  {
             if (IsGrabbing) {
-                Div.style.cursor = "grabbing"
+                document.body.style.cursor = "grabbing"
                 event.preventDefault()
                 Div.style.left = `${event.pageX - GrabbedAt[0]}px`
                 Div.style.top = `${event.pageY - GrabbedAt[1]}px`
             } else {
-                Div.style.cursor = "grab"
+                document.body.style.cursor = "grab"
             }
-        }     
+        } else {
+            document.body.style.cursor = "default"
+        }
     })
 
-    Div.addEventListener("mouseleave", function () {
+    /*Div.addEventListener("mouseleave", function () {
         Div.style.cursor = "default"
         ResetVariables()
-    })
+    })*/
 
     document.addEventListener("mousedown", function (event) {
         event.preventDefault()
         GrabbedAt[0] = event.pageX - Number(String(Div.style.left).replace("px", ""))
         GrabbedAt[1] = event.pageY - Number(String(Div.style.top).replace("px", ""))
+    })
+
+    Div.addEventListener("mousedown", function (event) {
+       InDiv = true
     })
 
     document.addEventListener("mouseup", function () {
