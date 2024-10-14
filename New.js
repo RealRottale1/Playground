@@ -106,13 +106,13 @@ function AdjustableDiv(Div) {
         ResetVariables()
     })
 
-    Div.addEventListener("mousedown", function (event) {
+    document.addEventListener("mousedown", function (event) {
         event.preventDefault()
         GrabbedAt[0] = event.pageX - Number(String(Div.style.left).replace("px", ""))
         GrabbedAt[1] = event.pageY - Number(String(Div.style.top).replace("px", ""))
     })
 
-    Div.addEventListener("mouseup", function () {
+    document.addEventListener("mouseup", function () {
         Div.style.cursor = "default"
         ResetVariables()
     })
