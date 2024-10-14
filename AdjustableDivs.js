@@ -105,15 +105,9 @@ function AdjustableDiv(Div) {
         }
     })
 
-    /*Div.addEventListener("mouseleave", function () {
-        Div.style.cursor = "default"
-        ResetVariables()
-    })*/
-
     Div.addEventListener("mouseleave", function() {
         HoveringInDiv = false
     })
-    
     
     Div.addEventListener("mouseenter", function() {
         HoveringInDiv = true
