@@ -4,7 +4,7 @@ console.log(Canvas)
 const CTX = Canvas.getContext("2d")
 
 const BubbleData = []
-const SpawnBubbleAt = 50
+const SpawnBubbleAt = 15
 const RadiusConstraints = [10, 50]
 const YBy = 0.75
 
@@ -23,11 +23,14 @@ function RandomRadius() {
     return(String(Math.floor(Math.random() * RadiusConstraints[1]) + RadiusConstraints[0]))
 }
 
-function CanSpawnBubble() {
+function CanSpawnBubble(XPos, YPos, Radius) {
     const BubbleLength = BubbleData.length
     for (let i = 0; i < BubbleLength; i++) {
         const SelectedBubble = BubbleData[i]
-        // Setup check to see if bubble is inside of a bubble
+        const TotalRadius = Radius + SelectedBubble[3]
+        if (Math.abs(SelectedBubble[1]-XPos) >= TotalRadius && Math.abs(SelectedBubble[2]-YPos) >= TotalRadius) {
+            return(false)
+        }
     }
     return(true)
 }
@@ -40,7 +43,7 @@ function RunBubbles() {
         const Radius = RandomRadius()
         const XPos = RandomXPos()
         const YPos = 0-Radius
-        if (CanSpawnBubble()) {
+        if (CanSpawnBubble(XPos, YPos, Radius)) {
             const NewBubble = [RandomColor(), XPos, YPos, Radius]
             BubbleData.push(NewBubble)
         }
