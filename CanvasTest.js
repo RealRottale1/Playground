@@ -12,15 +12,18 @@ Canvas.style.zIndex = "999"
 Canvas.style.backgroundColor = "rgba(125, 125, 125, 1)"
 document.body.appendChild(Canvas)
 
-const CContent = Canvas.getContext("2d")
+const CTX = Canvas.getContext("2d")
+CTX.globalAlpha = .25
+CTX.arc(100, 100, 50, 0, 1*Math.PI, true)
+CTX.fill()
+CTX.closePath()
 
-function Draw(XPos, YPos) {
-    CContent.fillStyle = "rgba(0, 0, 0, 1)"
-    CContent.fillRect(XPos, YPos, 5, 5)
-}
+CTX.globalAlpha = .5
+CTX.arc(100, 120, 50, 0, 1*Math.PI, true)
+CTX.fill()
+CTX.closePath()
 
-Canvas.addEventListener("mousemove", function(event) {
-    const UseX = (Number(Canvas.style.width.replace("px","")) - event.clientX)*-1+Canvas.width/2
-    const UseY = (Number(Canvas.style.height.replace("px","")) - event.clientY)*-1+Canvas.width/2
-    Draw(UseX, UseY)
-})
+CTX.globalAlpha = .75
+CTX.arc(100, 140, 50, 0, 1*Math.PI, true)
+CTX.fill()
+CTX.closePath()
