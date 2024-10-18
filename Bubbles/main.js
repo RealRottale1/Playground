@@ -12,15 +12,15 @@ function RandomColor() {
     const R = Math.floor(Math.random() * 255)
     const G = Math.floor(Math.random() * 255)
     const B = Math.floor(Math.random() * 255)
-    return (`rgba(${R} , ${G}, ${B}, 1)`)
+    return([R,G,B])
 }
 
 function RandomXPos() {
-    return (Math.floor(Math.random() * Canvas.width))
+    return(Math.floor(Math.random() * Canvas.width))
 }
 
 function RandomRadius() {
-    return (Math.floor(Math.random() * RadiusConstraints[1]) + RadiusConstraints[0])
+    return(Math.floor(Math.random() * RadiusConstraints[1]) + RadiusConstraints[0])
 }
 
 function CanSpawnBubble(XPos, YPos, Radius) {
@@ -59,8 +59,9 @@ function RunBubbles() {
         const SelectedBubble = BubbleData[i]
 
         CTX.beginPath()
-        const Gradient = CTX.createRadialGradient()
-        CTX.fillStyle = SelectedBubble.Color
+        const Gradient = CTX.createRadialGradient(SelectedBubble.XPos, SelectedBubble.YPos, SelectedBubble.Radius, SelectedBubble.XPos, SelectedBubble.YPos, SelectedBubble.Radius)
+        Gradient.addColorStop(0, `${SelectedBubble.Color[0]} 0)`)
+        Gradient.addColorStop(1, `${SelectedBubble.Color} 1)`)
         CTX.arc(SelectedBubble.XPos, (Canvas.height - SelectedBubble.YPos), SelectedBubble.Radius, 0, 2 * Math.PI)
         CTX.fill()
 
