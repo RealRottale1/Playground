@@ -16,11 +16,11 @@ function RandomColor() {
 }
 
 function RandomXPos() {
-    return(String(Math.floor(Math.random() * Canvas.width)))
+    return (Math.floor(Math.random() * Canvas.width))
 }
 
 function RandomRadius() {
-    return(String(Math.floor(Math.random() * RadiusConstraints[1]) + RadiusConstraints[0]))
+    return (Math.floor(Math.random() * RadiusConstraints[1]) + RadiusConstraints[0])
 }
 
 function CanSpawnBubble(XPos, YPos, Radius) {
@@ -28,11 +28,11 @@ function CanSpawnBubble(XPos, YPos, Radius) {
     for (let i = 0; i < BubbleLength; i++) {
         const SelectedBubble = BubbleData[i]
         const TotalRadius = Radius + SelectedBubble[3]
-        if (Math.abs(SelectedBubble[1]-XPos) >= TotalRadius && Math.abs(SelectedBubble[2]-YPos) >= TotalRadius) {
-            return(false)
+        if (Math.abs(SelectedBubble[1] - XPos) >= TotalRadius && Math.abs(SelectedBubble[2] - YPos) >= TotalRadius) {
+            return (false)
         }
     }
-    return(true)
+    return (true)
 }
 
 let SpawnBubble = 0
@@ -42,9 +42,14 @@ function RunBubbles() {
         SpawnBubble = 0
         const Radius = RandomRadius()
         const XPos = RandomXPos()
-        const YPos = 0-Radius
+        const YPos = 0 - Radius
         if (CanSpawnBubble(XPos, YPos, Radius)) {
-            const NewBubble = [RandomColor(), XPos, YPos, Radius]
+            const NewBubble = {
+                Color: RandomColor(),
+                Radius: Radius,
+                XPos: XPos,
+                YPos: YPos,
+            }
             BubbleData.push(NewBubble)
         }
     }
@@ -52,11 +57,14 @@ function RunBubbles() {
     const BubbleLength = BubbleData.length
     for (let i = 0; i < BubbleLength; i++) {
         const SelectedBubble = BubbleData[i]
+
         CTX.beginPath()
-        CTX.fillStyle = SelectedBubble[0]
-        CTX.arc(SelectedBubble[1], (Canvas.height - SelectedBubble[2]), SelectedBubble[3], 0, 2 * Math.PI)
+        const Gradient = CTX.createRadialGradient()
+        CTX.fillStyle = SelectedBubble.Color
+        CTX.arc(SelectedBubble.XPos, (Canvas.height - SelectedBubble.YPos), SelectedBubble.Radius, 0, 2 * Math.PI)
         CTX.fill()
-        SelectedBubble[2] += YBy
+
+        SelectedBubble.YPos += YBy
     }
     requestAnimationFrame(RunBubbles)
 }
