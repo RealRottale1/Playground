@@ -1,0 +1,25 @@
+#mainDiv {
+    width: 500px;
+    height: 500px;
+}
+
+#mainCanvas {
+    background-color: black;
+}
+
+#playButton {
+    position: fixed;
+    top: 187.5px;
+    left: 125px;
+    height: 125px;
+    width: 250px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 75px;
+    border-radius: 10px;
+    background-color: royalblue;
+    border: 0px;
+    padding: 0px;
+    margin: 0px;
+}
