@@ -1,10 +1,11 @@
 const Canvas = document.getElementById("BubbleCanvas")
-console.log(Canvas)
-
 const CTX = Canvas.getContext("2d")
+Canvas.width = window.innerWidth
+Canvas.height = window.innerHeight
 
+const MousePos = [0, 0]
 const BubbleData = []
-const SpawnBubbleAt = 15
+const SpawnBubbleAt = 5
 const RadiusConstraints = [10, 50]
 const YBy = 0.75
 
@@ -20,19 +21,34 @@ function RandomXPos() {
 }
 
 function RandomRadius() {
-    return(Math.floor(Math.random() * RadiusConstraints[1]) + RadiusConstraints[0])
+    return(Math.floor(Math.random() * (RadiusConstraints[1]*10))/10 + RadiusConstraints[0])
 }
 
 function CanSpawnBubble(XPos, YPos, Radius) {
     const BubbleLength = BubbleData.length
     for (let i = 0; i < BubbleLength; i++) {
         const SelectedBubble = BubbleData[i]
-        const TotalRadius = Radius + SelectedBubble[3]
-        if (Math.abs(SelectedBubble[1] - XPos) >= TotalRadius && Math.abs(SelectedBubble[2] - YPos) >= TotalRadius) {
-            return (false)
+        const Distance = Math.sqrt((SelectedBubble.XPos - XPos)**2+(SelectedBubble.YPos - YPos)**2)
+        if (Distance < SelectedBubble.Radius + Radius) {
+            return(false)
+        }
+    }   
+    return (true)
+}
+
+function MoveNearbyBubbles(UseX, UseY) {
+    const BubbleLength = BubbleData.length
+    for (let i = 0; i < BubbleLength; i++) {
+        const SelectedBubble = BubbleData[i]
+        const DX = (SelectedBubble.XPos - UseX)
+        const DY = (SelectedBubble.YPos - UseY)
+        const Distance = Math.sqrt(DX**2 + DY**2)
+        if (Distance <= SelectedBubble.Radius) {
+            const Angle = Math.atan2(DY, DX)
+            SelectedBubble.XPos += Math.cos(Angle) * (SelectedBubble.Radius-Distance)
+            SelectedBubble.YPos += Math.sin(Angle) * (SelectedBubble.Radius-Distance)
         }
     }
-    return (true)
 }
 
 let SpawnBubble = 0
@@ -55,9 +71,11 @@ function RunBubbles() {
     }
     CTX.clearRect(0, 0, Canvas.width, Canvas.height)
     const BubbleLength = BubbleData.length
-    for (let i = 0; i < BubbleLength; i++) {
-        const SelectedBubble = BubbleData[i]
 
+    MoveNearbyBubbles(MousePos[0], MousePos[1])
+
+    for (let i = BubbleLength-1; i > 0; i--) {
+        const SelectedBubble = BubbleData[i]
         CTX.beginPath()
         const Gradient = CTX.createRadialGradient(SelectedBubble.XPos, SelectedBubble.YPos, (SelectedBubble.Radius/3)*2, SelectedBubble.XPos, SelectedBubble.YPos, SelectedBubble.Radius)
         Gradient.addColorStop(0, `rgba(${SelectedBubble.Color[0]}, ${SelectedBubble.Color[1]}, ${SelectedBubble.Color[2]}, 0)`)
@@ -69,8 +87,22 @@ function RunBubbles() {
         CTX.fill()
 
         SelectedBubble.YPos -= YBy
+        if ((SelectedBubble.YPos + SelectedBubble.Radius) < 0) {
+            BubbleData.splice(i,1)
+        }
     }
     requestAnimationFrame(RunBubbles)
 }
 
 RunBubbles()
+
+Canvas.addEventListener("mousemove", function(event) {
+    const BoundingRect = Canvas.getBoundingClientRect()
+    MousePos[0] = Math.floor(event.pageX - BoundingRect.left)
+    MousePos[1] = Math.floor(event.pageY - BoundingRect.top)
+})
+
+window.addEventListener("resize", function() {
+    Canvas.width = window.innerWidth
+    Canvas.height = window.innerHeight
+})
