@@ -42,7 +42,7 @@ function RunBubbles() {
         SpawnBubble = 0
         const Radius = RandomRadius()
         const XPos = RandomXPos()
-        const YPos = 0 - Radius
+        const YPos = (Canvas.height - (0 - Radius))
         if (CanSpawnBubble(XPos, YPos, Radius)) {
             const NewBubble = {
                 Color: RandomColor(),
@@ -59,13 +59,16 @@ function RunBubbles() {
         const SelectedBubble = BubbleData[i]
 
         CTX.beginPath()
-        const Gradient = CTX.createRadialGradient(SelectedBubble.XPos, SelectedBubble.YPos, SelectedBubble.Radius, SelectedBubble.XPos, SelectedBubble.YPos, SelectedBubble.Radius)
-        Gradient.addColorStop(0, `${SelectedBubble.Color[0]} 0)`)
-        Gradient.addColorStop(1, `${SelectedBubble.Color} 1)`)
-        CTX.arc(SelectedBubble.XPos, (Canvas.height - SelectedBubble.YPos), SelectedBubble.Radius, 0, 2 * Math.PI)
+        const Gradient = CTX.createRadialGradient(SelectedBubble.XPos, SelectedBubble.YPos, (SelectedBubble.Radius/3)*2, SelectedBubble.XPos, SelectedBubble.YPos, SelectedBubble.Radius)
+        Gradient.addColorStop(0, `rgba(${SelectedBubble.Color[0]}, ${SelectedBubble.Color[1]}, ${SelectedBubble.Color[2]}, 0)`)
+        Gradient.addColorStop(.33, `rgba(${SelectedBubble.Color[0]}, ${SelectedBubble.Color[1]}, ${SelectedBubble.Color[2]}, .33)`)
+        Gradient.addColorStop(.66, `rgba(${SelectedBubble.Color[0]}, ${SelectedBubble.Color[1]}, ${SelectedBubble.Color[2]}, .66)`)
+        Gradient.addColorStop(1, `rgba(${SelectedBubble.Color[0]}, ${SelectedBubble.Color[1]}, ${SelectedBubble.Color[2]}, 1)`)
+        CTX.fillStyle = Gradient
+        CTX.arc(SelectedBubble.XPos, SelectedBubble.YPos, SelectedBubble.Radius, 0, 2 * Math.PI)
         CTX.fill()
 
-        SelectedBubble.YPos += YBy
+        SelectedBubble.YPos -= YBy
     }
     requestAnimationFrame(RunBubbles)
 }
