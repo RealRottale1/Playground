@@ -4,11 +4,7 @@ const ctx = mainCanvas.getContext('2d');
 
 const gameTextures = {
     grass: function(x, y) {
-        ctx.fillStyle = "rgb(26 150 20)";
-        ctx.beginPath();
-        ctx.rect(x, y+10, 5, 5);
-        ctx.rect(x+5, y+10, 5, 15);
-        ctx.fill()
+        ctx.drawImage('..\textures\grass.png', x, y)
     },
 }
 
