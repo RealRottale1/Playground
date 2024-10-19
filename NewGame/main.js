@@ -12,28 +12,6 @@ const settings = {
 
 // stores texture data
 const gameTextures = {
-    player: {
-        fullHealth: null,
-        halfHealth: null,
-        nearDeath: null,
-        sizeX: 25,
-        sizeY: 25,
-        draw: function(texture ,x, y) {
-            ctx.drawImage(texture, x-this.sizeX/2, y-this.sizeY/2, this.sizeX, this.sizeY);
-        },
-    },
-
-    goblin: {
-        fullHealth: null,
-        halfHealth: null,
-        nearDeath: null,
-        sizeX: 25,
-        sizeY: 25,
-        draw: function(texture ,x, y) {
-            ctx.drawImage(texture, x-this.sizeX/2, y-this.sizeY/2, this.sizeX, this.sizeY);
-        },
-    },
-
     sword: {
         texture: null,
         sizeX: 50,
@@ -50,7 +28,6 @@ const gameTextures = {
             ctx.restore();
         },
     },
-
     grass: {
         texture: null,
         draw: function(x, y) {
@@ -60,18 +37,28 @@ const gameTextures = {
 };
 
 let playerProps = {
+    // texture stuff
+    useTexture: null,
+    fullHealth: null,
+    halfHealth: null,
+    nearDeath: null,
+    sizeX: 25,
+    sizeY: 25,
+    draw: function(x, y) {
+        ctx.drawImage(this.useTexture, x-this.sizeX/2, y-this.sizeY/2, this.sizeX, this.sizeY);
+    },
     maxHealth: 100,
     health: 100,
-    useTexture: null,
     getUseTexture: function() {
         if (this.health > 66) {
-            this.useTexture = gameTextures.player.fullHealth;
+            this.useTexture = this.fullHealth;
         } else if (this.health <= 66 && this.health > 33) {
-            this.useTexture = gameTextures.player.halfHealth;
+            this.useTexture = this.halfHealth;
         } else {
-            this.useTexture = gameTextures.player.nearDeath;
-        }
+            this.useTexture = this.nearDeath;
+        };
     },
+    // movment stuff
     x: 250,
     y: 250,
     velocityX: 0,
@@ -92,6 +79,7 @@ let playerProps = {
             this.y = newY
         };
     },
+    // sword stuff
     mouseX: 0,
     mouseY: 0,
     swordData: {
@@ -104,25 +92,36 @@ let playerProps = {
 };
 
 const enemiesProps = {
-    gobblin: {
+    goblin: {
+        // texture stuff
+        useTexture: null,
+        fullHealth: null,
+        halfHealth: null,
+        nearDeath: null,
+        sizeX: 25,
+        sizeY: 25,
+        draw: function(texture ,x, y) {
+            ctx.drawImage(texture, x-this.sizeX/2, y-this.sizeY/2, this.sizeX, this.sizeY);
+        },
+        getUseTexture: function(health) {
+            if (health > 66) {
+                this.useTexture = this.fullHealth;
+            } else if (health <= 66 && health > 33) {
+                this.useTexture = this.halfHealth;
+            } else {
+                this.useTexture = this.nearDeath;
+            }
+        },
+        // general stuff
         starterHealth: 100,
         movementSpeed: 5,
         tickAction: function() {
 
         },
-        getUseTextureIndex: function(health) {
-            if (health > 66) {
-                return(0);
-            } else if (health <= 66 && health > 33) {
-                return(1);
-            } else {
-                return(2);
-            }
-        },
     },
 };
 
-const savedPlayerProps = {...playerProps};
+let savedPlayerProps = null;
 const currentEnemies = [];
 // End
 
@@ -176,12 +175,12 @@ function clearAll() {
 // game loop
 // handles loading textures
 async function loadTextures() {
-    gameTextures.player.fullHealth = await loadImage('textures/players/playerH3.png');
-    gameTextures.player.halfHealth = await loadImage('textures/players/playerH2.png');
-    gameTextures.player.nearDeath = await loadImage('textures/players/playerH1.png');
-    gameTextures.goblin.fullHealth = await loadImage('textures/enemies/goblin/goblin1.png');
-    gameTextures.goblin.halfHealth = await loadImage('textures/enemies/goblin/goblin2.png');
-    gameTextures.goblin.nearDeath = await loadImage('textures/enemies/goblin/goblin3.png');
+    playerProps.fullHealth = await loadImage('textures/players/playerH3.png');
+    playerProps.halfHealth = await loadImage('textures/players/playerH2.png');
+    playerProps.nearDeath = await loadImage('textures/players/playerH1.png');
+    enemiesProps.goblin.fullHealth = await loadImage('textures/enemies/goblin/goblin1.png');
+    enemiesProps.goblin.halfHealth = await loadImage('textures/enemies/goblin/goblin2.png');
+    enemiesProps.goblin.nearDeath = await loadImage('textures/enemies/goblin/goblin3.png');
     gameTextures.sword.texture = await loadImage('textures/swords/defaultSword.png');
     gameTextures.grass.texture = await loadImage('textures/grass.png');
 };
@@ -210,8 +209,8 @@ function makeLoadingScreen() {
 // boots up game
 function bootGame() {
     // generates stuff like bushes
+    savedPlayerProps = {...playerProps};
     playerProps = savedPlayerProps;
-    console.log(playerProps.health)
 
     return new Promise((success) => {
         success();
@@ -277,7 +276,7 @@ async function playGame() {
         clearAll();
         playerProps.updateXY();
         playerProps.getUseTexture();
-        gameTextures.player.draw(playerProps.useTexture, playerProps.x, playerProps.y);
+        playerProps.draw(playerProps.x, playerProps.y);
         gameTextures.sword.draw(playerProps.x, playerProps.y, playerProps.mouseX, playerProps.mouseY, playerProps.swordData.attacking)
 
         const currentEnemyLength = currentEnemies.length;
@@ -305,7 +304,7 @@ function summonEnemy(enemyName, spawnX, spawnY) {
         x: spawnX,
         y: spawnY,
     };
-    currentEnemies.push(summonedEnemy)
+    currentEnemies.push(summonedEnemy);
 };
 
 // handles core loop
@@ -315,7 +314,7 @@ async function runGame() {
         await makeLoadingScreen();
         await bootGame();
 
-        //summonEnemy(gobblin, 500, 400);
+        //summonEnemy(goblin, 500, 400);
         document.addEventListener('keydown', establishUserInputDown);
         document.addEventListener('keyup', establishUserInputUp);
         document.addEventListener('mousemove', establishMouseInput);
