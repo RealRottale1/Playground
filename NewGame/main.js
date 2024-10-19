@@ -23,17 +23,6 @@ const gameTextures = {
         },
     },
 
-    goblin: {
-        fullHealth: null,
-        halfHealth: null,
-        nearDeath: null,
-        sizeX: 25,
-        sizeY: 25,
-        draw: function(texture ,x, y) {
-            ctx.drawImage(texture, x-this.sizeX/2, y-this.sizeY/2, this.sizeX, this.sizeY);
-        },
-    },
-
     sword: {
         texture: null,
         sizeX: 50,
@@ -103,27 +92,7 @@ let playerProps = {
     },
 };
 
-const enemiesProps = {
-    gobblin: {
-        starterHealth: 100,
-        movementSpeed: 5,
-        tickAction: function() {
-
-        },
-        getUseTextureIndex: function(health) {
-            if (health > 66) {
-                return(0);
-            } else if (health <= 66 && health > 33) {
-                return(1);
-            } else {
-                return(2);
-            }
-        },
-    },
-};
-
 const savedPlayerProps = {...playerProps};
-const currentEnemies = [];
 // End
 
 
@@ -179,9 +148,6 @@ async function loadTextures() {
     gameTextures.player.fullHealth = await loadImage('textures/players/playerH3.png');
     gameTextures.player.halfHealth = await loadImage('textures/players/playerH2.png');
     gameTextures.player.nearDeath = await loadImage('textures/players/playerH1.png');
-    gameTextures.goblin.fullHealth = await loadImage('textures/enemies/goblin/goblin1.png');
-    gameTextures.goblin.halfHealth = await loadImage('textures/enemies/goblin/goblin2.png');
-    gameTextures.goblin.nearDeath = await loadImage('textures/enemies/goblin/goblin3.png');
     gameTextures.sword.texture = await loadImage('textures/swords/defaultSword.png');
     gameTextures.grass.texture = await loadImage('textures/grass.png');
 };
@@ -279,14 +245,7 @@ async function playGame() {
         playerProps.getUseTexture();
         gameTextures.player.draw(playerProps.useTexture, playerProps.x, playerProps.y);
         gameTextures.sword.draw(playerProps.x, playerProps.y, playerProps.mouseX, playerProps.mouseY, playerProps.swordData.attacking)
-
-        const currentEnemyLength = currentEnemies.length;
-        for (let i = currentEnemyLength-1; i > 0; i--) {
-            const selectedEnemy = currentEnemies[i];
-            selectedEnemy.enemyData.tickAction();
-            gameTextures.
-        };
-
+        playerProps.health -= 5
         if (playerProps.health <= 0) {
             break;
         } else {
@@ -295,35 +254,12 @@ async function playGame() {
     };
 };
 
-// gets object by name from an object
-function getObjectFromName(objectName, parentObject) {
-    for (let object in parentObject) {
-        if (object == objectName) {
-            return(object);
-        };
-    };
-};
-
-// handles spawning in enemies
-function summonEnemy(enemyName, spawnX, spawnY) {
-    const summonedEnemy = {
-        enemyData: getObjectFromName(enemyName, parentObject),
-        enemyTextureData: getObjectFromName(enemyName, parentObject),
-        health: enemyObject.maxHealth,
-        x: spawnX,
-        y: spawnY,
-    };
-    currentEnemies.push(summonedEnemy)
-};
-
 // handles core loop
 async function runGame() {
     await loadTextures();
     while (true) {
         await makeLoadingScreen();
         await bootGame();
-
-        summonEnemy(gobblin, 500, 400);
         document.addEventListener('keydown', establishUserInputDown);
         document.addEventListener('keyup', establishUserInputUp);
         document.addEventListener('mousemove', establishMouseInput);
