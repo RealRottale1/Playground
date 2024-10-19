@@ -7,6 +7,7 @@ const ctx = mainCanvas.getContext('2d');
 const settings = {
     refreshRate: 10,
     playerMovmentAmount: 2.5,
+
 };
 
 // stores texture data
@@ -18,20 +19,31 @@ const gameTextures = {
         sizeX: 25,
         sizeY: 25,
         draw: function(texture ,x, y) {
-            ctx.drawImage(texture, x-this.sizeX/2, y-this.sizeY/2, this.sizeX, this.sizeY)
+            ctx.drawImage(texture, x-this.sizeX/2, y-this.sizeY/2, this.sizeX, this.sizeY);
+        },
+    },
+
+    sword: {
+        texture: null,
+        sizeX: 50,
+        sizeY: 50,
+        offset: -50,
+        draw: function(x, y, mouseX, mouseY, attacking) {
+            const dX = mouseX - x;
+            const dY = mouseY - y;
+            const angle = Math.atan2(dY, dX) + Math.PI/2;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.drawImage(this.texture, -1*(this.sizeX/2), -1*(this.sizeY/2)+(attacking ? this.offset*(4/3) : this.offset), this.sizeX, this.sizeY);
+            ctx.restore();
         },
     },
 
     grass: {
         texture: null,
         draw: function(x, y) {
-            ctx.drawImage(this.texture, x, y, 25, 25)
-        },
-    },
-    rock: {
-        texture: null,
-        draw: function(x, y) {
-            ctx.drawImage(this.texture, x, y, 50, 50)
+            ctx.drawImage(this.texture, x, y, 25, 25);
         },
     },
 };
@@ -69,6 +81,15 @@ let playerProps = {
             this.y = newY
         };
     },
+    mouseX: 0,
+    mouseY: 0,
+    swordData: {
+        damage: 50,
+        canAttack: true,
+        attacking: false,
+        attackDuration: 750,
+        attackCoolDown: 250,
+    },
 };
 
 const savedPlayerProps = {...playerProps};
@@ -88,8 +109,8 @@ const savedPlayerProps = {...playerProps};
 function waitTick() {
     return new Promise((success) => {
         setTimeout(() => {
-            success()
-        }, settings.refreshRate)
+            success();
+        }, settings.refreshRate);
     });
 };
 
@@ -124,12 +145,11 @@ function clearAll() {
 // game loop
 // handles loading textures
 async function loadTextures() {
-    gameTextures.player.fullHealth = await loadImage('textures/playerH3.png');
-    gameTextures.player.halfHealth = await loadImage('textures/playerH2.png');
-    gameTextures.player.nearDeath = await loadImage('textures/playerH1.png');
-
+    gameTextures.player.fullHealth = await loadImage('textures/players/playerH3.png');
+    gameTextures.player.halfHealth = await loadImage('textures/players/playerH2.png');
+    gameTextures.player.nearDeath = await loadImage('textures/players/playerH1.png');
+    gameTextures.sword.texture = await loadImage('textures/swords/defaultSword.png');
     gameTextures.grass.texture = await loadImage('textures/grass.png');
-    gameTextures.rock.texture = await loadImage('textures/rock.png');
 };
 
 // loads main menu
@@ -157,6 +177,7 @@ function makeLoadingScreen() {
 function bootGame() {
     // generates stuff like bushes
     playerProps = savedPlayerProps;
+    console.log(playerProps.health)
 
     return new Promise((success) => {
         success();
@@ -195,6 +216,27 @@ function establishUserInputUp(event) {
     handleSetKeyMovment(event ,0)
 };
 
+// gets mouse position
+function establishMouseInput(event) {
+    const rect = mainCanvas.getBoundingClientRect()
+    playerProps.mouseX = event.clientX - rect.left
+    playerProps.mouseY = event.clientY - rect.top
+};
+
+// gets mouse click
+function establishMouseClick(event) {
+    if (playerProps.swordData.canAttack) {
+        playerProps.swordData.canAttack = false;
+        playerProps.swordData.attacking = true;
+        setTimeout(() => {
+            playerProps.swordData.attacking = false;
+            setTimeout(() => {
+                playerProps.swordData.canAttack = true;
+            }, playerProps.swordData.attackCoolDown);
+        }, playerProps.swordData.attackDuration);
+    };
+};
+
 // main game loop
 async function playGame() {
     while (true) {
@@ -202,21 +244,32 @@ async function playGame() {
         playerProps.updateXY();
         playerProps.getUseTexture();
         gameTextures.player.draw(playerProps.useTexture, playerProps.x, playerProps.y);
-        await waitTick();
-        console.log(playerProps.keyMovment)
+        gameTextures.sword.draw(playerProps.x, playerProps.y, playerProps.mouseX, playerProps.mouseY, playerProps.swordData.attacking)
+        playerProps.health -= 5
+        if (playerProps.health <= 0) {
+            break;
+        } else {
+            await waitTick();
+        };
     };
 };
 
 // handles core loop
 async function runGame() {
     await loadTextures();
-    await makeLoadingScreen();
-    await bootGame();
-    document.addEventListener('keydown', establishUserInputDown);
-    document.addEventListener('keyup', establishUserInputUp);
-    await playGame();
-    document.removeEventListener('keydown', establishUserInputDown);
-    document.removeEventListener('keyup', establishUserInputUp);
+    while (true) {
+        await makeLoadingScreen();
+        await bootGame();
+        document.addEventListener('keydown', establishUserInputDown);
+        document.addEventListener('keyup', establishUserInputUp);
+        document.addEventListener('mousemove', establishMouseInput);
+        document.addEventListener('click', establishMouseClick);
+        await playGame();
+        document.removeEventListener('keydown', establishUserInputDown);
+        document.removeEventListener('keyup', establishUserInputUp);
+        document.removeEventListener('mousemove', establishMouseInput);
+        document.removeEventListener('click', establishMouseClick);
+    }
 };
 
 runGame();
