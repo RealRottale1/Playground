@@ -38,7 +38,7 @@ function getWeaponPosition(x, y, mouseX, mouseY, sizeX, sizeY, offset, attacking
     const angle = Math.atan2(dY, dX) + Math.PI / 2;
     const offsetX = (-1*(sizeX / 2));
     const offsetY = (-1*(sizeY / 2) + (attacking ? offset * (4 / 3) : offset));
-    return([dX, dY, angle, offsetX, offsetY]);
+    return([angle, offsetX, offsetY]);
 };
 
 // stores texture data
@@ -370,7 +370,7 @@ async function playGame() {
         playerProps.updateXY();
         playerProps.getUseTexture();
         playerProps.draw(playerProps.x, playerProps.y);
-        const [dX, dY, angle, offsetX, offsetY] = getWeaponPosition(playerProps.x, playerProps.y, playerProps.mouseX, playerProps.mouseY, playerProps.weaponData.sizeX, playerProps.weaponData.sizeY, playerProps.weaponData.offset, playerProps.attacking);
+        const [angle, offsetX, offsetY] = getWeaponPosition(playerProps.x, playerProps.y, playerProps.mouseX, playerProps.mouseY, playerProps.weaponData.sizeX, playerProps.weaponData.sizeY, playerProps.weaponData.offset, playerProps.attacking);
         const currentEnemyLength = currentEnemies.length;
         for (let i = currentEnemyLength - 1; i >= 0; i--) {
             const selectedEnemy = currentEnemies[i];
@@ -385,11 +385,12 @@ async function playGame() {
                     const m = (j*averageHitBox*-1);
                     const x = playerProps.x + (m*Math.cos(angle+Math.PI/2));
                     const y = playerProps.y + (m*Math.sin(angle+Math.PI/2));
-                    ctx.beginPath();
+                    /*ctx.beginPath(); // For debugging!
                     ctx.fillStyle = 'blue';
                     ctx.rect(x, y, 5, 5);
                     ctx.fill();
                     ctx.closePath();
+                    */
                     const distance = Math.sqrt((selectedEnemy.x-x)**2+(selectedEnemy.y-y)**2);
                     const enemyHit = (distance < averageHitBox);
                     if (enemyHit) {
@@ -404,7 +405,7 @@ async function playGame() {
             };
 
             if (selectedEnemy.weaponData.texture) {
-                const [enemyDX, enemyDY, enemyAngle, enemyOffsetX, enemyOffsetY] = getWeaponPosition(selectedEnemy.x, selectedEnemy.y, playerProps.x, playerProps.y, selectedEnemy.weaponData.sizeX, selectedEnemy.weaponData.sizeY, selectedEnemy.weaponData.offset, selectedEnemy.attacking);
+                const [enemyAngle, enemyOffsetX, enemyOffsetY] = getWeaponPosition(selectedEnemy.x, selectedEnemy.y, playerProps.x, playerProps.y, selectedEnemy.weaponData.sizeX, selectedEnemy.weaponData.sizeY, selectedEnemy.weaponData.offset, selectedEnemy.attacking);
                 selectedEnemy.weaponData.draw(selectedEnemy.x, selectedEnemy.y, enemyAngle, enemyOffsetX, enemyOffsetY);
             };
         };
