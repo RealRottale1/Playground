@@ -136,6 +136,8 @@ const enemiesProps = {
         fullHealth: null,
         halfHealth: null,
         nearDeath: null,
+        hitBoxX: 25,
+        hitBoxY: 25,
         sizeX: 25,
         sizeY: 25,
         draw: function (x, y) {
@@ -156,6 +158,7 @@ const enemiesProps = {
         x: 0,
         y: 0,
         // weapon suff
+        wasAttacked: false,
         canAttack: true,
         attacking: false,
         attackRangeMultiplier: 1,
@@ -279,8 +282,10 @@ function makeLoadingScreen() {
 // boots up game
 function bootGame() {
     // generates stuff like bushes
-    savedPlayerProps = { ...playerProps };
+    savedPlayerProps = deepClone(playerProps);
     playerProps = savedPlayerProps;
+    console.log(playerProps.health);
+    currentEnemies.splice(0,currentEnemies.length);
 
     return new Promise((success) => {
         success();
@@ -335,6 +340,11 @@ function establishMouseClick(event) {
             playerProps.attacking = false;
             setTimeout(() => {
                 playerProps.canAttack = true;
+                const currentEnemyLength = currentEnemies.length;
+                for (let i = currentEnemyLength - 1; i >= 0; i--) {
+                    const selectedEnemy = currentEnemies[i];
+                    selectedEnemy.wasAttacked = false;
+                };
             }, playerProps.weaponData.attackCoolDown);
         }, playerProps.weaponData.attackDuration);
     };
@@ -348,15 +358,33 @@ async function playGame() {
         playerProps.getUseTexture();
         playerProps.draw(playerProps.x, playerProps.y);
         const [dX, dY, angle, offsetX, offsetY] = getWeaponPosition(playerProps.x, playerProps.y, playerProps.mouseX, playerProps.mouseY, playerProps.weaponData.sizeX, playerProps.weaponData.sizeY, playerProps.weaponData.offset, playerProps.attacking);
-        console.log(angle+' , '+offsetX+' , '+offsetY);
         const currentEnemyLength = currentEnemies.length;
         for (let i = currentEnemyLength - 1; i >= 0; i--) {
             const selectedEnemy = currentEnemies[i];
             selectedEnemy.getUseTexture();
             selectedEnemy.tickAction();
             selectedEnemy.draw(selectedEnemy.x, selectedEnemy.y);
-            const [enemyDX, enemyDY, enemyAngle, enemyOffsetX, enemyOffsetY] = getWeaponPosition(selectedEnemy.x, selectedEnemy.y, playerProps.x, playerProps.y, selectedEnemy.weaponData.sizeX, selectedEnemy.weaponData.sizeY, selectedEnemy.weaponData.offset, selectedEnemy.attacking);
-            selectedEnemy.weaponData.draw(selectedEnemy.x, selectedEnemy.y, enemyAngle, enemyOffsetX, enemyOffsetY);
+            
+            if (!selectedEnemy.wasAttacked && playerProps.attacking) {
+                const swordTipX = playerProps.x + (offsetY*Math.cos(angle+Math.PI/2));
+                const swordTipY = playerProps.y + (offsetY*Math.sin(angle+Math.PI/2));
+                const swordDX = swordTipX - selectedEnemy.x;
+                const swordDY = swordTipY - selectedEnemy.y;
+                const distance = Math.sqrt(swordDX**2 + swordDY**2);
+                const enemyHit = (distance < (selectedEnemy.hitBoxX+selectedEnemy.hitBoxY)/2);
+                if (enemyHit) {
+                    selectedEnemy.wasAttacked = true;
+                    selectedEnemy.health -= playerProps.weaponData.damage;
+                    if (selectedEnemy.health <= 0) {
+                        currentEnemies.splice(i, 1);
+                    };
+                };
+            };
+
+            if (selectedEnemy.weaponData.texture) {
+                const [enemyDX, enemyDY, enemyAngle, enemyOffsetX, enemyOffsetY] = getWeaponPosition(selectedEnemy.x, selectedEnemy.y, playerProps.x, playerProps.y, selectedEnemy.weaponData.sizeX, selectedEnemy.weaponData.sizeY, selectedEnemy.weaponData.offset, selectedEnemy.attacking);
+                selectedEnemy.weaponData.draw(selectedEnemy.x, selectedEnemy.y, enemyAngle, enemyOffsetX, enemyOffsetY);
+            };
         };
 
         playerProps.weaponData.draw(playerProps.x, playerProps.y, angle, offsetX, offsetY);
