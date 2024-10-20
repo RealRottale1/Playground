@@ -29,36 +29,10 @@ function deepClone(object) {
 // settings
 const settings = {
     refreshRate: 10,
-    playerMovmentAmount: 2.5,
 
 };
 
 // stores texture data
-const gameTextures = {
-    sword: {
-        texture: null,
-        sizeX: 50,
-        sizeY: 50,
-        offset: -50,
-        draw: function (x, y, mouseX, mouseY, attacking) {
-            const dX = mouseX - x;
-            const dY = mouseY - y;
-            const angle = Math.atan2(dY, dX) + Math.PI / 2;
-            ctx.save();
-            ctx.translate(x, y);
-            ctx.rotate(angle);
-            ctx.drawImage(this.texture, -1 * (this.sizeX / 2), -1 * (this.sizeY / 2) + (attacking ? this.offset * (4 / 3) : this.offset), this.sizeX, this.sizeY);
-            ctx.restore();
-        },
-    },
-    grass: {
-        texture: null,
-        draw: function (x, y) {
-            ctx.drawImage(this.texture, x, y, 25, 25);
-        },
-    },
-};
-
 const weapons = {
     hands: {
         attackRange: 35,
@@ -69,18 +43,34 @@ const weapons = {
         sizeX: 0,
         sizeY: 0,
         offset: 0,
+        draw: function (x, y, mouseX, mouseY, attacking) {
+            console.log(this.texture+" , "+this.sizeX+" , "+this.sizeY);
+            if (!this.texture || !this.sizeX || !this.sizeY) {
+                return(false);
+            };
+            const dX = mouseX - x;
+            const dY = mouseY - y;
+            const angle = Math.atan2(dY, dX) + Math.PI / 2;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.drawImage(this.texture, -1 * (this.sizeX / 2), -1 * (this.sizeY / 2) + (attacking ? this.offset * (4 / 3) : this.offset), this.sizeX, this.sizeY);
+            ctx.restore();
+        },
     },
-    defaultSword: {
-        attackRange: 45,
-        damage: 50,
-        attackDuration: 750,
-        attackCoolDown: 250,
-        texture: null,
-        sizeX: 50,
-        sizeY: 50,
-        offset: -50,
-    }
+    defaultSword: Object.create({}),
 };
+Object.assign(weapons.defaultSword, weapons.hands);
+Object.assign(weapons.defaultSword, {
+    attackRange: 45,
+    damage: 50,
+    attackDuration: 750,
+    attackCoolDown: 250,
+    texture: null,
+    sizeX: 50,
+    sizeY: 50,
+    offset: -50,
+});
 
 let playerProps = {
     // texture stuff
@@ -105,6 +95,7 @@ let playerProps = {
         };
     },
     // movment stuff
+    playerMovmentAmount: 2.5,
     x: 250,
     y: 250,
     velocityX: 0,
@@ -116,8 +107,8 @@ let playerProps = {
         d: 0,
     },
     updateXY: function () {
-        const newX = this.x + (this.keyMovment.d - this.keyMovment.a) * settings.playerMovmentAmount;;
-        const newY = this.y + (this.keyMovment.s - this.keyMovment.w) * settings.playerMovmentAmount;
+        const newX = this.x + (this.keyMovment.d - this.keyMovment.a) * this.playerMovmentAmount;;
+        const newY = this.y + (this.keyMovment.s - this.keyMovment.w) * this.playerMovmentAmount;
         if (newX >= 0 && newX <= mainCanvas.width) {
             this.x = newX
         };
@@ -258,8 +249,7 @@ async function loadTextures() {
     enemiesProps.goblin.fullHealth = await loadImage('textures/enemies/goblin/goblin3.png');
     enemiesProps.goblin.halfHealth = await loadImage('textures/enemies/goblin/goblin2.png');
     enemiesProps.goblin.nearDeath = await loadImage('textures/enemies/goblin/goblin1.png');
-    gameTextures.sword.texture = await loadImage('textures/swords/defaultSword.png');
-    gameTextures.grass.texture = await loadImage('textures/grass.png');
+    weapons.defaultSword.texture = await loadImage('textures/weapons/defaultSword.png');
 };
 
 // loads main menu
@@ -335,17 +325,12 @@ function establishMouseInput(event) {
 
 // gets mouse click
 function establishMouseClick(event) {
-    console.log(playerProps.canAttack);
-    console.log(playerProps.attacking);
     if (playerProps.canAttack) {
         playerProps.canAttack = false;
         playerProps.attacking = true;
-        console.log('started attacking');
         setTimeout(() => {
-            console.log('done attacking');
             playerProps.attacking = false;
             setTimeout(() => {
-                console.log('can attack again');
                 playerProps.canAttack = true;
             }, playerProps.weaponData.attackCoolDown);
         }, playerProps.weaponData.attackDuration);
@@ -359,7 +344,6 @@ async function playGame() {
         playerProps.updateXY();
         playerProps.getUseTexture();
         playerProps.draw(playerProps.x, playerProps.y);
-        gameTextures.sword.draw(playerProps.x, playerProps.y, playerProps.mouseX, playerProps.mouseY, playerProps.attacking)
 
         const currentEnemyLength = currentEnemies.length;
         for (let i = currentEnemyLength - 1; i >= 0; i--) {
@@ -369,6 +353,7 @@ async function playGame() {
             selectedEnemy.draw(selectedEnemy.x, selectedEnemy.y)
         };
 
+        playerProps.weaponData.draw(playerProps.x, playerProps.y, playerProps.mouseX, playerProps.mouseY, playerProps.attacking)
         if (playerProps.health <= 0) {
             break;
         } else {
