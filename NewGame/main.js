@@ -59,6 +59,29 @@ const gameTextures = {
     },
 };
 
+const weapons = {
+    hands: {
+        attackRange: 35,
+        damage: 15,
+        attackDuration: 500,
+        attackCoolDown: 150,
+        texture: null,
+        sizeX: 0,
+        sizeY: 0,
+        offset: 0,
+    },
+    defaultSword: {
+        attackRange: 45,
+        damage: 50,
+        attackDuration: 750,
+        attackCoolDown: 250,
+        texture: null,
+        sizeX: 50,
+        sizeY: 50,
+        offset: -50,
+    }
+};
+
 let playerProps = {
     // texture stuff
     useTexture: null,
@@ -105,13 +128,9 @@ let playerProps = {
     // sword stuff
     mouseX: 0,
     mouseY: 0,
-    swordData: {
-        damage: 50,
-        canAttack: true,
-        attacking: false,
-        attackDuration: 750,
-        attackCoolDown: 250,
-    },
+    canAttack: true,
+    attacking: false,
+    weaponData: weapons.defaultSword,
 };
 
 const enemiesProps = {
@@ -143,18 +162,14 @@ const enemiesProps = {
         // weapon suff
         canAttack: true,
         attacking: false,
-        weaponData: {
-            attackRange: 5,
-            texture: null,
-            damage: 50,
-            attackDuration: 750,
-            attackCoolDown: 250,
-        },
+        attackRangeMultiplier: 1,
+        attackDamageMultiplier: 1,
+        weaponData: weapons.hands,
         attack: function() {
             if (this.canAttack) {
                 this.canAttack = false;
                 this.attacking = true;
-                playerProps.health -= this.weaponData.damage;
+                playerProps.health -= this.weaponData.damage*this.attackDamageMultiplier;
                 setTimeout(() => {
                     this.attacking = false;
                     setTimeout(() => {
@@ -169,15 +184,15 @@ const enemiesProps = {
             const dX = playerProps.x - this.x;
             const dY = playerProps.y - this.y;
             const distance = Math.sqrt(dX**2 + dY**2);
-            if (distance > this.weaponData.attackRange) {
-                console.log('move!');
+            if (distance > 0) {
                 const nX = dX/distance;
                 const nY = dY/distance;
                 this.x += nX*this.movementSpeed;
                 this.y += nY*this.movementSpeed;
-            } else {
-                console.log('attack!');
-                this.attack();
+                if (distance < this.weaponData.attackRange*this.attackRangeMultiplier) {
+                    console.log('attack!');
+                    this.attack();
+                };
             };
         },
     },
@@ -320,15 +335,20 @@ function establishMouseInput(event) {
 
 // gets mouse click
 function establishMouseClick(event) {
-    if (playerProps.swordData.canAttack) {
-        playerProps.swordData.canAttack = false;
-        playerProps.swordData.attacking = true;
+    console.log(playerProps.canAttack);
+    console.log(playerProps.attacking);
+    if (playerProps.canAttack) {
+        playerProps.canAttack = false;
+        playerProps.attacking = true;
+        console.log('started attacking');
         setTimeout(() => {
-            playerProps.swordData.attacking = false;
+            console.log('done attacking');
+            playerProps.attacking = false;
             setTimeout(() => {
-                playerProps.swordData.canAttack = true;
-            }, playerProps.swordData.attackCoolDown);
-        }, playerProps.swordData.attackDuration);
+                console.log('can attack again');
+                playerProps.canAttack = true;
+            }, playerProps.weaponData.attackCoolDown);
+        }, playerProps.weaponData.attackDuration);
     };
 };
 
@@ -339,7 +359,7 @@ async function playGame() {
         playerProps.updateXY();
         playerProps.getUseTexture();
         playerProps.draw(playerProps.x, playerProps.y);
-        gameTextures.sword.draw(playerProps.x, playerProps.y, playerProps.mouseX, playerProps.mouseY, playerProps.swordData.attacking)
+        gameTextures.sword.draw(playerProps.x, playerProps.y, playerProps.mouseX, playerProps.mouseY, playerProps.attacking)
 
         const currentEnemyLength = currentEnemies.length;
         for (let i = currentEnemyLength - 1; i >= 0; i--) {
