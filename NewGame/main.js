@@ -2,6 +2,29 @@ const mainDiv = document.getElementById('mainDiv');
 const mainCanvas = document.getElementById('mainCanvas');
 const ctx = mainCanvas.getContext('2d');
 
+// deep clone function
+function deepClone(object) {
+    if (object === null || typeof object !== 'object') {
+        return(object);
+    };
+    if (object instanceof HTMLImageElement) {
+        const clonedImage = new Image();
+        clonedImage.src = object.src;
+        return(clonedImage);
+    };
+    let clonedObject = Array.isArray(object) ? [] : {};
+    for (let key in object) {
+        if (object.hasOwnProperty(key)) {
+            if (typeof object[key] === 'function') {
+                clonedObject[key] = object[key].bind(clonedObject);
+              } else {
+                clonedObject[key] = deepClone(object[key]);
+              };
+        };
+    };
+    return clonedObject;
+};
+
 // variables and settings
 // settings
 const settings = {
@@ -17,20 +40,20 @@ const gameTextures = {
         sizeX: 50,
         sizeY: 50,
         offset: -50,
-        draw: function(x, y, mouseX, mouseY, attacking) {
+        draw: function (x, y, mouseX, mouseY, attacking) {
             const dX = mouseX - x;
             const dY = mouseY - y;
-            const angle = Math.atan2(dY, dX) + Math.PI/2;
+            const angle = Math.atan2(dY, dX) + Math.PI / 2;
             ctx.save();
             ctx.translate(x, y);
             ctx.rotate(angle);
-            ctx.drawImage(this.texture, -1*(this.sizeX/2), -1*(this.sizeY/2)+(attacking ? this.offset*(4/3) : this.offset), this.sizeX, this.sizeY);
+            ctx.drawImage(this.texture, -1 * (this.sizeX / 2), -1 * (this.sizeY / 2) + (attacking ? this.offset * (4 / 3) : this.offset), this.sizeX, this.sizeY);
             ctx.restore();
         },
     },
     grass: {
         texture: null,
-        draw: function(x, y) {
+        draw: function (x, y) {
             ctx.drawImage(this.texture, x, y, 25, 25);
         },
     },
@@ -44,12 +67,12 @@ let playerProps = {
     nearDeath: null,
     sizeX: 25,
     sizeY: 25,
-    draw: function(x, y) {
-        ctx.drawImage(this.useTexture, x-this.sizeX/2, y-this.sizeY/2, this.sizeX, this.sizeY);
+    draw: function (x, y) {
+        ctx.drawImage(this.useTexture, x - this.sizeX / 2, y - this.sizeY / 2, this.sizeX, this.sizeY);
     },
     maxHealth: 100,
     health: 100,
-    getUseTexture: function() {
+    getUseTexture: function () {
         if (this.health > 66) {
             this.useTexture = this.fullHealth;
         } else if (this.health <= 66 && this.health > 33) {
@@ -69,9 +92,9 @@ let playerProps = {
         s: 0,
         d: 0,
     },
-    updateXY: function() {
-        const newX = this.x + (this.keyMovment.d - this.keyMovment.a)*settings.playerMovmentAmount;;
-        const newY = this.y + (this.keyMovment.s - this.keyMovment.w)*settings.playerMovmentAmount;
+    updateXY: function () {
+        const newX = this.x + (this.keyMovment.d - this.keyMovment.a) * settings.playerMovmentAmount;;
+        const newY = this.y + (this.keyMovment.s - this.keyMovment.w) * settings.playerMovmentAmount;
         if (newX >= 0 && newX <= mainCanvas.width) {
             this.x = newX
         };
@@ -100,23 +123,62 @@ const enemiesProps = {
         nearDeath: null,
         sizeX: 25,
         sizeY: 25,
-        draw: function(texture ,x, y) {
-            ctx.drawImage(texture, x-this.sizeX/2, y-this.sizeY/2, this.sizeX, this.sizeY);
+        draw: function (x, y) {
+            ctx.drawImage(this.useTexture, x - this.sizeX / 2, y - this.sizeY / 2, this.sizeX, this.sizeY);
         },
-        getUseTexture: function(health) {
-            if (health > 66) {
+        getUseTexture: function () {
+            if (this.health > 66) {
                 this.useTexture = this.fullHealth;
-            } else if (health <= 66 && health > 33) {
+            } else if (this.health <= 66 && this.health > 33) {
                 this.useTexture = this.halfHealth;
             } else {
                 this.useTexture = this.nearDeath;
-            }
+            };
         },
         // general stuff
         starterHealth: 100,
-        movementSpeed: 5,
-        tickAction: function() {
-
+        health: 100,
+        x: 0,
+        y: 0,
+        // weapon suff
+        canAttack: true,
+        attacking: false,
+        weaponData: {
+            attackRange: 5,
+            texture: null,
+            damage: 50,
+            attackDuration: 750,
+            attackCoolDown: 250,
+        },
+        attack: function() {
+            if (this.canAttack) {
+                this.canAttack = false;
+                this.attacking = true;
+                playerProps.health -= this.weaponData.damage;
+                setTimeout(() => {
+                    this.attacking = false;
+                    setTimeout(() => {
+                        this.canAttack = true;
+                    }, this.weaponData.attackCoolDown);
+                }, this.weaponData.attackDuration);
+            };
+        },
+        // movment/tick stuff
+        movementSpeed: 1.5,
+        tickAction: function () {
+            const dX = playerProps.x - this.x;
+            const dY = playerProps.y - this.y;
+            const distance = Math.sqrt(dX**2 + dY**2);
+            if (distance > this.weaponData.attackRange) {
+                console.log('move!');
+                const nX = dX/distance;
+                const nY = dY/distance;
+                this.x += nX*this.movementSpeed;
+                this.y += nY*this.movementSpeed;
+            } else {
+                console.log('attack!');
+                this.attack();
+            };
         },
     },
 };
@@ -147,12 +209,12 @@ function waitTick() {
 // handles loading image
 function loadImage(Path) {
     return new Promise((success, failure) => {
-     const image = new Image();
-     image.src = Path;
-     image.onload = () => {success(image)};
-     image.onerror = (err) => {failure(err)};
-    }); 
- };
+        const image = new Image();
+        image.src = Path;
+        image.onload = () => { success(image) };
+        image.onerror = (err) => { failure(err) };
+    });
+};
 
 // clears canvas and resets background
 function clearAll() {
@@ -178,9 +240,9 @@ async function loadTextures() {
     playerProps.fullHealth = await loadImage('textures/players/playerH3.png');
     playerProps.halfHealth = await loadImage('textures/players/playerH2.png');
     playerProps.nearDeath = await loadImage('textures/players/playerH1.png');
-    enemiesProps.goblin.fullHealth = await loadImage('textures/enemies/goblin/goblin1.png');
+    enemiesProps.goblin.fullHealth = await loadImage('textures/enemies/goblin/goblin3.png');
     enemiesProps.goblin.halfHealth = await loadImage('textures/enemies/goblin/goblin2.png');
-    enemiesProps.goblin.nearDeath = await loadImage('textures/enemies/goblin/goblin3.png');
+    enemiesProps.goblin.nearDeath = await loadImage('textures/enemies/goblin/goblin1.png');
     gameTextures.sword.texture = await loadImage('textures/swords/defaultSword.png');
     gameTextures.grass.texture = await loadImage('textures/grass.png');
 };
@@ -199,7 +261,7 @@ function makeLoadingScreen() {
     mainDiv.appendChild(startButton);
 
     return new Promise((success) => {
-        startButton.addEventListener('click', function(event) {
+        startButton.addEventListener('click', function (event) {
             startButton.remove();
             success();
         });
@@ -209,7 +271,7 @@ function makeLoadingScreen() {
 // boots up game
 function bootGame() {
     // generates stuff like bushes
-    savedPlayerProps = {...playerProps};
+    savedPlayerProps = { ...playerProps };
     playerProps = savedPlayerProps;
 
     return new Promise((success) => {
@@ -218,19 +280,19 @@ function bootGame() {
 };
 
 // handles setting key movment
-function handleSetKeyMovment(event ,setTo) {
+function handleSetKeyMovment(event, setTo) {
     if (event && event.key) {
         switch (String(event.key).toLowerCase()) {
-            case("w"):
+            case ("w"):
                 playerProps.keyMovment.w = setTo;
                 break;
-            case("a"):
+            case ("a"):
                 playerProps.keyMovment.a = setTo;
                 break;
-            case("s"):
+            case ("s"):
                 playerProps.keyMovment.s = setTo;
                 break;
-            case("d"):
+            case ("d"):
                 playerProps.keyMovment.d = setTo;
                 break;
             default:
@@ -241,12 +303,12 @@ function handleSetKeyMovment(event ,setTo) {
 
 // gets key down
 function establishUserInputDown(event) {
-    handleSetKeyMovment(event ,1)
+    handleSetKeyMovment(event, 1)
 };
 
 // gets key up
 function establishUserInputUp(event) {
-    handleSetKeyMovment(event ,0)
+    handleSetKeyMovment(event, 0)
 };
 
 // gets mouse position
@@ -280,10 +342,11 @@ async function playGame() {
         gameTextures.sword.draw(playerProps.x, playerProps.y, playerProps.mouseX, playerProps.mouseY, playerProps.swordData.attacking)
 
         const currentEnemyLength = currentEnemies.length;
-        for (let i = currentEnemyLength-1; i > 0; i--) {
+        for (let i = currentEnemyLength - 1; i >= 0; i--) {
             const selectedEnemy = currentEnemies[i];
-            selectedEnemy.enemyData.tickAction();
-            //gameTextures.
+            selectedEnemy.getUseTexture();
+            selectedEnemy.tickAction();
+            selectedEnemy.draw(selectedEnemy.x, selectedEnemy.y)
         };
 
         if (playerProps.health <= 0) {
@@ -296,14 +359,10 @@ async function playGame() {
 
 
 // handles spawning in enemies
-function summonEnemy(enemyName, spawnX, spawnY) {
-    const summonedEnemy = {
-        enemyData: getObjectFromName(enemyName, parentObject),
-        enemyTextureData: getObjectFromName(enemyName, parentObject),
-        health: enemyObject.maxHealth,
-        x: spawnX,
-        y: spawnY,
-    };
+function summonEnemy(enemyObject, spawnX, spawnY) {
+    const summonedEnemy = deepClone(enemyObject);
+    summonedEnemy.x = spawnX;
+    summonedEnemy.y = spawnY;
     currentEnemies.push(summonedEnemy);
 };
 
@@ -314,7 +373,7 @@ async function runGame() {
         await makeLoadingScreen();
         await bootGame();
 
-        //summonEnemy(goblin, 500, 400);
+        summonEnemy(enemiesProps.goblin, 500, 400);
         document.addEventListener('keydown', establishUserInputDown);
         document.addEventListener('keyup', establishUserInputUp);
         document.addEventListener('mousemove', establishMouseInput);
