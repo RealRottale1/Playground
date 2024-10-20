@@ -29,7 +29,16 @@ function deepClone(object) {
 // settings
 const settings = {
     refreshRate: 10,
+};
 
+// function for calculating weapon position
+function getWeaponPosition(x, y, mouseX, mouseY, sizeX, sizeY, offset, attacking) {
+    const dX = mouseX - x;
+    const dY = mouseY - y;
+    const angle = Math.atan2(dY, dX) + Math.PI / 2;
+    const offsetX = (-1*(sizeX / 2));
+    const offsetY = (-1*(sizeY / 2) + (attacking ? offset * (4 / 3) : offset));
+    return([dX, dY, angle, offsetX, offsetY]);
 };
 
 // stores texture data
@@ -43,18 +52,14 @@ const weapons = {
         sizeX: 0,
         sizeY: 0,
         offset: 0,
-        draw: function (x, y, mouseX, mouseY, attacking) {
-            console.log(this.texture+" , "+this.sizeX+" , "+this.sizeY);
+        draw: function (x, y, angle, offsetX, offsetY) {
             if (!this.texture || !this.sizeX || !this.sizeY) {
                 return(false);
             };
-            const dX = mouseX - x;
-            const dY = mouseY - y;
-            const angle = Math.atan2(dY, dX) + Math.PI / 2;
             ctx.save();
             ctx.translate(x, y);
             ctx.rotate(angle);
-            ctx.drawImage(this.texture, -1 * (this.sizeX / 2), -1 * (this.sizeY / 2) + (attacking ? this.offset * (4 / 3) : this.offset), this.sizeX, this.sizeY);
+            ctx.drawImage(this.texture, offsetX, offsetY, this.sizeX, this.sizeY);
             ctx.restore();
         },
     },
@@ -62,7 +67,7 @@ const weapons = {
 };
 Object.assign(weapons.defaultSword, weapons.hands);
 Object.assign(weapons.defaultSword, {
-    attackRange: 45,
+    attackRange: 80,
     damage: 50,
     attackDuration: 750,
     attackCoolDown: 250,
@@ -155,7 +160,7 @@ const enemiesProps = {
         attacking: false,
         attackRangeMultiplier: 1,
         attackDamageMultiplier: 1,
-        weaponData: weapons.hands,
+        weaponData: weapons.defaultSword,
         attack: function() {
             if (this.canAttack) {
                 this.canAttack = false;
@@ -175,15 +180,13 @@ const enemiesProps = {
             const dX = playerProps.x - this.x;
             const dY = playerProps.y - this.y;
             const distance = Math.sqrt(dX**2 + dY**2);
-            if (distance > 0) {
+            if (distance > this.weaponData.attackRange*this.attackRangeMultiplier) {
                 const nX = dX/distance;
                 const nY = dY/distance;
                 this.x += nX*this.movementSpeed;
                 this.y += nY*this.movementSpeed;
-                if (distance < this.weaponData.attackRange*this.attackRangeMultiplier) {
-                    console.log('attack!');
-                    this.attack();
-                };
+            } else {
+                this.attack();
             };
         },
     },
@@ -344,16 +347,19 @@ async function playGame() {
         playerProps.updateXY();
         playerProps.getUseTexture();
         playerProps.draw(playerProps.x, playerProps.y);
-
+        const [dX, dY, angle, offsetX, offsetY] = getWeaponPosition(playerProps.x, playerProps.y, playerProps.mouseX, playerProps.mouseY, playerProps.weaponData.sizeX, playerProps.weaponData.sizeY, playerProps.weaponData.offset, playerProps.attacking);
+        console.log(angle+' , '+offsetX+' , '+offsetY);
         const currentEnemyLength = currentEnemies.length;
         for (let i = currentEnemyLength - 1; i >= 0; i--) {
             const selectedEnemy = currentEnemies[i];
             selectedEnemy.getUseTexture();
             selectedEnemy.tickAction();
-            selectedEnemy.draw(selectedEnemy.x, selectedEnemy.y)
+            selectedEnemy.draw(selectedEnemy.x, selectedEnemy.y);
+            const [enemyDX, enemyDY, enemyAngle, enemyOffsetX, enemyOffsetY] = getWeaponPosition(selectedEnemy.x, selectedEnemy.y, playerProps.x, playerProps.y, selectedEnemy.weaponData.sizeX, selectedEnemy.weaponData.sizeY, selectedEnemy.weaponData.offset, selectedEnemy.attacking);
+            selectedEnemy.weaponData.draw(selectedEnemy.x, selectedEnemy.y, enemyAngle, enemyOffsetX, enemyOffsetY);
         };
 
-        playerProps.weaponData.draw(playerProps.x, playerProps.y, playerProps.mouseX, playerProps.mouseY, playerProps.attacking)
+        playerProps.weaponData.draw(playerProps.x, playerProps.y, angle, offsetX, offsetY);
         if (playerProps.health <= 0) {
             break;
         } else {
