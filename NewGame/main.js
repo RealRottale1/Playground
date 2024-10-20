@@ -64,6 +64,7 @@ const weapons = {
         },
     },
     defaultSword: Object.create({}),
+    longSword: Object.create({}),
 };
 Object.assign(weapons.defaultSword, weapons.hands);
 Object.assign(weapons.defaultSword, {
@@ -75,6 +76,17 @@ Object.assign(weapons.defaultSword, {
     sizeX: 50,
     sizeY: 50,
     offset: -50,
+});
+Object.assign(weapons.longSword, weapons.hands);
+Object.assign(weapons.longSword, {
+    attackRange: 125,
+    damage: 85,
+    attackDuration: 800,
+    attackCoolDown: 950,
+    texture: null,
+    sizeX: 50,
+    sizeY: 100,
+    offset: -75,
 });
 
 let playerProps = {
@@ -178,7 +190,7 @@ const enemiesProps = {
             };
         },
         // movment/tick stuff
-        movementSpeed: 1.5,
+        movementSpeed: 0.05,//1.5,
         tickAction: function () {
             const dX = playerProps.x - this.x;
             const dY = playerProps.y - this.y;
@@ -256,6 +268,7 @@ async function loadTextures() {
     enemiesProps.goblin.halfHealth = await loadImage('textures/enemies/goblin/goblin2.png');
     enemiesProps.goblin.nearDeath = await loadImage('textures/enemies/goblin/goblin1.png');
     weapons.defaultSword.texture = await loadImage('textures/weapons/defaultSword.png');
+    weapons.longSword.texture = await loadImage('textures/weapons/longSword.png');
 };
 
 // loads main menu
@@ -366,17 +379,26 @@ async function playGame() {
             selectedEnemy.draw(selectedEnemy.x, selectedEnemy.y);
             
             if (!selectedEnemy.wasAttacked && playerProps.attacking) {
-                const swordTipX = playerProps.x + (offsetY*Math.cos(angle+Math.PI/2));
-                const swordTipY = playerProps.y + (offsetY*Math.sin(angle+Math.PI/2));
-                const swordDX = swordTipX - selectedEnemy.x;
-                const swordDY = swordTipY - selectedEnemy.y;
-                const distance = Math.sqrt(swordDX**2 + swordDY**2);
-                const enemyHit = (distance < (selectedEnemy.hitBoxX+selectedEnemy.hitBoxY)/2);
-                if (enemyHit) {
-                    selectedEnemy.wasAttacked = true;
-                    selectedEnemy.health -= playerProps.weaponData.damage;
-                    if (selectedEnemy.health <= 0) {
-                        currentEnemies.splice(i, 1);
+                const averageHitBox = (selectedEnemy.hitBoxX+selectedEnemy.hitBoxY)/2;
+                const startAt = ((offsetY+(playerProps.weaponData.offset*-1))/averageHitBox)*-1+1;
+                for (let j = startAt; j <= (offsetY*-1)/averageHitBox; j++) {
+                    const m = (j*averageHitBox*-1);
+                    const x = playerProps.x + (m*Math.cos(angle+Math.PI/2));
+                    const y = playerProps.y + (m*Math.sin(angle+Math.PI/2));
+                    ctx.beginPath();
+                    ctx.fillStyle = 'blue';
+                    ctx.rect(x, y, 5, 5);
+                    ctx.fill();
+                    ctx.closePath();
+                    const distance = Math.sqrt((selectedEnemy.x-x)**2+(selectedEnemy.y-y)**2);
+                    const enemyHit = (distance < averageHitBox);
+                    if (enemyHit) {
+                        selectedEnemy.wasAttacked = true;
+                        selectedEnemy.health -= playerProps.weaponData.damage;
+                        if (selectedEnemy.health <= 0) {
+                            currentEnemies.splice(i, 1);
+                        };
+                        break;
                     };
                 };
             };
