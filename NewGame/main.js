@@ -190,7 +190,7 @@ const enemiesProps = {
             };
         },
         // movment/tick stuff
-        movementSpeed: 0.05,//1.5,
+        movementSpeed: 1.5,
         tickAction: function () {
             const dX = playerProps.x - this.x;
             const dY = playerProps.y - this.y;
@@ -295,9 +295,10 @@ function makeLoadingScreen() {
 // boots up game
 function bootGame() {
     // generates stuff like bushes
-    savedPlayerProps = deepClone(playerProps);
-    playerProps = savedPlayerProps;
-    console.log(playerProps.health);
+    if (!savedPlayerProps) {
+        savedPlayerProps = deepClone(playerProps);
+    };
+    playerProps = deepClone(savedPlayerProps);
     currentEnemies.splice(0,currentEnemies.length);
 
     return new Promise((success) => {
