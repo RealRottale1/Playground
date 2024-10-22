@@ -2,29 +2,6 @@ const mainDiv = document.getElementById('mainDiv');
 const mainCanvas = document.getElementById('mainCanvas');
 const ctx = mainCanvas.getContext('2d');
 
-// deep clone function
-function deepClone(object) {
-    if (object === null || typeof object !== 'object') {
-        return(object);
-    };
-    if (object instanceof HTMLImageElement) {
-        const clonedImage = new Image();
-        clonedImage.src = object.src;
-        return(clonedImage);
-    };
-    let clonedObject = Array.isArray(object) ? [] : {};
-    for (let key in object) {
-        if (object.hasOwnProperty(key)) {
-            if (typeof object[key] === 'function') {
-                clonedObject[key] = object[key].bind(clonedObject);
-              } else {
-                clonedObject[key] = deepClone(object[key]);
-              };
-        };
-    };
-    return clonedObject;
-};
-
 // variables and settings
 // settings
 const settings = {
@@ -33,7 +10,11 @@ const settings = {
 
 function makeImage(url) {
     const image = new Image();
-    image.src = url;
+    try {
+        image.src = url;
+    } catch {
+        image.src = 'textures/missing.png';
+    };
     return(image);
 };
 
@@ -86,7 +67,7 @@ const weapons = {
 Object.assign(weapons.defaultSword, weapons.hands);
 Object.assign(weapons.defaultSword, {
     attackRange: 80,
-    damage: 50,
+    damage: 35,
     attackDuration: 750,
     attackCoolDown: 250,
     texture: gameTextures.weaponDefaultSword,
@@ -159,20 +140,20 @@ let playerProps = class {
 };
 
 const enemiesProps = {
-    goblin: {
+    goblin: class {
         // texture stuff
-        useTexture: null,
-        fullHealth: gameTextures.goblinFullHealth,
-        halfHealth: gameTextures.goblinHalfHealth,
-        nearDeath: gameTextures.goblinNearDeath,
-        hitBoxX: 25,
-        hitBoxY: 25,
-        sizeX: 25,
-        sizeY: 25,
-        draw: function (x, y) {
+        useTexture = null;
+        fullHealth = gameTextures.goblinFullHealth;
+        halfHealth = gameTextures.goblinHalfHealth;
+        nearDeath = gameTextures.goblinNearDeath;
+        hitBoxX = 25;
+        hitBoxY = 25;
+        sizeX = 25;
+        sizeY = 25;
+        draw(x, y) {
             ctx.drawImage(this.useTexture, x - this.sizeX / 2, y - this.sizeY / 2, this.sizeX, this.sizeY);
-        },
-        getUseTexture: function () {
+        };
+        getUseTexture() {
             if (this.health > 66) {
                 this.useTexture = this.fullHealth;
             } else if (this.health <= 66 && this.health > 33) {
@@ -180,20 +161,20 @@ const enemiesProps = {
             } else {
                 this.useTexture = this.nearDeath;
             };
-        },
+        };
         // general stuff
-        starterHealth: 100,
-        health: 100,
-        x: 0,
-        y: 0,
+        starterHealth = 100;
+        health = 100;
+        x = 0;
+        y = 0;
         // weapon suff
-        wasAttacked: false,
-        canAttack: true,
-        attacking: false,
-        attackRangeMultiplier: 1,
-        attackDamageMultiplier: 1,
-        weaponData: weapons.defaultSword,
-        attack: function() {
+        wasAttacked = false;
+        canAttack = true;
+        attacking = false;
+        attackRangeMultiplier = 1;
+        attackDamageMultiplier = 1;
+        weaponData = weapons.defaultSword;
+        attack() {
             if (this.canAttack) {
                 this.canAttack = false;
                 this.attacking = true;
@@ -205,10 +186,10 @@ const enemiesProps = {
                     }, this.weaponData.attackCoolDown);
                 }, this.weaponData.attackDuration);
             };
-        },
+        };
         // movment/tick stuff
-        movementSpeed: 1.5,
-        tickAction: function () {
+        movementSpeed = 1.5;
+        tickAction() {
             const dX = usePlayerProps.x - this.x;
             const dY = usePlayerProps.y - this.y;
             const distance = Math.sqrt(dX**2 + dY**2);
@@ -220,7 +201,7 @@ const enemiesProps = {
             } else {
                 this.attack();
             };
-        },
+        };
     },
 };
 
@@ -417,7 +398,7 @@ async function playGame() {
 
 // handles spawning in enemies
 function summonEnemy(enemyObject, spawnX, spawnY) {
-    const summonedEnemy = deepClone(enemyObject);
+    const summonedEnemy = new enemiesProps.goblin();
     summonedEnemy.x = spawnX;
     summonedEnemy.y = spawnY;
     currentEnemies.push(summonedEnemy);
