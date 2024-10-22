@@ -31,10 +31,21 @@ const settings = {
     refreshRate: 10,
 };
 
+function makeImage(url) {
+    const image = new Image();
+    image.src = url;
+    return(image);
+};
+
 const gameTextures = {
-    playerFullHealth: null,
-    playerHalfHealth: null,
-    playerNearDeath: null,
+    playerFullHealth: makeImage('textures/players/playerH3.png'),
+    playerHalfHealth: makeImage('textures/players/playerH2.png'),
+    playerNearDeath: makeImage('textures/players/playerH1.png'),
+    goblinFullHealth: makeImage('textures/enemies/goblin/goblin3.png'),
+    goblinHalfHealth: makeImage('textures/enemies/goblin/goblin2.png'),
+    goblinNearDeath: makeImage('textures/enemies/goblin/goblin1.png'),
+    weaponDefaultSword: makeImage('textures/weapons/defaultSword.png'),
+    weaponLongSword: makeImage('textures/weapons/longSword.png'),
 };
 
 // function for calculating weapon position
@@ -78,7 +89,7 @@ Object.assign(weapons.defaultSword, {
     damage: 50,
     attackDuration: 750,
     attackCoolDown: 250,
-    texture: null,
+    texture: gameTextures.weaponDefaultSword,
     sizeX: 50,
     sizeY: 50,
     offset: -50,
@@ -89,7 +100,7 @@ Object.assign(weapons.longSword, {
     damage: 85,
     attackDuration: 800,
     attackCoolDown: 950,
-    texture: null,
+    texture: gameTextures.weaponLongSword,
     sizeX: 50,
     sizeY: 100,
     offset: -75,
@@ -103,7 +114,7 @@ let playerProps = class {
     nearDeath = gameTextures.playerNearDeath;
     sizeX = 25;
     sizeY = 25;
-    draw(self, x, y) {
+    draw(x, y) {
         ctx.drawImage(this.useTexture, x - this.sizeX / 2, y - this.sizeY / 2, this.sizeX, this.sizeY);
     };
     maxHealth = 100;
@@ -151,9 +162,9 @@ const enemiesProps = {
     goblin: {
         // texture stuff
         useTexture: null,
-        fullHealth: null,
-        halfHealth: null,
-        nearDeath: null,
+        fullHealth: gameTextures.goblinFullHealth,
+        halfHealth: gameTextures.goblinHalfHealth,
+        nearDeath: gameTextures.goblinNearDeath,
         hitBoxX: 25,
         hitBoxY: 25,
         sizeX: 25,
@@ -236,16 +247,6 @@ function waitTick() {
     });
 };
 
-// handles loading image
-function loadImage(Path) {
-    return new Promise((success, failure) => {
-        const image = new Image();
-        image.src = Path;
-        image.onload = () => { success(image) };
-        image.onerror = (err) => { failure(err) };
-    });
-};
-
 // clears canvas and resets background
 function clearAll() {
     ctx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
@@ -265,17 +266,6 @@ function clearAll() {
 
 
 // game loop
-// handles loading textures
-async function loadTextures() {
-    gameTextures.playerFullHealth = await loadImage('textures/players/playerH3.png');
-    gameTextures.playerHalfHealth = await loadImage('textures/players/playerH2.png');
-    gameTextures.playerNearDeath = await loadImage('textures/players/playerH1.png');
-    enemiesProps.goblin.fullHealth = await loadImage('textures/enemies/goblin/goblin3.png');
-    enemiesProps.goblin.halfHealth = await loadImage('textures/enemies/goblin/goblin2.png');
-    enemiesProps.goblin.nearDeath = await loadImage('textures/enemies/goblin/goblin1.png');
-    weapons.defaultSword.texture = await loadImage('textures/weapons/defaultSword.png');
-    weapons.longSword.texture = await loadImage('textures/weapons/longSword.png');
-};
 
 // loads main menu
 function makeLoadingScreen() {
@@ -313,16 +303,16 @@ function bootGame() {
 function handleSetKeyMovment(event, setTo) {
     if (event && event.key) {
         switch (String(event.key).toLowerCase()) {
-            case ("w"):
+            case ('w'):
                 usePlayerProps.keyMovment.w = setTo;
                 break;
-            case ("a"):
+            case ('a'):
                 usePlayerProps.keyMovment.a = setTo;
                 break;
-            case ("s"):
+            case ('s'):
                 usePlayerProps.keyMovment.s = setTo;
                 break;
-            case ("d"):
+            case ('d'):
                 usePlayerProps.keyMovment.d = setTo;
                 break;
             default:
@@ -371,7 +361,6 @@ function establishMouseClick(event) {
 async function playGame() {
     while (true) {
         clearAll();
-        console.log(usePlayerProps);
         usePlayerProps.updateXY();
         usePlayerProps.getUseTexture();
         usePlayerProps.draw(usePlayerProps.x, usePlayerProps.y);
@@ -390,7 +379,8 @@ async function playGame() {
                     const m = (j*averageHitBox*-1);
                     const x = usePlayerProps.x + (m*Math.cos(angle+Math.PI/2));
                     const y = usePlayerProps.y + (m*Math.sin(angle+Math.PI/2));
-                    /*ctx.beginPath(); // For debugging!
+                    /*
+                    ctx.beginPath(); // For debugging!
                     ctx.fillStyle = 'blue';
                     ctx.rect(x, y, 5, 5);
                     ctx.fill();
@@ -435,7 +425,6 @@ function summonEnemy(enemyObject, spawnX, spawnY) {
 
 // handles core loop
 async function runGame() {
-    await loadTextures();
     while (true) {
         await makeLoadingScreen();
         await bootGame();
