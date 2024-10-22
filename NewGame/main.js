@@ -31,6 +31,12 @@ const settings = {
     refreshRate: 10,
 };
 
+const gameTextures = {
+    playerFullHealth: null,
+    playerHalfHealth: null,
+    playerNearDeath: null,
+};
+
 // function for calculating weapon position
 function getWeaponPosition(x, y, mouseX, mouseY, sizeX, sizeY, offset, attacking) {
     const dX = mouseX - x;
@@ -89,20 +95,20 @@ Object.assign(weapons.longSword, {
     offset: -75,
 });
 
-let playerProps = {
+let playerProps = class {
     // texture stuff
-    useTexture: null,
-    fullHealth: null,
-    halfHealth: null,
-    nearDeath: null,
-    sizeX: 25,
-    sizeY: 25,
-    draw: function (x, y) {
+    useTexture = null;
+    fullHealth = gameTextures.playerFullHealth;
+    halfHealth = gameTextures.playerHalfHealth;
+    nearDeath = gameTextures.playerNearDeath;
+    sizeX = 25;
+    sizeY = 25;
+    draw(self, x, y) {
         ctx.drawImage(this.useTexture, x - this.sizeX / 2, y - this.sizeY / 2, this.sizeX, this.sizeY);
-    },
-    maxHealth: 100,
-    health: 100,
-    getUseTexture: function () {
+    };
+    maxHealth = 100;
+    health = 100;
+    getUseTexture() {
         if (this.health > 66) {
             this.useTexture = this.fullHealth;
         } else if (this.health <= 66 && this.health > 33) {
@@ -110,20 +116,20 @@ let playerProps = {
         } else {
             this.useTexture = this.nearDeath;
         };
-    },
+    };
     // movment stuff
-    playerMovmentAmount: 2.5,
-    x: 250,
-    y: 250,
-    velocityX: 0,
-    velocityY: 0,
-    keyMovment: {
+    playerMovmentAmount = 2.5;
+    x = 250;
+    y = 250;
+    velocityX = 0;
+    velocityY = 0;
+    keyMovment = {
         w: 0,
         a: 0,
         s: 0,
         d: 0,
-    },
-    updateXY: function () {
+    };
+    updateXY() {
         const newX = this.x + (this.keyMovment.d - this.keyMovment.a) * this.playerMovmentAmount;;
         const newY = this.y + (this.keyMovment.s - this.keyMovment.w) * this.playerMovmentAmount;
         if (newX >= 0 && newX <= mainCanvas.width) {
@@ -132,13 +138,13 @@ let playerProps = {
         if (newY >= 0 && newY <= mainCanvas.height) {
             this.y = newY
         };
-    },
+    };
     // sword stuff
-    mouseX: 0,
-    mouseY: 0,
-    canAttack: true,
-    attacking: false,
-    weaponData: weapons.defaultSword,
+    mouseX = 0;
+    mouseY = 0;
+    canAttack = true;
+    attacking = false;
+    weaponData = weapons.defaultSword;
 };
 
 const enemiesProps = {
@@ -180,7 +186,7 @@ const enemiesProps = {
             if (this.canAttack) {
                 this.canAttack = false;
                 this.attacking = true;
-                playerProps.health -= this.weaponData.damage*this.attackDamageMultiplier;
+                usePlayerProps.health -= this.weaponData.damage*this.attackDamageMultiplier;
                 setTimeout(() => {
                     this.attacking = false;
                     setTimeout(() => {
@@ -192,8 +198,8 @@ const enemiesProps = {
         // movment/tick stuff
         movementSpeed: 1.5,
         tickAction: function () {
-            const dX = playerProps.x - this.x;
-            const dY = playerProps.y - this.y;
+            const dX = usePlayerProps.x - this.x;
+            const dY = usePlayerProps.y - this.y;
             const distance = Math.sqrt(dX**2 + dY**2);
             if (distance > this.weaponData.attackRange*this.attackRangeMultiplier) {
                 const nX = dX/distance;
@@ -207,7 +213,7 @@ const enemiesProps = {
     },
 };
 
-let savedPlayerProps = null;
+let usePlayerProps = null;
 const currentEnemies = [];
 // End
 
@@ -261,9 +267,9 @@ function clearAll() {
 // game loop
 // handles loading textures
 async function loadTextures() {
-    playerProps.fullHealth = await loadImage('textures/players/playerH3.png');
-    playerProps.halfHealth = await loadImage('textures/players/playerH2.png');
-    playerProps.nearDeath = await loadImage('textures/players/playerH1.png');
+    gameTextures.playerFullHealth = await loadImage('textures/players/playerH3.png');
+    gameTextures.playerHalfHealth = await loadImage('textures/players/playerH2.png');
+    gameTextures.playerNearDeath = await loadImage('textures/players/playerH1.png');
     enemiesProps.goblin.fullHealth = await loadImage('textures/enemies/goblin/goblin3.png');
     enemiesProps.goblin.halfHealth = await loadImage('textures/enemies/goblin/goblin2.png');
     enemiesProps.goblin.nearDeath = await loadImage('textures/enemies/goblin/goblin1.png');
@@ -295,10 +301,7 @@ function makeLoadingScreen() {
 // boots up game
 function bootGame() {
     // generates stuff like bushes
-    if (!savedPlayerProps) {
-        savedPlayerProps = deepClone(playerProps);
-    };
-    playerProps = deepClone(savedPlayerProps);
+    usePlayerProps = new playerProps();
     currentEnemies.splice(0,currentEnemies.length);
 
     return new Promise((success) => {
@@ -311,16 +314,16 @@ function handleSetKeyMovment(event, setTo) {
     if (event && event.key) {
         switch (String(event.key).toLowerCase()) {
             case ("w"):
-                playerProps.keyMovment.w = setTo;
+                usePlayerProps.keyMovment.w = setTo;
                 break;
             case ("a"):
-                playerProps.keyMovment.a = setTo;
+                usePlayerProps.keyMovment.a = setTo;
                 break;
             case ("s"):
-                playerProps.keyMovment.s = setTo;
+                usePlayerProps.keyMovment.s = setTo;
                 break;
             case ("d"):
-                playerProps.keyMovment.d = setTo;
+                usePlayerProps.keyMovment.d = setTo;
                 break;
             default:
                 break;
@@ -341,26 +344,26 @@ function establishUserInputUp(event) {
 // gets mouse position
 function establishMouseInput(event) {
     const rect = mainCanvas.getBoundingClientRect()
-    playerProps.mouseX = event.clientX - rect.left
-    playerProps.mouseY = event.clientY - rect.top
+    usePlayerProps.mouseX = event.clientX - rect.left
+    usePlayerProps.mouseY = event.clientY - rect.top
 };
 
 // gets mouse click
 function establishMouseClick(event) {
-    if (playerProps.canAttack) {
-        playerProps.canAttack = false;
-        playerProps.attacking = true;
+    if (usePlayerProps.canAttack) {
+        usePlayerProps.canAttack = false;
+        usePlayerProps.attacking = true;
         setTimeout(() => {
-            playerProps.attacking = false;
+            usePlayerProps.attacking = false;
             setTimeout(() => {
-                playerProps.canAttack = true;
+                usePlayerProps.canAttack = true;
                 const currentEnemyLength = currentEnemies.length;
                 for (let i = currentEnemyLength - 1; i >= 0; i--) {
                     const selectedEnemy = currentEnemies[i];
                     selectedEnemy.wasAttacked = false;
                 };
-            }, playerProps.weaponData.attackCoolDown);
-        }, playerProps.weaponData.attackDuration);
+            }, usePlayerProps.weaponData.attackCoolDown);
+        }, usePlayerProps.weaponData.attackDuration);
     };
 };
 
@@ -368,10 +371,11 @@ function establishMouseClick(event) {
 async function playGame() {
     while (true) {
         clearAll();
-        playerProps.updateXY();
-        playerProps.getUseTexture();
-        playerProps.draw(playerProps.x, playerProps.y);
-        const [angle, offsetX, offsetY] = getWeaponPosition(playerProps.x, playerProps.y, playerProps.mouseX, playerProps.mouseY, playerProps.weaponData.sizeX, playerProps.weaponData.sizeY, playerProps.weaponData.offset, playerProps.attacking);
+        console.log(usePlayerProps);
+        usePlayerProps.updateXY();
+        usePlayerProps.getUseTexture();
+        usePlayerProps.draw(usePlayerProps.x, usePlayerProps.y);
+        const [angle, offsetX, offsetY] = getWeaponPosition(usePlayerProps.x, usePlayerProps.y, usePlayerProps.mouseX, usePlayerProps.mouseY, usePlayerProps.weaponData.sizeX, usePlayerProps.weaponData.sizeY, usePlayerProps.weaponData.offset, usePlayerProps.attacking);
         const currentEnemyLength = currentEnemies.length;
         for (let i = currentEnemyLength - 1; i >= 0; i--) {
             const selectedEnemy = currentEnemies[i];
@@ -379,13 +383,13 @@ async function playGame() {
             selectedEnemy.tickAction();
             selectedEnemy.draw(selectedEnemy.x, selectedEnemy.y);
             
-            if (!selectedEnemy.wasAttacked && playerProps.attacking) {
+            if (!selectedEnemy.wasAttacked && usePlayerProps.attacking) {
                 const averageHitBox = (selectedEnemy.hitBoxX+selectedEnemy.hitBoxY)/2;
-                const startAt = ((offsetY+(playerProps.weaponData.offset*-1))/averageHitBox)*-1+1;
+                const startAt = ((offsetY+(usePlayerProps.weaponData.offset*-1))/averageHitBox)*-1+1;
                 for (let j = startAt; j <= (offsetY*-1)/averageHitBox; j++) {
                     const m = (j*averageHitBox*-1);
-                    const x = playerProps.x + (m*Math.cos(angle+Math.PI/2));
-                    const y = playerProps.y + (m*Math.sin(angle+Math.PI/2));
+                    const x = usePlayerProps.x + (m*Math.cos(angle+Math.PI/2));
+                    const y = usePlayerProps.y + (m*Math.sin(angle+Math.PI/2));
                     /*ctx.beginPath(); // For debugging!
                     ctx.fillStyle = 'blue';
                     ctx.rect(x, y, 5, 5);
@@ -396,7 +400,7 @@ async function playGame() {
                     const enemyHit = (distance < averageHitBox);
                     if (enemyHit) {
                         selectedEnemy.wasAttacked = true;
-                        selectedEnemy.health -= playerProps.weaponData.damage;
+                        selectedEnemy.health -= usePlayerProps.weaponData.damage;
                         if (selectedEnemy.health <= 0) {
                             currentEnemies.splice(i, 1);
                         };
@@ -406,13 +410,13 @@ async function playGame() {
             };
 
             if (selectedEnemy.weaponData.texture) {
-                const [enemyAngle, enemyOffsetX, enemyOffsetY] = getWeaponPosition(selectedEnemy.x, selectedEnemy.y, playerProps.x, playerProps.y, selectedEnemy.weaponData.sizeX, selectedEnemy.weaponData.sizeY, selectedEnemy.weaponData.offset, selectedEnemy.attacking);
+                const [enemyAngle, enemyOffsetX, enemyOffsetY] = getWeaponPosition(selectedEnemy.x, selectedEnemy.y, usePlayerProps.x, usePlayerProps.y, selectedEnemy.weaponData.sizeX, selectedEnemy.weaponData.sizeY, selectedEnemy.weaponData.offset, selectedEnemy.attacking);
                 selectedEnemy.weaponData.draw(selectedEnemy.x, selectedEnemy.y, enemyAngle, enemyOffsetX, enemyOffsetY);
             };
         };
 
-        playerProps.weaponData.draw(playerProps.x, playerProps.y, angle, offsetX, offsetY);
-        if (playerProps.health <= 0) {
+        usePlayerProps.weaponData.draw(usePlayerProps.x, usePlayerProps.y, angle, offsetX, offsetY);
+        if (usePlayerProps.health <= 0) {
             break;
         } else {
             await waitTick();
