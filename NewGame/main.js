@@ -6,6 +6,7 @@ const ctx = mainCanvas.getContext('2d');
 // settings
 const settings = {
     refreshRate: 10,
+    mouseSwingRate: 50,
 };
 
 function makeImage(url) {
@@ -42,6 +43,7 @@ function getWeaponPosition(x, y, mouseX, mouseY, sizeX, sizeY, offset, attacking
 // stores texture data
 const weapons = {
     hands: {
+        swingable: false,
         attackRange: 35,
         damage: 15,
         attackDuration: 500,
@@ -66,6 +68,7 @@ const weapons = {
 };
 Object.assign(weapons.defaultSword, weapons.hands);
 Object.assign(weapons.defaultSword, {
+    swingable: false,
     attackRange: 80,
     damage: 35,
     attackDuration: 750,
@@ -77,6 +80,7 @@ Object.assign(weapons.defaultSword, {
 });
 Object.assign(weapons.longSword, weapons.hands);
 Object.assign(weapons.longSword, {
+    swingable: true,
     attackRange: 125,
     damage: 85,
     attackDuration: 800,
@@ -134,6 +138,7 @@ let playerProps = class {
     // sword stuff
     mouseX = 0;
     mouseY = 0;
+    isSwinging = true; // Set to false
     canAttack = true;
     attacking = false;
     weaponData = weapons.defaultSword;
@@ -168,6 +173,7 @@ const enemiesProps = {
         x = 0;
         y = 0;
         // weapon suff
+        wasSwingAttacked = false;
         wasAttacked = false;
         canAttack = true;
         attacking = false;
@@ -189,7 +195,15 @@ const enemiesProps = {
         };
         // movment/tick stuff
         movementSpeed = 1.5;
+        swingAttackClock = [0, 10];
         tickAction() {
+            if (this.wasSwingAttacked) {
+                this.swingAttackClock[0] += 1;
+                if (this.swingAttackClock[0] >= this.swingAttackClock[1]) {
+                    this.swingAttackClock[0] = 0;
+                    this.wasSwingAttacked = false;
+                };
+            };
             const dX = usePlayerProps.x - this.x;
             const dY = usePlayerProps.y - this.y;
             const distance = Math.sqrt(dX**2 + dY**2);
@@ -304,19 +318,41 @@ function handleSetKeyMovment(event, setTo) {
 
 // gets key down
 function establishUserInputDown(event) {
-    handleSetKeyMovment(event, 1)
+    handleSetKeyMovment(event, 1);
 };
 
 // gets key up
 function establishUserInputUp(event) {
-    handleSetKeyMovment(event, 0)
+    handleSetKeyMovment(event, 0);
+};
+
+function getMouseAngle() {
+    const dX = usePlayerProps.mouseX - usePlayerProps.x;
+    const dY = usePlayerProps.mouseY - usePlayerProps.y;
+    return(Math.atan2(dY, dX));
 };
 
 // gets mouse position
+let savedMouseDirections = [];
 function establishMouseInput(event) {
-    const rect = mainCanvas.getBoundingClientRect()
-    usePlayerProps.mouseX = event.clientX - rect.left
-    usePlayerProps.mouseY = event.clientY - rect.top
+    const rect = mainCanvas.getBoundingClientRect();
+    usePlayerProps.mouseX = event.clientX - rect.left;
+    usePlayerProps.mouseY = event.clientY - rect.top;
+    const angle = getMouseAngle();
+    savedMouseDirections.push(angle);
+};
+
+// checks if player is swinging the sword and sets isSwinging to the value
+function handelSwingingCheck() {
+    const currentAngle =  getMouseAngle();
+    const directionHistoryLength = savedMouseDirections.length;
+    for (let i = 0; i < directionHistoryLength; i++) {
+        const useDirection = savedMouseDirections[i];
+        if ((Math.abs(useDirection) > Math.abs(currentAngle) + .5) || Math.abs(useDirection) + .5 < Math.abs(currentAngle)) {
+            break;
+        };
+    };
+    savedMouseDirections = [];
 };
 
 // gets mouse click
@@ -339,8 +375,16 @@ function establishMouseClick(event) {
 };
 
 // main game loop
+let gameClock = 0;
 async function playGame() {
     while (true) {
+        gameClock += 1;
+        if ((gameClock % settings.mouseSwingRate) == 0) {
+            handelSwingingCheck();
+        };
+        if (gameClock >= 2500) {
+            gameClock = 0;
+        };
         clearAll();
         usePlayerProps.updateXY();
         usePlayerProps.getUseTexture();
@@ -353,7 +397,7 @@ async function playGame() {
             selectedEnemy.tickAction();
             selectedEnemy.draw(selectedEnemy.x, selectedEnemy.y);
             
-            if (!selectedEnemy.wasAttacked && usePlayerProps.attacking) {
+            if ((!selectedEnemy.wasAttacked && usePlayerProps.attacking) || (!selectedEnemy.wasSwingAttacked && usePlayerProps.isSwinging && usePlayerProps.weaponData.swingable)) {
                 const averageHitBox = (selectedEnemy.hitBoxX+selectedEnemy.hitBoxY)/2;
                 const startAt = ((offsetY+(usePlayerProps.weaponData.offset*-1))/averageHitBox)*-1+1;
                 for (let j = startAt; j <= (offsetY*-1)/averageHitBox; j++) {
@@ -370,8 +414,15 @@ async function playGame() {
                     const distance = Math.sqrt((selectedEnemy.x-x)**2+(selectedEnemy.y-y)**2);
                     const enemyHit = (distance < averageHitBox);
                     if (enemyHit) {
-                        selectedEnemy.wasAttacked = true;
-                        selectedEnemy.health -= usePlayerProps.weaponData.damage;
+                        if (!selectedEnemy.wasAttacked && usePlayerProps.attacking) {
+                            console.log('Stabbed');
+                            selectedEnemy.wasAttacked = true;
+                            selectedEnemy.health -= usePlayerProps.weaponData.damage;
+                        } else {
+                            console.log('Slashed');
+                            selectedEnemy.wasSwingAttacked = true;
+                            selectedEnemy.health -= usePlayerProps.weaponData.damage/7.5;
+                        };
                         if (selectedEnemy.health <= 0) {
                             currentEnemies.splice(i, 1);
                         };
