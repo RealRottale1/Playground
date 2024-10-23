@@ -26,6 +26,9 @@ const gameTextures = {
     goblinFullHealth: makeImage('textures/enemies/goblin/goblin3.png'),
     goblinHalfHealth: makeImage('textures/enemies/goblin/goblin2.png'),
     goblinNearDeath: makeImage('textures/enemies/goblin/goblin1.png'),
+    armorGoblinFullHealth: makeImage('textures/enemies/armorGoblin/armorGoblin3.png'),
+    armorGoblinHalfHealth: makeImage('textures/enemies/armorGoblin/armorGoblin2.png'),
+    armorGoblinNearDeath: makeImage('textures/enemies/armorGoblin/armorGoblin1.png'),
     weaponDefaultSword: makeImage('textures/weapons/defaultSword.png'),
     weaponLongSword: makeImage('textures/weapons/longSword.png'),
 };
@@ -144,79 +147,93 @@ let playerProps = class {
     weaponData = weapons.defaultSword;
 };
 
-const enemiesProps = {
-    goblin: class {
-        // texture stuff
-        useTexture = null;
-        fullHealth = gameTextures.goblinFullHealth;
-        halfHealth = gameTextures.goblinHalfHealth;
-        nearDeath = gameTextures.goblinNearDeath;
-        hitBoxX = 25;
-        hitBoxY = 25;
-        sizeX = 25;
-        sizeY = 25;
-        draw(x, y) {
-            ctx.drawImage(this.useTexture, x - this.sizeX / 2, y - this.sizeY / 2, this.sizeX, this.sizeY);
+const goblin = class {
+    // texture stuff
+    useTexture = null;
+    fullHealth = gameTextures.goblinFullHealth;
+    halfHealth = gameTextures.goblinHalfHealth;
+    nearDeath = gameTextures.goblinNearDeath;
+    hitBoxX = 25;
+    hitBoxY = 25;
+    sizeX = 25;
+    sizeY = 25;
+    draw(x, y) {
+        ctx.drawImage(this.useTexture, x - this.sizeX / 2, y - this.sizeY / 2, this.sizeX, this.sizeY);
+    };
+    starterHealth = 100;
+    health = 100;
+    getUseTexture() {
+        if (this.health > this.starterHealth*2/3) {
+            this.useTexture = this.fullHealth;
+        } else if (this.health <= this.starterHealth*2/3 && this.health > this.starterHealth*1/3) {
+            this.useTexture = this.halfHealth;
+        } else {
+            this.useTexture = this.nearDeath;
         };
-        getUseTexture() {
-            if (this.health > 66) {
-                this.useTexture = this.fullHealth;
-            } else if (this.health <= 66 && this.health > 33) {
-                this.useTexture = this.halfHealth;
-            } else {
-                this.useTexture = this.nearDeath;
-            };
-        };
-        // general stuff
-        starterHealth = 100;
-        health = 100;
-        x = 0;
-        y = 0;
-        // weapon suff
-        wasSwingAttacked = false;
-        wasAttacked = false;
-        canAttack = true;
-        attacking = false;
-        attackRangeMultiplier = 1;
-        attackDamageMultiplier = 1;
-        weaponData = weapons.defaultSword;
-        attack() {
-            if (this.canAttack) {
-                this.canAttack = false;
-                this.attacking = true;
-                usePlayerProps.health -= this.weaponData.damage*this.attackDamageMultiplier;
+    };
+    // general stuff
+    x = 0;
+    y = 0;
+    // weapon suff
+    wasSwingAttacked = false;
+    wasAttacked = false;
+    canAttack = true;
+    attacking = false;
+    attackRangeMultiplier = 1;
+    attackDamageMultiplier = 1;
+    weaponData = weapons.defaultSword;
+    attack() {
+        if (this.canAttack) {
+            this.canAttack = false;
+            this.attacking = true;
+            usePlayerProps.health -= this.weaponData.damage*this.attackDamageMultiplier;
+            setTimeout(() => {
+                this.attacking = false;
                 setTimeout(() => {
-                    this.attacking = false;
-                    setTimeout(() => {
-                        this.canAttack = true;
-                    }, this.weaponData.attackCoolDown);
-                }, this.weaponData.attackDuration);
+                    this.canAttack = true;
+                }, this.weaponData.attackCoolDown);
+            }, this.weaponData.attackDuration);
+        };
+    };
+    // movment/tick stuff
+    movementSpeed = 1.5;
+    swingAttackClock = [0, 10];
+    tickAction() {
+        if (this.wasSwingAttacked) {
+            this.swingAttackClock[0] += 1;
+            if (this.swingAttackClock[0] >= this.swingAttackClock[1]) {
+                this.swingAttackClock[0] = 0;
+                this.wasSwingAttacked = false;
             };
         };
-        // movment/tick stuff
-        movementSpeed = 1.5;
-        swingAttackClock = [0, 10];
-        tickAction() {
-            if (this.wasSwingAttacked) {
-                this.swingAttackClock[0] += 1;
-                if (this.swingAttackClock[0] >= this.swingAttackClock[1]) {
-                    this.swingAttackClock[0] = 0;
-                    this.wasSwingAttacked = false;
-                };
-            };
-            const dX = usePlayerProps.x - this.x;
-            const dY = usePlayerProps.y - this.y;
-            const distance = Math.sqrt(dX**2 + dY**2);
-            if (distance > this.weaponData.attackRange*this.attackRangeMultiplier) {
-                const nX = dX/distance;
-                const nY = dY/distance;
-                this.x += nX*this.movementSpeed;
-                this.y += nY*this.movementSpeed;
-            } else {
-                this.attack();
-            };
+        const dX = usePlayerProps.x - this.x;
+        const dY = usePlayerProps.y - this.y;
+        const distance = Math.sqrt(dX**2 + dY**2);
+        if (distance > this.weaponData.attackRange*this.attackRangeMultiplier) {
+            const nX = dX/distance;
+            const nY = dY/distance;
+            this.x += nX*this.movementSpeed;
+            this.y += nY*this.movementSpeed;
+        } else {
+            this.attack();
         };
-    },
+    };    
+};
+
+const armorGoblin = class extends goblin {
+    constructor() {
+        super();
+        this.fullHealth = gameTextures.armorGoblinFullHealth;
+        this.halfHealth = gameTextures.armorGoblinHalfHealth;
+        this.nearDeath = gameTextures.armorGoblinNearDeath;
+        this.starterHealth = 200;
+        this.health = 200;
+    };
+};
+
+const enemiesProps = {
+    goblin: goblin,
+    armorGoblin: armorGoblin,
 };
 
 let usePlayerProps = null;
@@ -383,7 +400,11 @@ function drawHUD() {
     ctx.closePath();
 
     ctx.beginPath();
-    ctx.fillStyle = 'green';
+    if (usePlayerProps.health >= 50) {
+        ctx.fillStyle = `rgba(${255*((usePlayerProps.maxHealth-usePlayerProps.health)*.02)}, 255, 1)`;
+    } else {
+        ctx.fillStyle = `rgba(255, ${Math.floor(255*(usePlayerProps.health/usePlayerProps.maxHealth))}, 0, 1)`;
+    };
     ctx.rect((mainCanvas.width-242.5)/2, mainCanvas.height-27.5, 242.5*(usePlayerProps.health/100), 20);
     ctx.fill();
     ctx.closePath();
@@ -430,11 +451,9 @@ async function playGame() {
                     const enemyHit = (distance < averageHitBox);
                     if (enemyHit) {
                         if (!selectedEnemy.wasAttacked && usePlayerProps.attacking) {
-                            console.log('Stabbed');
                             selectedEnemy.wasAttacked = true;
                             selectedEnemy.health -= usePlayerProps.weaponData.damage;
                         } else {
-                            console.log('Slashed');
                             selectedEnemy.wasSwingAttacked = true;
                             selectedEnemy.health -= usePlayerProps.weaponData.damage/7.5;
                         };
@@ -465,7 +484,7 @@ async function playGame() {
 
 // handles spawning in enemies
 function summonEnemy(enemyObject, spawnX, spawnY) {
-    const summonedEnemy = new enemiesProps.goblin();
+    const summonedEnemy = new enemyObject;
     summonedEnemy.x = spawnX;
     summonedEnemy.y = spawnY;
     currentEnemies.push(summonedEnemy);
@@ -477,7 +496,7 @@ async function runGame() {
         await makeLoadingScreen();
         await bootGame();
 
-        summonEnemy(enemiesProps.goblin, 500, 400);
+        summonEnemy(enemiesProps.armorGoblin, 500, 400);
         document.addEventListener('keydown', establishUserInputDown);
         document.addEventListener('keyup', establishUserInputUp);
         document.addEventListener('mousemove', establishMouseInput);
