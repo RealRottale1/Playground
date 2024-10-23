@@ -374,6 +374,21 @@ function establishMouseClick(event) {
     };
 };
 
+// draws the HUD
+function drawHUD() {
+    ctx.beginPath();
+    ctx.fillStyle = 'black';
+    ctx.rect((mainCanvas.width-250)/2, mainCanvas.height-30, 250, 25);
+    ctx.fill();
+    ctx.closePath();
+
+    ctx.beginPath();
+    ctx.fillStyle = 'green';
+    ctx.rect((mainCanvas.width-242.5)/2, mainCanvas.height-27.5, 242.5*(usePlayerProps.health/100), 20);
+    ctx.fill();
+    ctx.closePath();
+}
+
 // main game loop
 let gameClock = 0;
 async function playGame() {
@@ -438,6 +453,7 @@ async function playGame() {
         };
 
         usePlayerProps.weaponData.draw(usePlayerProps.x, usePlayerProps.y, angle, offsetX, offsetY);
+        drawHUD();
         if (usePlayerProps.health <= 0) {
             break;
         } else {
