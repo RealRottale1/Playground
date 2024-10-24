@@ -26,6 +26,9 @@ const gameTextures = {
     goblinFullHealth: makeImage('textures/enemies/goblin/goblin3.png'),
     goblinHalfHealth: makeImage('textures/enemies/goblin/goblin2.png'),
     goblinNearDeath: makeImage('textures/enemies/goblin/goblin1.png'),
+    bigGoblinFullHealth: makeImage('textures/enemies/bigGoblin/bigGoblin3.png'),
+    bigGoblinHalfHealth: makeImage('textures/enemies/bigGoblin/bigGoblin2.png'),
+    bigGoblinNearDeath: makeImage('textures/enemies/bigGoblin/bigGoblin1.png'),
     armorGoblinFullHealth: makeImage('textures/enemies/armorGoblin/armorGoblin3.png'),
     armorGoblinHalfHealth: makeImage('textures/enemies/armorGoblin/armorGoblin2.png'),
     armorGoblinNearDeath: makeImage('textures/enemies/armorGoblin/armorGoblin1.png'),
@@ -209,7 +212,7 @@ const goblin = class {
         const dX = usePlayerProps.x - this.x;
         const dY = usePlayerProps.y - this.y;
         const distance = Math.sqrt(dX**2 + dY**2);
-        if (distance > this.weaponData.attackRange*this.attackRangeMultiplier) {
+        if (distance-(this.hitBoxX+this.hitBoxY)/2 > this.weaponData.attackRange*this.attackRangeMultiplier) {
             const nX = dX/distance;
             const nY = dY/distance;
             this.x += nX*this.movementSpeed;
@@ -228,12 +231,31 @@ const armorGoblin = class extends goblin {
         this.nearDeath = gameTextures.armorGoblinNearDeath;
         this.starterHealth = 200;
         this.health = 200;
+        this.movementSpeed = 1;
+    };
+};
+
+const bigGoblin = class extends goblin {
+    constructor() {
+        super();
+        this.fullHealth = gameTextures.bigGoblinFullHealth;
+        this.halfHealth = gameTextures.bigGoblinHalfHealth;
+        this.nearDeath = gameTextures.bigGoblinNearDeath;
+        this.starterHealth = 125;
+        this.health = 125;
+        this.hitBoxX = 50;
+        this.hitBoxY = 50;
+        this.sizeX = 50;
+        this.sizeY = 50;
+        this.attackDamageMultiplier = 1.5;
+        this.movementSpeed = .5;
     };
 };
 
 const enemiesProps = {
     goblin: goblin,
     armorGoblin: armorGoblin,
+    bigGoblin: bigGoblin,
 };
 
 let usePlayerProps = null;
@@ -432,9 +454,8 @@ async function playGame() {
             selectedEnemy.getUseTexture();
             selectedEnemy.tickAction();
             selectedEnemy.draw(selectedEnemy.x, selectedEnemy.y);
-            
+            const averageHitBox = (selectedEnemy.hitBoxX+selectedEnemy.hitBoxY)/2;
             if ((!selectedEnemy.wasAttacked && usePlayerProps.attacking) || (!selectedEnemy.wasSwingAttacked && usePlayerProps.isSwinging && usePlayerProps.weaponData.swingable)) {
-                const averageHitBox = (selectedEnemy.hitBoxX+selectedEnemy.hitBoxY)/2;
                 const startAt = ((offsetY+(usePlayerProps.weaponData.offset*-1))/averageHitBox)*-1+1;
                 for (let j = startAt; j <= (offsetY*-1)/averageHitBox; j++) {
                     const m = (j*averageHitBox*-1);
@@ -466,7 +487,7 @@ async function playGame() {
             };
 
             if (selectedEnemy.weaponData.texture) {
-                const [enemyAngle, enemyOffsetX, enemyOffsetY] = getWeaponPosition(selectedEnemy.x, selectedEnemy.y, usePlayerProps.x, usePlayerProps.y, selectedEnemy.weaponData.sizeX, selectedEnemy.weaponData.sizeY, selectedEnemy.weaponData.offset, selectedEnemy.attacking);
+                const [enemyAngle, enemyOffsetX, enemyOffsetY] = getWeaponPosition(selectedEnemy.x, selectedEnemy.y, usePlayerProps.x, usePlayerProps.y, selectedEnemy.weaponData.sizeX, selectedEnemy.weaponData.sizeY+averageHitBox, selectedEnemy.weaponData.offset, selectedEnemy.attacking);
                 selectedEnemy.weaponData.draw(selectedEnemy.x, selectedEnemy.y, enemyAngle, enemyOffsetX, enemyOffsetY);
             };
         };
@@ -496,7 +517,7 @@ async function runGame() {
         await makeLoadingScreen();
         await bootGame();
 
-        summonEnemy(enemiesProps.armorGoblin, 500, 400);
+        summonEnemy(enemiesProps.bigGoblin, 500, 400);
         document.addEventListener('keydown', establishUserInputDown);
         document.addEventListener('keyup', establishUserInputUp);
         document.addEventListener('mousemove', establishMouseInput);
