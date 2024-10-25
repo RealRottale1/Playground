@@ -7,6 +7,7 @@ const ctx = mainCanvas.getContext('2d');
 const settings = {
     refreshRate: 10,
     mouseSwingRate: 50,
+    dropHearSize: [50, 50],
 };
 
 function makeImage(url) {
@@ -20,6 +21,7 @@ function makeImage(url) {
 };
 
 const gameTextures = {
+    missingTexture: makeImage('textures/missing.png'),
     playerFullHealth: makeImage('textures/players/playerH3.png'),
     playerHalfHealth: makeImage('textures/players/playerH2.png'),
     playerNearDeath: makeImage('textures/players/playerH1.png'),
@@ -34,6 +36,7 @@ const gameTextures = {
     armorGoblinNearDeath: makeImage('textures/enemies/armorGoblin/armorGoblin1.png'),
     weaponDefaultSword: makeImage('textures/weapons/defaultSword.png'),
     weaponLongSword: makeImage('textures/weapons/longSword.png'),
+    heart: makeImage('textures/drops/heart.png'),
 };
 
 // function for calculating weapon position
@@ -97,7 +100,7 @@ Object.assign(weapons.longSword, {
     offset: -75,
 });
 
-let playerProps = class {
+const playerProps = class {
     // texture stuff
     useTexture = null;
     fullHealth = gameTextures.playerFullHealth;
@@ -258,7 +261,37 @@ const enemiesProps = {
     bigGoblin: bigGoblin,
 };
 
+const dropItem = class {
+    useTexture = gameTextures.missingTexture;
+    x = 0;
+    y = 0;
+    sizeX = 0;
+    sizeY = 0;
+    draw() {
+        ctx.drawImage(this.useTexture, this.x - this.sizeX / 2, this.y - this.sizeY / 2, this.sizeX, this.sizeY);
+    };
+}
+
+const heartItem = class extends dropItem {
+    constructor(x, y) {
+        super();
+        this.useTexture = gameTextures.heart;
+        this.x = x;
+        this.y = y;
+        this.sizeX = 25;
+        this.sizeY = 25;
+    };
+    pickUp() {
+        if (usePlayerProps.health <= 75) {
+            usePlayerProps.health += 25;
+        } else {
+            usePlayerProps.health = 100;
+        };
+    };
+};
+
 let usePlayerProps = null;
+const currentDropItems = [];
 const currentEnemies = [];
 // End
 
@@ -432,6 +465,27 @@ function drawHUD() {
     ctx.closePath();
 }
 
+// handles dropping a heart
+function dropHeart(x, y) {
+    const heart = new heartItem(x, y);
+    currentDropItems.push(heart);
+};
+
+// draws dropped items
+function drawDroppedItems() {
+    const droppedLength = currentDropItems.length;
+    for (let i = droppedLength-1; i > -1; i--) {
+        const currentDroppedItem = currentDropItems[i];
+        const distanceFromPlayer = Math.sqrt((usePlayerProps.x - currentDroppedItem.x)**2 + (usePlayerProps.y - currentDroppedItem.y)**2);
+        if (distanceFromPlayer > (currentDroppedItem.sizeX + currentDroppedItem.sizeY)/2) {
+            currentDroppedItem.draw();
+        } else {
+            currentDroppedItem.pickUp();
+            currentDropItems.splice(i, 1);
+        };
+    };
+};
+
 // main game loop
 let gameClock = 0;
 async function playGame() {
@@ -446,6 +500,7 @@ async function playGame() {
         clearAll();
         usePlayerProps.updateXY();
         usePlayerProps.getUseTexture();
+        drawDroppedItems();
         usePlayerProps.draw(usePlayerProps.x, usePlayerProps.y);
         const [angle, offsetX, offsetY] = getWeaponPosition(usePlayerProps.x, usePlayerProps.y, usePlayerProps.mouseX, usePlayerProps.mouseY, usePlayerProps.weaponData.sizeX, usePlayerProps.weaponData.sizeY, usePlayerProps.weaponData.offset, usePlayerProps.attacking);
         const currentEnemyLength = currentEnemies.length;
@@ -479,6 +534,7 @@ async function playGame() {
                             selectedEnemy.health -= usePlayerProps.weaponData.damage/7.5;
                         };
                         if (selectedEnemy.health <= 0) {
+                            dropHeart(selectedEnemy.x, selectedEnemy.y);
                             currentEnemies.splice(i, 1);
                         };
                         break;
@@ -517,7 +573,7 @@ async function runGame() {
         await makeLoadingScreen();
         await bootGame();
 
-        summonEnemy(enemiesProps.bigGoblin, 500, 400);
+        summonEnemy(enemiesProps.goblin, 500, 400);
         document.addEventListener('keydown', establishUserInputDown);
         document.addEventListener('keyup', establishUserInputUp);
         document.addEventListener('mousemove', establishMouseInput);
