@@ -36,6 +36,8 @@ const gameTextures = {
     armorGoblinNearDeath: makeImage('textures/enemies/armorGoblin/armorGoblin1.png'),
     weaponDefaultSword: makeImage('textures/weapons/defaultSword.png'),
     weaponLongSword: makeImage('textures/weapons/longSword.png'),
+    weaponBow: makeImage('textures/weapons/bow.png'),
+    bulletArrow: makeImage('textures/weapons/arrow.png'),
     heart: makeImage('textures/drops/heart.png'),
 };
 
@@ -49,58 +51,77 @@ function getWeaponPosition(x, y, mouseX, mouseY, sizeX, sizeY, offset, attacking
     return([angle, offsetX, offsetY]);
 };
 
-// stores texture data
-const weapons = {
-    hands: {
-        swingable: false,
-        attackRange: 35,
-        damage: 15,
-        attackDuration: 500,
-        attackCoolDown: 150,
-        texture: null,
-        sizeX: 0,
-        sizeY: 0,
-        offset: 0,
-        draw: function (x, y, angle, offsetX, offsetY) {
-            if (!this.texture || !this.sizeX || !this.sizeY) {
-                return(false);
-            };
-            ctx.save();
-            ctx.translate(x, y);
-            ctx.rotate(angle);
-            ctx.drawImage(this.texture, offsetX, offsetY, this.sizeX, this.sizeY);
-            ctx.restore();
-        },
-    },
-    defaultSword: Object.create({}),
-    longSword: Object.create({}),
+class weaponHands {
+    swingable = false;
+    attackRange = 35;
+    damage = 15;
+    attackDuration = 500;
+    attackCoolDown = 150;
+    texture = null;
+    sizeX = 0;
+    sizeY = 0;
+    offset = 0;
+    draw(x, y, angle, offsetX, offsetY) {
+        if (!this.texture || !this.sizeX || !this.sizeY) {
+            return(false);
+        };
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.drawImage(this.texture, offsetX, offsetY, this.sizeX, this.sizeY);
+        ctx.restore();
+    };
 };
-Object.assign(weapons.defaultSword, weapons.hands);
-Object.assign(weapons.defaultSword, {
-    swingable: false,
-    attackRange: 80,
-    damage: 35,
-    attackDuration: 750,
-    attackCoolDown: 250,
-    texture: gameTextures.weaponDefaultSword,
-    sizeX: 50,
-    sizeY: 50,
-    offset: -50,
-});
-Object.assign(weapons.longSword, weapons.hands);
-Object.assign(weapons.longSword, {
-    swingable: true,
-    attackRange: 125,
-    damage: 85,
-    attackDuration: 800,
-    attackCoolDown: 950,
-    texture: gameTextures.weaponLongSword,
-    sizeX: 50,
-    sizeY: 100,
-    offset: -75,
-});
 
-const playerProps = class {
+class weaponBow extends weaponHands {
+    constructor() {
+        super();
+        this.isABow = true;
+        this.fireRate = 1000;
+        this.swingable = false;
+        this.attackRange = 0;
+        this.damage = 0;
+        this.attackDuration = 0;
+        this.attackCoolDown = 0;
+        this.texture = null;
+        this.texture = gameTextures.weaponBow;
+        this.sizeX = 50;
+        this.sizeY = 50;
+        this.yOffset= -75;
+    };
+};
+
+class weaponDefaultSword extends weaponHands {
+    constructor() {
+        super();
+        this.swingable = false;
+        this.attackRange = 80;
+        this.damage = 35;
+        this.attackDuration = 750;
+        this.attackCoolDown = 250;
+        this.texture = gameTextures.weaponDefaultSword;
+        this.sizeX = 50;
+        this.sizeY = 50;
+        this.offset = -50;
+    };
+};
+
+class weaponLongSword extends weaponHands {
+    constructor() {
+        super();
+        this.swingable = true;
+        this.attackRange = 125;
+        this.damage = 85;
+        this.attackDuration = 800;
+        this.attackCoolDown = 950;
+        this.texture = gameTextures.weaponLongSword;
+        this.sizeX = 50;
+        this.sizeY = 100;
+        this.offset = -75;
+    };
+};
+
+class playerProps {
     // texture stuff
     useTexture = null;
     fullHealth = gameTextures.playerFullHealth;
@@ -135,7 +156,7 @@ const playerProps = class {
         d: 0,
     };
     updateXY() {
-        const newX = this.x + (this.keyMovment.d - this.keyMovment.a) * this.playerMovmentAmount;;
+        const newX = this.x + (this.keyMovment.d - this.keyMovment.a) * this.playerMovmentAmount;
         const newY = this.y + (this.keyMovment.s - this.keyMovment.w) * this.playerMovmentAmount;
         if (newX >= 0 && newX <= mainCanvas.width) {
             this.x = newX
@@ -147,13 +168,18 @@ const playerProps = class {
     // sword stuff
     mouseX = 0;
     mouseY = 0;
-    isSwinging = true; // Set to false
+    isSwinging = false;
     canAttack = true;
     attacking = false;
-    weaponData = weapons.defaultSword;
+    isShooting = false;
+    canShoot = true;
+    shooting = false;
+    currentWeapon = 'sword';
+    weaponData = new weaponDefaultSword;
+    bowData = new weaponBow;
 };
 
-const goblin = class {
+class goblin {
     // texture stuff
     useTexture = null;
     fullHealth = gameTextures.goblinFullHealth;
@@ -187,7 +213,7 @@ const goblin = class {
     attacking = false;
     attackRangeMultiplier = 1;
     attackDamageMultiplier = 1;
-    weaponData = weapons.defaultSword;
+    weaponData = new weaponDefaultSword;
     attack() {
         if (this.canAttack) {
             this.canAttack = false;
@@ -226,7 +252,7 @@ const goblin = class {
     };    
 };
 
-const armorGoblin = class extends goblin {
+class armorGoblin extends goblin {
     constructor() {
         super();
         this.fullHealth = gameTextures.armorGoblinFullHealth;
@@ -238,7 +264,7 @@ const armorGoblin = class extends goblin {
     };
 };
 
-const bigGoblin = class extends goblin {
+class bigGoblin extends goblin {
     constructor() {
         super();
         this.fullHealth = gameTextures.bigGoblinFullHealth;
@@ -261,7 +287,7 @@ const enemiesProps = {
     bigGoblin: bigGoblin,
 };
 
-const dropItem = class {
+class dropItem {
     useTexture = gameTextures.missingTexture;
     x = 0;
     y = 0;
@@ -272,7 +298,7 @@ const dropItem = class {
     };
 }
 
-const heartItem = class extends dropItem {
+class heartItem extends dropItem {
     constructor(x, y) {
         super();
         this.useTexture = gameTextures.heart;
@@ -382,6 +408,12 @@ function handleSetKeyMovment(event, setTo) {
             case ('d'):
                 usePlayerProps.keyMovment.d = setTo;
                 break;
+            case ('1'):
+                usePlayerProps.currentWeapon = 'sword';
+                break;
+            case ('2'):
+                usePlayerProps.currentWeapon = 'bow';
+                break;
             default:
                 break;
         };
@@ -429,20 +461,32 @@ function handelSwingingCheck() {
 
 // gets mouse click
 function establishMouseClick(event) {
-    if (usePlayerProps.canAttack) {
-        usePlayerProps.canAttack = false;
-        usePlayerProps.attacking = true;
-        setTimeout(() => {
-            usePlayerProps.attacking = false;
+    if (usePlayerProps.currentWeapon == 'sword') {
+        if (usePlayerProps.canAttack) {
+            usePlayerProps.canAttack = false;
+            usePlayerProps.attacking = true;
             setTimeout(() => {
-                usePlayerProps.canAttack = true;
-                const currentEnemyLength = currentEnemies.length;
-                for (let i = currentEnemyLength - 1; i >= 0; i--) {
-                    const selectedEnemy = currentEnemies[i];
-                    selectedEnemy.wasAttacked = false;
-                };
-            }, usePlayerProps.weaponData.attackCoolDown);
-        }, usePlayerProps.weaponData.attackDuration);
+                usePlayerProps.attacking = false;
+                setTimeout(() => {
+                    usePlayerProps.canAttack = true;
+                    const currentEnemyLength = currentEnemies.length;
+                    for (let i = currentEnemyLength - 1; i >= 0; i--) {
+                        const selectedEnemy = currentEnemies[i];
+                        selectedEnemy.wasAttacked = false;
+                    };
+                }, usePlayerProps.weaponData.attackCoolDown);
+            }, usePlayerProps.weaponData.attackDuration);
+        };
+    } else {
+        if (usePlayerProps.canShoot) {
+            usePlayerProps.canShoot = false;
+            usePlayerProps.shooting = true;
+            // Spawn Arrow
+            setTimeout(() => {
+                usePlayerProps.canShoot = true;
+                usePlayerProps.shooting = false;
+            }, usePlayerProps.bowData.fireRate);
+        };
     };
 };
 
@@ -548,7 +592,11 @@ async function playGame() {
             };
         };
 
-        usePlayerProps.weaponData.draw(usePlayerProps.x, usePlayerProps.y, angle, offsetX, offsetY);
+        if (usePlayerProps.currentWeapon == 'sword') {
+            usePlayerProps.weaponData.draw(usePlayerProps.x, usePlayerProps.y, angle, offsetX, offsetY);
+        } else {
+            usePlayerProps.bowData.draw(usePlayerProps.x, usePlayerProps.y, angle, offsetX, usePlayerProps.bowData.yOffset);
+        };
         drawHUD();
         if (usePlayerProps.health <= 0) {
             break;
