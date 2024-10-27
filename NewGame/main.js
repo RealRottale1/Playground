@@ -304,14 +304,18 @@ class goblin {
         if (this.weaponData && (trueDistance <= this.weaponData.attackRange*this.attackRangeMultiplier)) {
             this.currentWeapon = 'sword';
             this.attack();
-        } else if (this.weaponData && this.bowData && (trueDistance <= this.bowData.attackRange - (this.weaponData.attackRange*this.attackRangeMultiplier))) {
+            //console.log('stab');
+        } else if (this.weaponData && (trueDistance <= this.weaponData.attackRange*this.attackRangeMultiplier*5/3)) {
             this.currentWeapon = 'sword';
             this.move(dX, dY, distance)
+            //console.log('switch to stab');
         } else if (this.bowData && (trueDistance <= this.bowData.attackRange)) {
             this.currentWeapon = 'bow';
             this.shoot();
+            //console.log('shoot');
         } else {
-            this.move(dX, dY, distance)
+            this.move(dX, dY, distance);
+            //console.log('move');
         };
     };    
 };
@@ -392,9 +396,14 @@ const levelData = [
         foreground: gameTextures.plainsForeground,
         waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
             [
-                [2000, goblin, [weaponDefaultSword, weaponBow], [500, 500]],
-                [5000, goblin, [weaponLongSword, null], [0, 500]],
-                [8000, goblin, [null, weaponBow], [500, 0]],
+                [200, goblin, [weaponDefaultSword, weaponBow], [500, 500]],
+                [500, goblin, [weaponDefaultSword, null], [0, 500]],
+                [800, goblin, [null, weaponBow], [500, 0]],
+            ],
+            [
+                [400, goblin, [weaponDefaultSword, weaponBow], [500, 500]],
+                [200, goblin, [weaponDefaultSword, weaponBow], [0, 500]],
+                [500, goblin, [weaponDefaultSword, weaponBow], [500, 500]],
             ],
         ],
     },
@@ -453,9 +462,15 @@ function makeLoadingScreen() {
 // boots up game
 function bootGame() {
     // generates stuff like bushes
-    currentBullets.splice(0,currentBullets.length);
+    settings.currentLevel = 0;
+    settings.currentWave = 0;
+    amountSummoned = 0;
+    stillEnemiesToSummon = true;
+    gameClock = 0;
     usePlayerProps = new playerProps();
     currentEnemies.splice(0,currentEnemies.length);
+    currentBullets.splice(0,currentBullets.length);
+    currentDropItems.splice(0,currentDropItems.length);
 
     return new Promise((success) => {
         success();
@@ -649,7 +664,23 @@ function moveBullets() {
     };
 };
 
+// handles spawning in enemies
+function summonEnemy(enemyData) {
+    const summonedEnemy = new enemyData[1];
+    if (enemyData[2][0]) {
+        summonedEnemy.weaponData = new enemyData[2][0];
+    };
+    if (enemyData[2][1]) {
+        summonedEnemy.bowData = new enemyData[2][1];
+    };
+    summonedEnemy.x = enemyData[3][0];
+    summonedEnemy.y = enemyData[3][1];
+    currentEnemies.push(summonedEnemy);
+};
+
 // main game loop
+let amountSummoned = 0;
+let stillEnemiesToSummon = true;
 let gameClock = 0;
 async function playGame() {
     while (true) {
@@ -658,13 +689,38 @@ async function playGame() {
         if ((gameClock % settings.mouseSwingRate) == 0) {
             handelSwingingCheck();
         };
+        if (stillEnemiesToSummon) {
+            const currentWaveData = levelData[settings.currentLevel].waves[settings.currentWave];
+            if (currentWaveData) {
+                const levelEnemiesLength = currentWaveData.length;
+                for (let i = 0; i < levelEnemiesLength; i++) {
+                    const enemyData = currentWaveData[i];
+                    if (enemyData[0] == gameClock) {
+                        summonEnemy(enemyData);
+                        amountSummoned += 1;
+                        if (amountSummoned >= levelEnemiesLength) {
+                            stillEnemiesToSummon = false;
+                            break;
+                        };
+                    };
+                };
+            } else {
+                console.log('Next Level');
+                settings.currentLevel += 1;
+                break;
+            };
+        };
         if (gameClock >= 18000) {
+            console.log('Times up! Next wave!');
             gameClock = 0;
+            settings.currentWave += 1;
+            amountSummoned = 0;
+            stillEnemiesToSummon = true;
         };
 
         // Reset/update stuff
         ctx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
-        ctx.drawImage(levelData[currentLevel].background, 0, 0, mainCanvas.width, mainCanvas.height);
+        ctx.drawImage(levelData[settings.currentLevel].background, 0, 0, mainCanvas.width, mainCanvas.height);
         usePlayerProps.updateXY();
         usePlayerProps.getUseTexture();
 
@@ -714,14 +770,12 @@ async function playGame() {
                 };
             };
 
-            if (selectedEnemy.weaponData.texture) {
+            if (selectedEnemy.currentWeapon == 'sword') {
                 const [enemyAngle, enemyOffsetX, enemyOffsetY] = getWeaponPosition(selectedEnemy.x, selectedEnemy.y, usePlayerProps.x, usePlayerProps.y, selectedEnemy.weaponData.sizeX, selectedEnemy.weaponData.sizeY+averageHitBox, selectedEnemy.weaponData.offset, selectedEnemy.attacking);
-                if (selectedEnemy.currentWeapon == 'sword') {
-                    selectedEnemy.weaponData.draw(selectedEnemy.x, selectedEnemy.y, enemyAngle, enemyOffsetX, enemyOffsetY);
-                } else {
-                    selectedEnemy.bowData.draw(selectedEnemy.x, selectedEnemy.y, enemyAngle, enemyOffsetX, selectedEnemy.bowData.yOffset);
-                };
-            
+                selectedEnemy.weaponData.draw(selectedEnemy.x, selectedEnemy.y, enemyAngle, enemyOffsetX, enemyOffsetY);
+            } else {
+                const [enemyAngle, enemyOffsetX, enemyOffsetY] = getWeaponPosition(selectedEnemy.x, selectedEnemy.y, usePlayerProps.x, usePlayerProps.y, selectedEnemy.bowData.sizeX, selectedEnemy.bowData.sizeY+averageHitBox, selectedEnemy.bowData.offset, null);
+                selectedEnemy.bowData.draw(selectedEnemy.x, selectedEnemy.y, enemyAngle, enemyOffsetX, selectedEnemy.bowData.yOffset);
             };
         };
         if (usePlayerProps.currentWeapon == 'sword') {
@@ -730,8 +784,16 @@ async function playGame() {
             usePlayerProps.bowData.draw(usePlayerProps.x, usePlayerProps.y, angle, offsetX, usePlayerProps.bowData.yOffset);
         };
 
+        if (!stillEnemiesToSummon && currentEnemies.length <= 0) {
+            console.log('Completed wave! Next wave!');
+            gameClock = 0;
+            settings.currentWave += 1;
+            amountSummoned = 0;
+            stillEnemiesToSummon = true;
+        };
+
         // Final drawing
-        ctx.drawImage(levelData[currentLevel].foreground, 0, 0, mainCanvas.width, mainCanvas.height);
+        ctx.drawImage(levelData[settings.currentLevel].foreground, 0, 0, mainCanvas.width, mainCanvas.height);
         drawHUD();
 
         // End check
@@ -743,22 +805,12 @@ async function playGame() {
     };
 };
 
-
-// handles spawning in enemies
-function summonEnemy(enemyObject, spawnX, spawnY) {
-    const summonedEnemy = new enemyObject;
-    summonedEnemy.x = spawnX;
-    summonedEnemy.y = spawnY;
-    currentEnemies.push(summonedEnemy);
-};
-
 // handles core loop
 async function runGame() {
     while (true) {
         await makeLoadingScreen();
         await bootGame();
 
-        //summonEnemy(enemiesProps.goblin, 500, 400);
         document.addEventListener('keydown', establishUserInputDown);
         document.addEventListener('keyup', establishUserInputUp);
         document.addEventListener('mousemove', establishMouseInput);
