@@ -9,6 +9,9 @@ const settings = {
     mouseSwingRate: 50,
     dropHearSize: [50, 50],
     bulletSpeed: -5,
+    currentLevel: 0,
+    currentWave: 0,
+    timeBeforeNextWave: 5000,
 };
 
 function makeImage(url) {
@@ -40,6 +43,8 @@ const gameTextures = {
     weaponBow: makeImage('textures/weapons/bow.png'),
     bulletArrow: makeImage('textures/weapons/arrow.png'),
     heart: makeImage('textures/drops/heart.png'),
+    plainsBackground: makeImage('textures/areas/plainBackground.png'),
+    plainsForeground: makeImage('textures/areas/plainForeground.png'),
 };
 
 // function for calculating weapon position
@@ -54,7 +59,7 @@ function getWeaponPosition(x, y, mouseX, mouseY, sizeX, sizeY, offset, attacking
 
 class weaponHands {
     swingable = false;
-    attackRange = 35;
+    attackRange = 5;
     damage = 15;
     attackDuration = 500;
     attackCoolDown = 150;
@@ -66,7 +71,6 @@ class weaponHands {
         if (!this.texture || !this.sizeX || !this.sizeY) {
             return(false);
         };
-
         ctx.save();
         ctx.translate(x, y);
         ctx.rotate(angle);
@@ -250,8 +254,8 @@ class goblin {
     attackRangeMultiplier = 1;
     attackDamageMultiplier = 1;
     currentWeapon = 'sword';
-    weaponData = new weaponDefaultSword;
-    bowData = new weaponBow;
+    weaponData = new weaponHands;
+    bowData = null;
     move(dX, dY, distance) {
         const nX = dX/distance;
         const nY = dY/distance;
@@ -300,15 +304,12 @@ class goblin {
         if (this.weaponData && (trueDistance <= this.weaponData.attackRange*this.attackRangeMultiplier)) {
             this.currentWeapon = 'sword';
             this.attack();
-            console.log('stabbing');
         } else if (this.weaponData && this.bowData && (trueDistance <= this.bowData.attackRange - (this.weaponData.attackRange*this.attackRangeMultiplier))) {
             this.currentWeapon = 'sword';
             this.move(dX, dY, distance)
-            console.log('switching to stab mode');
         } else if (this.bowData && (trueDistance <= this.bowData.attackRange)) {
             this.currentWeapon = 'bow';
             this.shoot();
-            console.log('shooting');
         } else {
             this.move(dX, dY, distance)
         };
@@ -385,6 +386,19 @@ const currentDropItems = [];
 const currentEnemies = [];
 // End
 
+const levelData = [
+    {
+        background: gameTextures.plainsBackground,
+        foreground: gameTextures.plainsForeground,
+        waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
+            [
+                [2000, goblin, [weaponDefaultSword, weaponBow], [500, 500]],
+                [5000, goblin, [weaponLongSword, null], [0, 500]],
+                [8000, goblin, [null, weaponBow], [500, 0]],
+            ],
+        ],
+    },
+];
 
 
 
@@ -402,15 +416,6 @@ function waitTick() {
             success();
         }, settings.refreshRate);
     });
-};
-
-// clears canvas and resets background
-function clearAll() {
-    ctx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
-    ctx.fillStyle = 'rgb(14 204 30)';
-    ctx.beginPath();
-    ctx.rect(0, 0, mainCanvas.width, mainCanvas.height);
-    ctx.fill();
 };
 // End
 
@@ -648,18 +653,26 @@ function moveBullets() {
 let gameClock = 0;
 async function playGame() {
     while (true) {
+        // Clock stuff
         gameClock += 1;
         if ((gameClock % settings.mouseSwingRate) == 0) {
             handelSwingingCheck();
         };
-        if (gameClock >= 2500) {
+        if (gameClock >= 18000) {
             gameClock = 0;
         };
-        clearAll();
+
+        // Reset/update stuff
+        ctx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+        ctx.drawImage(levelData[currentLevel].background, 0, 0, mainCanvas.width, mainCanvas.height);
         usePlayerProps.updateXY();
         usePlayerProps.getUseTexture();
-        drawDroppedItems();
+
+        // Draw non-characters
         moveBullets();
+        drawDroppedItems();
+
+        // Draw player and enemies
         usePlayerProps.draw(usePlayerProps.x, usePlayerProps.y);
         const [angle, offsetX, offsetY] = getWeaponPosition(usePlayerProps.x, usePlayerProps.y, usePlayerProps.mouseX, usePlayerProps.mouseY, usePlayerProps.weaponData.sizeX, usePlayerProps.weaponData.sizeY, usePlayerProps.weaponData.offset, usePlayerProps.attacking);
         const currentEnemyLength = currentEnemies.length;
@@ -711,13 +724,17 @@ async function playGame() {
             
             };
         };
-
         if (usePlayerProps.currentWeapon == 'sword') {
             usePlayerProps.weaponData.draw(usePlayerProps.x, usePlayerProps.y, angle, offsetX, offsetY);
         } else {
             usePlayerProps.bowData.draw(usePlayerProps.x, usePlayerProps.y, angle, offsetX, usePlayerProps.bowData.yOffset);
         };
+
+        // Final drawing
+        ctx.drawImage(levelData[currentLevel].foreground, 0, 0, mainCanvas.width, mainCanvas.height);
         drawHUD();
+
+        // End check
         if (usePlayerProps.health <= 0) {
             break;
         } else {
@@ -741,7 +758,7 @@ async function runGame() {
         await makeLoadingScreen();
         await bootGame();
 
-        summonEnemy(enemiesProps.goblin, 500, 400);
+        //summonEnemy(enemiesProps.goblin, 500, 400);
         document.addEventListener('keydown', establishUserInputDown);
         document.addEventListener('keyup', establishUserInputUp);
         document.addEventListener('mousemove', establishMouseInput);

@@ -1,0 +1,10 @@
+
+Plains {
+    normal goblin
+    big goblin
+}
+
+forest {
+    tribal goblins
+    
+}
