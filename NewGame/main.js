@@ -8,6 +8,7 @@ const settings = {
     refreshRate: 10,
     mouseSwingRate: 50,
     dropHearSize: [50, 50],
+    bulletSpeed: -5,
 };
 
 function makeImage(url) {
@@ -65,6 +66,7 @@ class weaponHands {
         if (!this.texture || !this.sizeX || !this.sizeY) {
             return(false);
         };
+
         ctx.save();
         ctx.translate(x, y);
         ctx.rotate(angle);
@@ -73,13 +75,34 @@ class weaponHands {
     };
 };
 
+class arrow {
+    source = null;
+    sizeX = 100;
+    sizeY = 100;
+    useTexture = gameTextures.bulletArrow;
+    x = 0;
+    y = 0;
+    angle = 0;
+    damage = 25;
+    draw() {
+        if (!this.useTexture || !this.sizeX || !this.sizeY) {
+            return(false);
+        };
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.angle);
+        ctx.drawImage(this.useTexture, -1*(this.sizeX/2), -1*(this.sizeY/2), this.sizeX, this.sizeY);
+        ctx.restore();
+    };
+};
+
 class weaponBow extends weaponHands {
     constructor() {
         super();
-        this.isABow = true;
         this.fireRate = 1000;
+        this.useBullet = arrow;
         this.swingable = false;
-        this.attackRange = 0;
+        this.attackRange = 250;
         this.damage = 0;
         this.attackDuration = 0;
         this.attackCoolDown = 0;
@@ -87,7 +110,18 @@ class weaponBow extends weaponHands {
         this.texture = gameTextures.weaponBow;
         this.sizeX = 50;
         this.sizeY = 50;
-        this.yOffset= -75;
+        this.yOffset = -75;
+    };
+    shoot(x1, x2, y1, y2, source) {
+        const dX = x2 - x1;
+        const dY = y2 - y1;
+        const angle = Math.atan2(dY, dX) + Math.PI / 2;
+        const shotArrow = new this.useBullet;
+        shotArrow.source = source;
+        shotArrow.x = x1;
+        shotArrow.y = y1;
+        shotArrow.angle = angle;
+        currentBullets.push(shotArrow);
     };
 };
 
@@ -211,9 +245,19 @@ class goblin {
     wasAttacked = false;
     canAttack = true;
     attacking = false;
+    canShoot = true;
+    shooting = false;
     attackRangeMultiplier = 1;
     attackDamageMultiplier = 1;
+    currentWeapon = 'sword';
     weaponData = new weaponDefaultSword;
+    bowData = new weaponBow;
+    move(dX, dY, distance) {
+        const nX = dX/distance;
+        const nY = dY/distance;
+        this.x += nX*this.movementSpeed;
+        this.y += nY*this.movementSpeed;
+    };
     attack() {
         if (this.canAttack) {
             this.canAttack = false;
@@ -225,6 +269,17 @@ class goblin {
                     this.canAttack = true;
                 }, this.weaponData.attackCoolDown);
             }, this.weaponData.attackDuration);
+        };
+    };
+    shoot() {
+        if (this.canShoot) {
+            this.canShoot = false;
+            this.shooting = true;
+            this.bowData.shoot(this.x, usePlayerProps.x, this.y, usePlayerProps.y, 'enemy');
+            setTimeout(() => {
+                this.canShoot = true;
+                this.shooting = false;
+            }, this.bowData.fireRate);
         };
     };
     // movment/tick stuff
@@ -241,13 +296,21 @@ class goblin {
         const dX = usePlayerProps.x - this.x;
         const dY = usePlayerProps.y - this.y;
         const distance = Math.sqrt(dX**2 + dY**2);
-        if (distance-(this.hitBoxX+this.hitBoxY)/2 > this.weaponData.attackRange*this.attackRangeMultiplier) {
-            const nX = dX/distance;
-            const nY = dY/distance;
-            this.x += nX*this.movementSpeed;
-            this.y += nY*this.movementSpeed;
-        } else {
+        const trueDistance = distance-(this.hitBoxX+this.hitBoxY)/2;
+        if (this.weaponData && (trueDistance <= this.weaponData.attackRange*this.attackRangeMultiplier)) {
+            this.currentWeapon = 'sword';
             this.attack();
+            console.log('stabbing');
+        } else if (this.weaponData && this.bowData && (trueDistance <= this.bowData.attackRange - (this.weaponData.attackRange*this.attackRangeMultiplier))) {
+            this.currentWeapon = 'sword';
+            this.move(dX, dY, distance)
+            console.log('switching to stab mode');
+        } else if (this.bowData && (trueDistance <= this.bowData.attackRange)) {
+            this.currentWeapon = 'bow';
+            this.shoot();
+            console.log('shooting');
+        } else {
+            this.move(dX, dY, distance)
         };
     };    
 };
@@ -317,6 +380,7 @@ class heartItem extends dropItem {
 };
 
 let usePlayerProps = null;
+const currentBullets = [];
 const currentDropItems = [];
 const currentEnemies = [];
 // End
@@ -384,6 +448,7 @@ function makeLoadingScreen() {
 // boots up game
 function bootGame() {
     // generates stuff like bushes
+    currentBullets.splice(0,currentBullets.length);
     usePlayerProps = new playerProps();
     currentEnemies.splice(0,currentEnemies.length);
 
@@ -481,7 +546,7 @@ function establishMouseClick(event) {
         if (usePlayerProps.canShoot) {
             usePlayerProps.canShoot = false;
             usePlayerProps.shooting = true;
-            // Spawn Arrow
+            usePlayerProps.bowData.shoot(usePlayerProps.x, usePlayerProps.mouseX, usePlayerProps.y, usePlayerProps.mouseY, 'player');
             setTimeout(() => {
                 usePlayerProps.canShoot = true;
                 usePlayerProps.shooting = false;
@@ -530,6 +595,55 @@ function drawDroppedItems() {
     };
 };
 
+// handles moving bullets
+function moveBullets() {
+    const bulletLength = currentBullets.length;
+    for (let i = bulletLength-1; i > -1; i--) {
+        const useBullet = currentBullets[i];
+        useBullet.x += (settings.bulletSpeed*Math.cos(useBullet.angle+Math.PI/2));
+        useBullet.y += (settings.bulletSpeed*Math.sin(useBullet.angle+Math.PI/2));
+        if (useBullet.x < 0 || useBullet.x > mainCanvas.width || useBullet.y < 0 || useBullet.y > mainCanvas.height) {
+            currentBullets.splice(i, 1);
+            continue;
+        };
+        if (useBullet.source == 'player') {
+            let hitEnemy = false;
+            const enemyLength = currentEnemies.length;
+            for (let j = enemyLength-1; j > -1; j--) {
+                const useEnemy = currentEnemies[j];
+                const distance = Math.sqrt((useEnemy.x - useBullet.x)**2 + (useEnemy.y - useBullet.y)**2);
+                if (distance <= (useEnemy.hitBoxX + useEnemy.hitBoxY)/2) {
+                    hitEnemy = true;
+                    useEnemy.health -= useBullet.damage;
+                    if (useEnemy.health <= 0) {
+                        dropHeart(useEnemy.x, useEnemy.y);
+                        currentEnemies.splice(j, 1);
+                    };
+                };
+            };
+            if (hitEnemy) {
+                currentBullets.splice(i, 1);
+                continue;
+            };
+        } else {
+            const distance = Math.sqrt((usePlayerProps.x - useBullet.x)**2 + (usePlayerProps.y - useBullet.y)**2);
+            if (distance <= (usePlayerProps.sizeX + usePlayerProps.sizeY)/2) {
+                usePlayerProps.health -= useBullet.damage;
+                currentBullets.splice(i, 1);
+                continue;
+            };
+        };
+        useBullet.draw();
+        /*
+        ctx.beginPath(); // For debugging!
+        ctx.fillStyle = 'blue';
+        ctx.rect(useBullet.x, useBullet.y, 5, 5);
+        ctx.fill();
+        ctx.closePath();
+        */
+    };
+};
+
 // main game loop
 let gameClock = 0;
 async function playGame() {
@@ -545,6 +659,7 @@ async function playGame() {
         usePlayerProps.updateXY();
         usePlayerProps.getUseTexture();
         drawDroppedItems();
+        moveBullets();
         usePlayerProps.draw(usePlayerProps.x, usePlayerProps.y);
         const [angle, offsetX, offsetY] = getWeaponPosition(usePlayerProps.x, usePlayerProps.y, usePlayerProps.mouseX, usePlayerProps.mouseY, usePlayerProps.weaponData.sizeX, usePlayerProps.weaponData.sizeY, usePlayerProps.weaponData.offset, usePlayerProps.attacking);
         const currentEnemyLength = currentEnemies.length;
@@ -588,7 +703,12 @@ async function playGame() {
 
             if (selectedEnemy.weaponData.texture) {
                 const [enemyAngle, enemyOffsetX, enemyOffsetY] = getWeaponPosition(selectedEnemy.x, selectedEnemy.y, usePlayerProps.x, usePlayerProps.y, selectedEnemy.weaponData.sizeX, selectedEnemy.weaponData.sizeY+averageHitBox, selectedEnemy.weaponData.offset, selectedEnemy.attacking);
-                selectedEnemy.weaponData.draw(selectedEnemy.x, selectedEnemy.y, enemyAngle, enemyOffsetX, enemyOffsetY);
+                if (selectedEnemy.currentWeapon == 'sword') {
+                    selectedEnemy.weaponData.draw(selectedEnemy.x, selectedEnemy.y, enemyAngle, enemyOffsetX, enemyOffsetY);
+                } else {
+                    selectedEnemy.bowData.draw(selectedEnemy.x, selectedEnemy.y, enemyAngle, enemyOffsetX, selectedEnemy.bowData.yOffset);
+                };
+            
             };
         };
 
