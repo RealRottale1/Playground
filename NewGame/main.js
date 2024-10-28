@@ -12,6 +12,7 @@ const settings = {
     currentLevel: 0,
     currentWave: 0,
     timeBeforeNextWave: 5000,
+    maxTimeBeforeNextWave: 18000,
 };
 
 function makeImage(url) {
@@ -80,6 +81,11 @@ class weaponHands {
         ctx.rotate(angle);
         ctx.drawImage(this.texture, offsetX, offsetY, this.sizeX, this.sizeY);
         ctx.restore();
+
+/*
+const xTip = x + -1*(offsetY) * Math.cos(angle - Math.PI/2);
+const yTip = y + -1*(offsetY) * Math.sin(angle - Math.PI/2);
+*/
     };
 };
 
@@ -87,6 +93,8 @@ class arrow {
     source = null;
     sizeX = 100;
     sizeY = 100;
+    boxSizeX = 50;
+    boxSizeY = 50;
     useTexture = gameTextures.bulletArrow;
     x = 0;
     y = 0;
@@ -142,8 +150,9 @@ class weaponBow extends weaponHands {
         const angle = Math.atan2(dY, dX) + Math.PI / 2;
         const shotArrow = new this.useBullet;
         shotArrow.source = source;
-        shotArrow.x = x1;
-        shotArrow.y = y1;
+        const averageSize = (shotArrow.boxSizeX + shotArrow.boxSizeY)/2;
+        shotArrow.x = x1 + (-1*(this.yOffset)-averageSize) * Math.cos(angle - Math.PI/2);
+        shotArrow.y = y1 + (-1*(this.yOffset)-averageSize) * Math.sin(angle - Math.PI/2);
         shotArrow.angle = angle;
         currentBullets.push(shotArrow);
     };
@@ -339,21 +348,21 @@ class goblin {
         const dY = usePlayerProps.y - this.y;
         const distance = Math.sqrt(dX**2 + dY**2);
         const trueDistance = distance-(this.hitBoxX+this.hitBoxY)/2;
-        if (this.weaponData && (trueDistance <= this.weaponData.attackRange*this.attackRangeMultiplier)) {
+        if (this.weaponData && (trueDistance <= this.weaponData.attackRange*this.attackRangeMultiplier*5/3)) {
             this.currentWeapon = 'sword';
-            this.attack();
-            //console.log('stab');
-        } else if (this.weaponData && (trueDistance <= this.weaponData.attackRange*this.attackRangeMultiplier*5/3)) {
-            this.currentWeapon = 'sword';
-            this.move(dX, dY, distance)
-            //console.log('switch to stab');
-        } else if (this.bowData && (trueDistance <= this.bowData.attackRange)) {
+            if (trueDistance > this.weaponData.attackRange*this.attackRangeMultiplier) {
+                this.move(dX, dY, distance)
+            } else {
+                this.attack();
+            };
+        } else if (this.bowData && (trueDistance <= this.bowData.attackRange*5/3)) {
+            if (trueDistance > this.bowData.attackRange) {
+                this.move(dX, dY, distance);
+            };
             this.currentWeapon = 'bow';
             this.shoot();
-            //console.log('shoot');
         } else {
             this.move(dX, dY, distance);
-            //console.log('move');
         };
     };    
 };
@@ -750,7 +759,7 @@ async function playGame() {
                 break;
             };
         };
-        if (gameClock >= 18000) {
+        if (gameClock >= settings.maxTimeBeforeNextWave) {
             console.log('Times up! Next wave!');
             gameClock = 0;
             settings.currentWave += 1;
@@ -778,7 +787,7 @@ async function playGame() {
             selectedEnemy.tickAction();
             selectedEnemy.draw(selectedEnemy.x, selectedEnemy.y);
             const averageHitBox = (selectedEnemy.hitBoxX+selectedEnemy.hitBoxY)/2;
-            if ((!selectedEnemy.wasAttacked && usePlayerProps.attacking) || (!selectedEnemy.wasSwingAttacked && usePlayerProps.isSwinging && usePlayerProps.weaponData.swingable)) {
+            if ((!selectedEnemy.wasAttacked && usePlayerProps.attacking) || (!selectedEnemy.wasSwingAttacked && usePlayerProps.isSwinging && ((usePlayerProps.currentWeapon == 'sword' && usePlayerProps.weaponData.swingable) || (usePlayerProps.currentWeapon == 'bow' && usePlayerProps.bowData.swingable)))) {
                 const startAt = ((offsetY+(usePlayerProps.weaponData.offset*-1))/averageHitBox)*-1+1;
                 for (let j = startAt; j <= (offsetY*-1)/averageHitBox; j++) {
                     const m = (j*averageHitBox*-1);
