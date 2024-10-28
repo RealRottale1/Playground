@@ -52,6 +52,11 @@ const gameTextures = {
     plainsForeground: makeImage('textures/areas/plainForeground.png'),
 };
 
+let usePlayerProps = null;
+const currentBullets = [];
+const currentDropItems = [];
+const currentEnemies = [];
+
 // function for calculating weapon position
 function getWeaponPosition(x, y, mouseX, mouseY, sizeX, sizeY, offset, attacking) {
     const dX = mouseX - x;
@@ -81,11 +86,6 @@ class weaponHands {
         ctx.rotate(angle);
         ctx.drawImage(this.texture, offsetX, offsetY, this.sizeX, this.sizeY);
         ctx.restore();
-
-/*
-const xTip = x + -1*(offsetY) * Math.cos(angle - Math.PI/2);
-const yTip = y + -1*(offsetY) * Math.sin(angle - Math.PI/2);
-*/
     };
 };
 
@@ -335,8 +335,37 @@ class goblin {
     };
     // movment/tick stuff
     movementSpeed = 1.5;
+    checkTick = [0, 10000];
     swingAttackClock = [0, 10];
+    rushFor = 50;
+    isRushing = false;
+    shouldRush() {
+        let enemiesShooting = 0;
+        const summonLength = currentEnemies.length;
+        for (let i = 0; i < summonLength; i++) {
+            if (currentEnemies[i].shooting) {
+                enemiesShooting += 1;
+            };
+        };
+        console.log(enemiesShooting/summonLength);
+        if (summonLength > 2 && (((enemiesShooting/summonLength) <= .6) && ((enemiesShooting/summonLength) >= .2))) {
+            return(true);
+        } else {
+            return(false);
+        };
+    };
     tickAction() {
+        this.checkTick[0] += 1;
+        const dX = usePlayerProps.x - this.x;
+        const dY = usePlayerProps.y - this.y;
+        const distance = Math.sqrt(dX**2 + dY**2);
+        const trueDistance = distance-(this.hitBoxX+this.hitBoxY)/2;
+        if ((this.checkTick[0] % this.rushFor) == 0) {
+            this.isRushing = (this.shouldRush() && trueDistance <= (this.bowData ? this.bowData.attackRange : this.weaponData.attackRange));
+        };
+        if (this.checkTick[0] >= this.checkTick[1]) {
+            this.checkTick[0] = 0;
+        };
         if (this.wasSwingAttacked) {
             this.swingAttackClock[0] += 1;
             if (this.swingAttackClock[0] >= this.swingAttackClock[1]) {
@@ -344,11 +373,7 @@ class goblin {
                 this.wasSwingAttacked = false;
             };
         };
-        const dX = usePlayerProps.x - this.x;
-        const dY = usePlayerProps.y - this.y;
-        const distance = Math.sqrt(dX**2 + dY**2);
-        const trueDistance = distance-(this.hitBoxX+this.hitBoxY)/2;
-        if (this.weaponData && (trueDistance <= this.weaponData.attackRange*this.attackRangeMultiplier*5/3)) {
+        if (this.weaponData && (trueDistance <= this.weaponData.attackRange*this.attackRangeMultiplier*5/3) || this.isRushing) {
             this.currentWeapon = 'sword';
             if (trueDistance > this.weaponData.attackRange*this.attackRangeMultiplier) {
                 this.move(dX, dY, distance)
@@ -430,11 +455,6 @@ class heartItem extends dropItem {
         };
     };
 };
-
-let usePlayerProps = null;
-const currentBullets = [];
-const currentDropItems = [];
-const currentEnemies = [];
 // End
 
 const levelData = [
@@ -442,15 +462,17 @@ const levelData = [
         background: gameTextures.plainsBackground,
         foreground: gameTextures.plainsForeground,
         waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
-            [
+            /*[
                 [200, goblin, [null, null], [500, 500]],
                 [500, goblin, [weaponDefaultSword, null], [0, 500]],
                 [800, goblin, [null, weaponBow], [500, 0]],
-            ],
+            ],*/
             [
-                [400, goblin, [weaponDefaultSword, weaponBow], [500, 500]],
+                [200, goblin, [weaponDefaultSword, weaponBow], [500, 500]],
                 [200, goblin, [weaponDefaultSword, weaponBow], [0, 500]],
-                [500, goblin, [weaponDefaultSword, weaponBow], [500, 500]],
+                [200, goblin, [weaponDefaultSword, weaponBow], [450, 500]],
+                [200, goblin, [weaponDefaultSword, weaponBow], [0, 450]],
+                [200, goblin, [weaponDefaultSword, weaponBow], [250, 500]],
             ],
         ],
     },
