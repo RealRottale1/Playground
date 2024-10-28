@@ -41,7 +41,11 @@ const gameTextures = {
     weaponDefaultSword: makeImage('textures/weapons/defaultSword.png'),
     weaponLongSword: makeImage('textures/weapons/longSword.png'),
     weaponBow: makeImage('textures/weapons/bow.png'),
+    weaponGoldBow: makeImage('textures/weapons/goldBow.png'),
+    weaponCrossbow: makeImage('textures/weapons/crossbow.png'),
     bulletArrow: makeImage('textures/weapons/arrow.png'),
+    bulletGoldArrow: makeImage('textures/weapons/goldArrow.png'),
+    bulletCrossArrow: makeImage('textures/weapons/crossArrow.png'),
     heart: makeImage('textures/drops/heart.png'),
     plainsBackground: makeImage('textures/areas/plainBackground.png'),
     plainsForeground: makeImage('textures/areas/plainForeground.png'),
@@ -100,6 +104,22 @@ class arrow {
     };
 };
 
+class goldArrow extends arrow {
+    constructor() {
+        super();
+        this.useTexture = gameTextures.bulletGoldArrow;
+        this.damage = 50;
+    };
+}
+
+class crossbow extends arrow {
+    constructor() {
+        super();
+        this.useTexture = gameTextures.bulletCrossArrow;
+        this.damage = 150;
+    };
+}
+
 class weaponBow extends weaponHands {
     constructor() {
         super();
@@ -129,10 +149,28 @@ class weaponBow extends weaponHands {
     };
 };
 
+class weaponCrossbow extends weaponBow {
+    constructor() {
+        super();
+        this.fireRate = 5000;
+        this.useBullet = crossbow;
+        this.texture = gameTextures.weaponCrossbow;
+    };
+};
+
+class weaponGoldBow extends weaponBow {
+    constructor() {
+        super();
+        this.fireRate = 750;
+        this.useBullet = arrow;
+        this.texture = gameTextures.weaponGoldBow;
+    };
+};
+
 class weaponDefaultSword extends weaponHands {
     constructor() {
         super();
-        this.swingable = false;
+        this.swingable = true;
         this.attackRange = 80;
         this.damage = 35;
         this.attackDuration = 750;
@@ -214,7 +252,7 @@ class playerProps {
     shooting = false;
     currentWeapon = 'sword';
     weaponData = new weaponDefaultSword;
-    bowData = new weaponBow;
+    bowData = new weaponCrossbow;
 };
 
 class goblin {
@@ -396,7 +434,7 @@ const levelData = [
         foreground: gameTextures.plainsForeground,
         waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
             [
-                [200, goblin, [weaponDefaultSword, weaponBow], [500, 500]],
+                [200, goblin, [null, null], [500, 500]],
                 [500, goblin, [weaponDefaultSword, null], [0, 500]],
                 [800, goblin, [null, weaponBow], [500, 0]],
             ],
@@ -535,10 +573,12 @@ function establishMouseInput(event) {
 function handelSwingingCheck() {
     const currentAngle =  getMouseAngle();
     const directionHistoryLength = savedMouseDirections.length;
+    usePlayerProps.isSwinging = false;
     for (let i = 0; i < directionHistoryLength; i++) {
         const useDirection = savedMouseDirections[i];
         if ((Math.abs(useDirection) > Math.abs(currentAngle) + .5) || Math.abs(useDirection) + .5 < Math.abs(currentAngle)) {
-            break;
+            usePlayerProps.isSwinging = true;
+            break
         };
     };
     savedMouseDirections = [];
@@ -755,9 +795,11 @@ async function playGame() {
                     const enemyHit = (distance < averageHitBox);
                     if (enemyHit) {
                         if (!selectedEnemy.wasAttacked && usePlayerProps.attacking) {
+                            console.log('Stab');
                             selectedEnemy.wasAttacked = true;
                             selectedEnemy.health -= usePlayerProps.weaponData.damage;
                         } else {
+                            console.log('Swing');
                             selectedEnemy.wasSwingAttacked = true;
                             selectedEnemy.health -= usePlayerProps.weaponData.damage/7.5;
                         };
