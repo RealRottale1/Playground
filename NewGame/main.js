@@ -347,10 +347,12 @@ class goblin {
                 enemiesShooting += 1;
             };
         };
-        console.log(enemiesShooting/summonLength);
+        //console.log(enemiesShooting/summonLength);
         if (summonLength > 2 && ((enemiesShooting/summonLength) >= .5)) {
+            console.log('rushing');
             return(true);
         } else {
+            console.log('NOT rushing');
             return(false);
         };
     };
