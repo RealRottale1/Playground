@@ -336,36 +336,48 @@ class goblin {
     // movment/tick stuff
     movementSpeed = 1.5;
     checkTick = [0, 10000];
+    currentRushTick = 0;
     swingAttackClock = [0, 10];
-    rushFor = 250;
+    checkToRushTick = 50;
+    rushClock= [0, 500];
     isRushing = false;
     shouldRush() {
         let enemiesShooting = 0;
         const summonLength = currentEnemies.length;
         for (let i = 0; i < summonLength; i++) {
-            if (currentEnemies[i].shooting && currentEnemies[i].canAttack) {
+            if (currentEnemies[i].shooting && currentEnemies[i].canAttack && !currentEnemies[i].isRushing) {
                 enemiesShooting += 1;
             };
         };
-        //console.log(enemiesShooting/summonLength);
+        console.log(enemiesShooting/summonLength);
         if (summonLength > 2 && ((enemiesShooting/summonLength) >= .5)) {
-            console.log('rushing');
             return(true);
         } else {
-            console.log('NOT rushing');
             return(false);
         };
     };
     tickAction() {
+        // math stuff
         this.checkTick[0] += 1;
         const dX = usePlayerProps.x - this.x;
         const dY = usePlayerProps.y - this.y;
         const distance = Math.sqrt(dX**2 + dY**2);
         const trueDistance = distance-(this.hitBoxX+this.hitBoxY)/2;
-        if ((this.checkTick[0] % this.rushFor) == 0) {
+
+        // rush ability stuff
+        if (!this.isRushing && ((this.checkTick[0] % this.checkToRushTick) == 0)) {
             const withinRange = (this.bowData ? trueDistance <= this.bowData.attackRange : true);
             this.isRushing = (this.shouldRush() && withinRange);
         };
+        if (this.isRushing) {
+            if (this.rushClock[0] >= this.rushClock[1]) {
+                this.isRushing = false;
+            } else {
+                this.rushClock[0] += 1;
+            };
+        };
+
+        // swing tick stuff
         if (this.checkTick[0] >= this.checkTick[1]) {
             this.checkTick[0] = 0;
         };
@@ -376,20 +388,26 @@ class goblin {
                 this.wasSwingAttacked = false;
             };
         };
+
+        // action stuff
         if (this.weaponData && (trueDistance <= this.weaponData.attackRange*this.attackRangeMultiplier*5/3) || this.isRushing) {
             this.currentWeapon = 'sword';
             if (trueDistance > this.weaponData.attackRange*this.attackRangeMultiplier) {
                 this.move(dX, dY, distance)
+                console.log('rush');
             } else {
+                console.log('stab');
                 this.attack();
             };
         } else if (this.bowData && (trueDistance <= this.bowData.attackRange*5/3)) {
             if (trueDistance > this.bowData.attackRange) {
                 this.move(dX, dY, distance);
             };
+            console.log('shoot');
             this.currentWeapon = 'bow';
             this.shoot();
         } else {
+            console.log('move');
             this.move(dX, dY, distance);
         };
     };    
@@ -829,11 +847,11 @@ async function playGame() {
                     const enemyHit = (distance < averageHitBox);
                     if (enemyHit) {
                         if (!selectedEnemy.wasAttacked && usePlayerProps.attacking) {
-                            console.log('Stab');
+                            //console.log('Stab');
                             selectedEnemy.wasAttacked = true;
                             selectedEnemy.health -= usePlayerProps.weaponData.damage;
                         } else {
-                            console.log('Swing');
+                            //console.log('Swing');
                             selectedEnemy.wasSwingAttacked = true;
                             selectedEnemy.health -= usePlayerProps.weaponData.damage/7.5;
                         };
