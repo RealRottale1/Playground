@@ -15,6 +15,7 @@ const settings = {
     maxTimeBeforeNextWave: 18000,
     startPosition: [250, 250],
     hasShownTransition: false,
+    waveDisplayTime: 250,
 };
 
 function makeImage(url) {
@@ -351,7 +352,6 @@ class goblin {
                 enemiesShooting += 1;
             };
         };
-        console.log(enemiesShooting/summonLength);
         if (summonLength > 2 && ((enemiesShooting/summonLength) >= .5)) {
             return(true);
         } else {
@@ -396,20 +396,20 @@ class goblin {
             this.currentWeapon = 'sword';
             if (trueDistance > this.weaponData.attackRange*this.attackRangeMultiplier) {
                 this.move(dX, dY, distance)
-                console.log('rush');
+                //console.log('rush');
             } else {
-                console.log('stab');
+                //console.log('stab');
                 this.attack();
             };
         } else if (this.bowData && (trueDistance <= this.bowData.attackRange*5/3)) {
             if (trueDistance > this.bowData.attackRange) {
                 this.move(dX, dY, distance);
             };
-            console.log('shoot');
+            //console.log('shoot');
             this.currentWeapon = 'bow';
             this.shoot();
         } else {
-            console.log('move');
+            //console.log('move');
             this.move(dX, dY, distance);
         };
     };    
@@ -485,12 +485,13 @@ const levelData = [
         background: gameTextures.plainsBackground,
         foreground: gameTextures.plainsForeground,
         transition: [
-            [gameTextures.missingTexture, 2000],[gameTextures.goblinFullHealth, 3000],
+            [gameTextures.missingTexture, 2000],
         ],
         waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
             [
                 [200, goblin, [weaponDefaultSword, weaponBow], [500, 500]],
-                [200, goblin, [weaponDefaultSword, weaponBow], [0, 500]],
+            ],
+            [
                 [200, goblin, [weaponDefaultSword, weaponBow], [450, 500]],
                 [200, goblin, [weaponDefaultSword, weaponBow], [0, 450]],
                 [200, goblin, [weaponDefaultSword, weaponBow], [250, 500]],
@@ -528,13 +529,45 @@ function waitTick() {
 
 // game loop
 
-// loads main menu
-function makeLoadingScreen() {
+// makes background for title screen
+function makeTitleScreenBackground() {
     ctx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
     ctx.fillStyle = 'rgb(255 0 0)';
     ctx.beginPath();
     ctx.rect(0, 0, mainCanvas.width, mainCanvas.height);
     ctx.fill();
+};
+
+// loads on death options
+function optionsOnDeath() {
+    makeTitleScreenBackground()
+    const retryButton = document.createElement('button');
+    retryButton.textContent = 'Retry';
+    retryButton.id = 'retryButton';
+    mainDiv.appendChild(retryButton);
+
+    const resetButton = document.createElement('button');
+    resetButton.textContent = 'Reset';
+    resetButton.id = 'resetButton';
+    mainDiv.appendChild(resetButton);
+
+    return new Promise((results) => {
+        retryButton.addEventListener('click', function() {
+            retryButton.remove();
+            resetButton.remove();
+            results(true);
+        });
+        resetButton.addEventListener('click', function() {
+            retryButton.remove();
+            resetButton.remove();
+            results(false);
+        });
+    });
+}
+
+// loads main menu
+function makeLoadingScreen() {
+    makeTitleScreenBackground()
 
     const startButton = document.createElement('button');
     startButton.textContent = 'Play';
@@ -542,7 +575,7 @@ function makeLoadingScreen() {
     mainDiv.appendChild(startButton);
 
     return new Promise((success) => {
-        startButton.addEventListener('click', function (event) {
+        startButton.addEventListener('click', function() {
             startButton.remove();
             success();
         });
@@ -551,6 +584,7 @@ function makeLoadingScreen() {
 
 // boots up game
 function bootGame() {
+    settings.hasShownTransition = false;
     settings.currentLevel = 0;
     settings.currentWave = 0;
     amountSummoned = 0;
@@ -808,6 +842,15 @@ async function wait(time) {
     });
 };
 
+async function drawWaveNumber(i) {
+    ctx.font = '25px Georgia';
+    const multiplier = 1+(1/(settings.waveDisplayTime-50));
+    const useOpacity = (i <= 50 ? 1 : (settings.waveDisplayTime-i*multiplier)/settings.waveDisplayTime);
+    ctx.fillStyle = `rgba(0, 0, 0, ${useOpacity})`;
+    ctx.fillText(`Wave ${settings.currentWave+1}`, mainCanvas.width*.8, mainCanvas.height-25, 100);
+};
+
+// plays transition
 async function playTransition() {
     const transitionSlides = levelData[settings.currentLevel].transition.length;
     for (let i = 0; i < transitionSlides; i++) {
@@ -936,6 +979,9 @@ async function playLevel() {
         // Final drawing
         ctx.drawImage(levelData[settings.currentLevel].foreground, 0, 0, mainCanvas.width, mainCanvas.height);
         drawHUD();
+        if (gameClock <= settings.waveDisplayTime) {
+            drawWaveNumber(gameClock);
+        };
 
         // End check
         if (usePlayerProps.health <= 0) {
@@ -948,26 +994,30 @@ async function playLevel() {
 
 // handles core loop
 async function runGame() {
-    await makeLoadingScreen();
-    await bootGame();
     while (true) {
-        // Check if the round was won and +1 to currentLevel
-        // settings.hasShownTransition = false;
-        if (!settings.hasShownTransition) {
-            await playTransition();
-            settings.hasShownTransition = true;
+        await makeLoadingScreen();
+        await bootGame();
+        while (true) {
+            if (!settings.hasShownTransition) {
+                await playTransition();
+                settings.hasShownTransition = true;
+            };
+            document.addEventListener('keydown', establishUserInputDown);
+            document.addEventListener('keyup', establishUserInputUp);
+            document.addEventListener('mousemove', establishMouseInput);
+            document.addEventListener('click', establishMouseClick);
+            await playLevel();
+            document.removeEventListener('keydown', establishUserInputDown);
+            document.removeEventListener('keyup', establishUserInputUp);
+            document.removeEventListener('mousemove', establishMouseInput);
+            document.removeEventListener('click', establishMouseClick);
+            const retry = await optionsOnDeath();
+            if (retry) {
+                reloadGame();
+            } else {
+                break;
+            };
         };
-        document.addEventListener('keydown', establishUserInputDown);
-        document.addEventListener('keyup', establishUserInputUp);
-        document.addEventListener('mousemove', establishMouseInput);
-        document.addEventListener('click', establishMouseClick);
-        await playLevel();
-        document.removeEventListener('keydown', establishUserInputDown);
-        document.removeEventListener('keyup', establishUserInputUp);
-        document.removeEventListener('mousemove', establishMouseInput);
-        document.removeEventListener('click', establishMouseClick);
-        // Give option to retry or reset
-        reloadGame();
     };
 };
 
