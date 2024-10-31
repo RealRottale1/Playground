@@ -13,6 +13,8 @@ const settings = {
     currentWave: 0,
     timeBeforeNextWave: 5000,
     maxTimeBeforeNextWave: 18000,
+    startPosition: [250, 250],
+    hasShownTransition: false,
 };
 
 function makeImage(url) {
@@ -230,8 +232,8 @@ class playerProps {
     };
     // movment stuff
     playerMovmentAmount = 2.5;
-    x = 250;
-    y = 250;
+    x = settings.startPosition[0];
+    y = settings.startPosition[1];
     velocityX = 0;
     velocityY = 0;
     keyMovment = {
@@ -482,12 +484,10 @@ const levelData = [
     {
         background: gameTextures.plainsBackground,
         foreground: gameTextures.plainsForeground,
+        transition: [
+            [gameTextures.missingTexture, 2000],[gameTextures.goblinFullHealth, 3000],
+        ],
         waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
-            /*[
-                [200, goblin, [null, null], [500, 500]],
-                [500, goblin, [weaponDefaultSword, null], [0, 500]],
-                [800, goblin, [null, weaponBow], [500, 0]],
-            ],*/
             [
                 [200, goblin, [weaponDefaultSword, weaponBow], [500, 500]],
                 [200, goblin, [weaponDefaultSword, weaponBow], [0, 500]],
@@ -551,7 +551,6 @@ function makeLoadingScreen() {
 
 // boots up game
 function bootGame() {
-    // generates stuff like bushes
     settings.currentLevel = 0;
     settings.currentWave = 0;
     amountSummoned = 0;
@@ -565,6 +564,38 @@ function bootGame() {
     return new Promise((success) => {
         success();
     });
+};
+
+// reloads game
+function reloadGame() {
+    settings.currentWave = 0;
+    amountSummoned = 0;
+    stillEnemiesToSummon = true;
+    gameClock = 0;
+    
+    usePlayerProps.x = settings.startPosition[0];
+    usePlayerProps.y = settings.startPosition[1];
+    usePlayerProps.health = 100;
+    usePlayerProps.maxHealth = 100;
+    usePlayerProps.velocityX = 0;
+    usePlayerProps.velocityY = 0;
+    usePlayerProps.keyMovment.w = 0;
+    usePlayerProps.keyMovment.a = 0;
+    usePlayerProps.keyMovment.s = 0;
+    usePlayerProps.keyMovment.d = 0;
+    usePlayerProps.mouseX = 0;
+    usePlayerProps.mouseY = 0;
+    usePlayerProps.isSwinging = false;
+    usePlayerProps.canAttack = true;
+    usePlayerProps.attacking = false;
+    usePlayerProps.isShooting = false;
+    usePlayerProps.canShoot = true;
+    usePlayerProps.shooting = false;
+    usePlayerProps.currentWeapon = 'sword';
+
+    currentEnemies.splice(0,currentEnemies.length);
+    currentBullets.splice(0,currentBullets.length);
+    currentDropItems.splice(0,currentDropItems.length);
 };
 
 // handles setting key movment
@@ -770,11 +801,27 @@ function summonEnemy(enemyData) {
     currentEnemies.push(summonedEnemy);
 };
 
+// plays transition
+async function wait(time) {
+    return new Promise((success) => {
+        setTimeout(() => {success()}, time);
+    });
+};
+
+async function playTransition() {
+    const transitionSlides = levelData[settings.currentLevel].transition.length;
+    for (let i = 0; i < transitionSlides; i++) {
+        const useImageData = levelData[settings.currentLevel].transition[i];
+        ctx.drawImage(useImageData[0], 0, 0);
+        await wait(useImageData[1]);
+    };
+};
+
 // main game loop
 let amountSummoned = 0;
 let stillEnemiesToSummon = true;
 let gameClock = 0;
-async function playGame() {
+async function playLevel() {
     while (true) {
         // Clock stuff
         gameClock += 1;
@@ -901,19 +948,26 @@ async function playGame() {
 
 // handles core loop
 async function runGame() {
+    await makeLoadingScreen();
+    await bootGame();
     while (true) {
-        await makeLoadingScreen();
-        await bootGame();
-
+        // Check if the round was won and +1 to currentLevel
+        // settings.hasShownTransition = false;
+        if (!settings.hasShownTransition) {
+            await playTransition();
+            settings.hasShownTransition = true;
+        };
         document.addEventListener('keydown', establishUserInputDown);
         document.addEventListener('keyup', establishUserInputUp);
         document.addEventListener('mousemove', establishMouseInput);
         document.addEventListener('click', establishMouseClick);
-        await playGame();
+        await playLevel();
         document.removeEventListener('keydown', establishUserInputDown);
         document.removeEventListener('keyup', establishUserInputUp);
         document.removeEventListener('mousemove', establishMouseInput);
         document.removeEventListener('click', establishMouseClick);
+        // Give option to retry or reset
+        reloadGame();
     };
 };
 
