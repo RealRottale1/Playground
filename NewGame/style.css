@@ -1,3 +1,7 @@
+body * {
+    font-family: 'Black Ops One', system-ui;
+}
+
 #mainDiv {
     display: flex;
     align-items: center;
@@ -13,7 +17,7 @@
 }
 
 #playButton, #retryButton {
-    position: fixed;
+    position: absolute;
     top: 187.5px;
     left: calc(50%-125px);
     height: 125px;
@@ -30,7 +34,7 @@
 }
 
 #resetButton {
-    position: fixed;
+    position: absolute;
     top: 325px;
     left: calc(50%-75px);
     height: 75px;

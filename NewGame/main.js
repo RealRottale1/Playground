@@ -11,7 +11,7 @@ const settings = {
     bulletSpeed: -5,
     currentLevel: 0,
     currentWave: 0,
-    timeBeforeNextWave: 5000,
+    timeBeforeNextWave: 2500,
     maxTimeBeforeNextWave: 18000,
     startPosition: [250, 250],
     hasShownTransition: false,
@@ -843,9 +843,15 @@ async function wait(time) {
 };
 
 async function drawWaveNumber(i) {
-    ctx.font = '25px Georgia';
-    const multiplier = 1+(1/(settings.waveDisplayTime-50));
-    const useOpacity = (i <= 50 ? 1 : (settings.waveDisplayTime-i*multiplier)/settings.waveDisplayTime);
+    ctx.font = '25px Black Ops One';
+    let useOpacity = 1;
+    if (i < settings.waveDisplayTime/3) {
+        useOpacity = (i/(settings.waveDisplayTime/3));
+    } else if (i >= settings.waveDisplayTime/3 && i <= settings.waveDisplayTime*2/3) {
+        useOpacity = 1;
+    } else {
+        useOpacity = ((settings.waveDisplayTime/i)*2)-2;
+    };
     ctx.fillStyle = `rgba(0, 0, 0, ${useOpacity})`;
     ctx.fillText(`Wave ${settings.currentWave+1}`, mainCanvas.width*.8, mainCanvas.height-25, 100);
 };
@@ -970,16 +976,20 @@ async function playLevel() {
 
         if (!stillEnemiesToSummon && currentEnemies.length <= 0) {
             console.log('Completed wave! Next wave!');
-            gameClock = 0;
-            settings.currentWave += 1;
-            amountSummoned = 0;
             stillEnemiesToSummon = true;
+            setTimeout(() => {
+                if (amountSummoned != 0) {
+                    settings.currentWave += 1;
+                    amountSummoned = 0;
+                    gameClock = 0;
+                };
+            }, settings.timeBeforeNextWave);
         };
 
         // Final drawing
         ctx.drawImage(levelData[settings.currentLevel].foreground, 0, 0, mainCanvas.width, mainCanvas.height);
         drawHUD();
-        if (gameClock <= settings.waveDisplayTime) {
+        if (gameClock <= settings.waveDisplayTime && levelData[settings.currentLevel].waves[settings.currentWave]) {
             drawWaveNumber(gameClock);
         };
 
