@@ -7,6 +7,7 @@ const ctx = mainCanvas.getContext('2d');
 // variables and settings
 // settings
 const settings = {
+    gridRes: 25,
     refreshRate: 10,
     mouseSwingRate: 50,
     dropHearSize: [50, 50],
@@ -314,12 +315,74 @@ class goblin {
     currentWeapon = 'sword';
     weaponData = new weaponHands;
     bowData = null;
+    movePath = [];
+    lineIntersectsBox(sPos, ePos, enemyOutlines) {
+        const outlineLength = enemyOutlines.length;
+        for (let i = 0; i < outlineLength; i++) {
+            const outline = enemyOutlines[i]; 
+            const tx1 = (outline[0] - sPos[0]) / (ePos[0] - sPos[0]);
+            const tx2 = (outline[2] - sPos[0]) / (ePos[0] - sPos[0]);
+            const ty1 = (outline[1] - sPos[1]) / (ePos[1] - sPos[1]);
+            const ty2 = (outline[3] - sPos[1]) / (ePos[1] - sPos[1]);
+
+            if (x1 == x2) {
+                tx1 = tx2 = (sPos[0] >= outline[0] && sPos[0] <= outline[2]) ? 0 : (sPos[0] < outline[0] ? Infinity : -Infinity);
+            };
+            if (y1 == y2) {
+                ty1 = ty2 = (sPos[1] >= outline[1] && sPos[1] <= outline[3]) ? 0 : (sPos[1] < outline[1] ? Infinity : -Infinity);
+            }
+
+            const tEnter = Math.max(Math.min(tx1, tx2), Math.min(ty1, ty2));
+            const tExit = Math.min(Math.max(tx1, tx2), Math.max(ty1, ty2));
+
+            if (tEnter <= tExit && tExit >= 0 && tEnter <= 1) {
+                return(true);
+            };
+        };
+    };
+    getEnemyPositions() {
+        const enemyOutlines = [];
+        const enemyLength = currentEnemies.length;
+        for (let i = 0; i < enemyLength; i++) {
+            const enemy = currentEnemies[i];
+            if (enemy !== this) {
+                enemyOutlines.push([
+                    enemy.x - enemy.sizeX,
+                    enemy.y - enemy.sizeY,
+                    enemy.x + enemy.sizeX,
+                    enemy.y + enemy.sizeY,
+                ]);
+            };
+        };
+        return((enemyOutlines.length > 0) ? enemyOutlines : null);
+    }
+    /*
+        Go 
+    */
+    findNewPath(enemyOutlines) {
+        
+    };
     move(dX, dY, distance) {
+        const enemyOutlines = getEnemyPositions();
+        // Check if last position close to player current pos. If no then reset path
+        if (this.movePath.length == 0 || this.lineIntersectsBox([this.x, this.y], this.movePath[0], enemyOutlines)) {
+            findNewPath(enemyOutlines);
+        } else {
+            // Follow path
+        };
+    };
+    /*
+        List of grid points to go to in a straight line
+        It checks if the now to next is blocked and if so re-routes
+
+    */
+    /* Straight line move
         const nX = dX/distance;
         const nY = dY/distance;
+        console.log(nX +' , '+nY);
         this.x += nX*this.movementSpeed;
         this.y += nY*this.movementSpeed;
-    };
+    */
     attack() {
         if (this.canAttack) {
             this.canAttack = false;
@@ -610,8 +673,8 @@ function handleShop() {
     });
 };
 
-settings.currentLevel = 1;
-handleShop();
+//settings.currentLevel = 1;
+//handleShop();
 
 // loads main menu
 function makeLoadingScreen() {
