@@ -315,73 +315,56 @@ class goblin {
     currentWeapon = 'sword';
     weaponData = new weaponHands;
     bowData = null;
-    movePath = [];
-    lineIntersectsBox(sPos, ePos, enemyOutlines) {
-        const outlineLength = enemyOutlines.length;
-        for (let i = 0; i < outlineLength; i++) {
-            const outline = enemyOutlines[i]; 
-            const tx1 = (outline[0] - sPos[0]) / (ePos[0] - sPos[0]);
-            const tx2 = (outline[2] - sPos[0]) / (ePos[0] - sPos[0]);
-            const ty1 = (outline[1] - sPos[1]) / (ePos[1] - sPos[1]);
-            const ty2 = (outline[3] - sPos[1]) / (ePos[1] - sPos[1]);
+    move(dX, dY, distance) {
+        const nX = dX/distance;
+        const nY = dY/distance;
+        this.x += nX*this.movementSpeed;
+        this.y += nY*this.movementSpeed;
 
-            if (x1 == x2) {
-                tx1 = tx2 = (sPos[0] >= outline[0] && sPos[0] <= outline[2]) ? 0 : (sPos[0] < outline[0] ? Infinity : -Infinity);
-            };
-            if (y1 == y2) {
-                ty1 = ty2 = (sPos[1] >= outline[1] && sPos[1] <= outline[3]) ? 0 : (sPos[1] < outline[1] ? Infinity : -Infinity);
-            }
-
-            const tEnter = Math.max(Math.min(tx1, tx2), Math.min(ty1, ty2));
-            const tExit = Math.min(Math.max(tx1, tx2), Math.max(ty1, ty2));
-
-            if (tEnter <= tExit && tExit >= 0 && tEnter <= 1) {
-                return(true);
-            };
-        };
-    };
-    getEnemyPositions() {
-        const enemyOutlines = [];
         const enemyLength = currentEnemies.length;
         for (let i = 0; i < enemyLength; i++) {
             const enemy = currentEnemies[i];
-            if (enemy !== this) {
-                enemyOutlines.push([
-                    enemy.x - enemy.sizeX,
-                    enemy.y - enemy.sizeY,
-                    enemy.x + enemy.sizeX,
-                    enemy.y + enemy.sizeY,
-                ]);
+            if (enemy != this) {
+                const enemyDifX = enemy.x - this.x;
+                const enemyDifY = enemy.y - this.y;
+                const enemyDist = Math.sqrt(enemyDifX**2 + enemyDifY**2);
+                const averageHitBox = (this.hitBoxX+this.hitBoxY)/2;
+                const averageEnemyHitBox = (enemy.hitBoxX+enemy.hitBoxY)/2;
+                const strength = (enemyDist>averageHitBox ? 0 : -1*(averageHitBox-enemyDist)/averageHitBox);
+                if (averageHitBox > averageEnemyHitBox) { // If you are bigger you push them
+                    enemy.x += -1*strength*enemyDifX;
+                    enemy.y += -1*strength*enemyDifY;
+                } else {
+                    this.x += strength*enemyDifX;
+                    this.y += strength*enemyDifY;
+                };
+                console.log(strength*enemyDifX);
             };
         };
-        return((enemyOutlines.length > 0) ? enemyOutlines : null);
-    }
-    /*
-        Go 
-    */
-    findNewPath(enemyOutlines) {
-        
-    };
-    move(dX, dY, distance) {
-        const enemyOutlines = getEnemyPositions();
-        // Check if last position close to player current pos. If no then reset path
-        if (this.movePath.length == 0 || this.lineIntersectsBox([this.x, this.y], this.movePath[0], enemyOutlines)) {
-            findNewPath(enemyOutlines);
-        } else {
-            // Follow path
-        };
     };
     /*
-        List of grid points to go to in a straight line
-        It checks if the now to next is blocked and if so re-routes
+const enemyDifX = enemy.x - this.x;
+                const enemyDifY = enemy.y - this.y;
+                let enemyDist = Math.sqrt(enemyDifX**2 + enemyDifY**2);
+                if (enemyDist < 100) {
+                    if (enemyDist < 1) {
+                        enemyDist = 1;
+                    };
+                    const strength = (100 - enemyDist)/enemyDist;
+                    console.log(strength);
+                };
 
-    */
-    /* Straight line move
-        const nX = dX/distance;
-        const nY = dY/distance;
-        console.log(nX +' , '+nY);
-        this.x += nX*this.movementSpeed;
-        this.y += nY*this.movementSpeed;
+
+                const minSeperation = (this.hitBoxX+this.hitBoxY)/2;
+                const tDX = enemy.x - this.x;
+                const tDY = enemy.y - this.y;
+                const disFromEnemy = Math.sqrt(tDX**2 + tDY**2);
+                console.log(disFromEnemy);
+                if (disFromEnemy < minSeperation+5) {
+                    const force = (minSeperation - disFromEnemy)/disFromEnemy;
+                    this.x += tDX*force*this.movementSpeed;
+                    this.y +=  tDY*force*this.movementSpeed;
+                };
     */
     attack() {
         if (this.canAttack) {
@@ -416,6 +399,9 @@ class goblin {
     rushClock= [0, 500];
     isRushing = false;
     shouldRush() {
+        if (this.cantRush) {
+            return(false);
+        }
         let enemiesShooting = 0;
         const summonLength = currentEnemies.length;
         for (let i = 0; i < summonLength; i++) {
@@ -501,6 +487,7 @@ class armorGoblin extends goblin {
 class bigGoblin extends goblin {
     constructor() {
         super();
+        this.cantRush = true;
         this.fullHealth = gameTextures.bigGoblinFullHealth;
         this.halfHealth = gameTextures.bigGoblinHalfHealth;
         this.nearDeath = gameTextures.bigGoblinNearDeath;
@@ -560,12 +547,20 @@ const levelData = [
         ],
         waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
             [
-                [200, goblin, [weaponDefaultSword, weaponBow], [500, 500]],
+                [200, bigGoblin, [weaponHands, null], [450, 500]],
+                [200, goblin, [weaponHands, null], [0, 450]],
+                [200, goblin, [weaponHands, null], [250, 500]],
+                [200, bigGoblin,[weaponHands, null], [350, 500]],
+                [200, goblin, [weaponHands, null], [0, 350]],
+                [200, goblin, [weaponHands, null], [150, 500]],
             ],
             [
                 [200, goblin, [weaponDefaultSword, weaponBow], [450, 500]],
                 [200, goblin, [weaponDefaultSword, weaponBow], [0, 450]],
                 [200, goblin, [weaponDefaultSword, weaponBow], [250, 500]],
+                [200, goblin, [weaponDefaultSword, weaponBow], [350, 500]],
+                [200, goblin, [weaponDefaultSword, weaponBow], [0, 350]],
+                [200, goblin, [weaponDefaultSword, weaponBow], [150, 500]],
             ],
         ],
         shopItems: {
