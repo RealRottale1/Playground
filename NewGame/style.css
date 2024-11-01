@@ -1,7 +1,3 @@
-body * {
-    font-family: 'Black Ops One', system-ui;
-}
-
 #mainDiv {
     display: flex;
     align-items: center;
@@ -11,12 +7,15 @@ body * {
 }
 
 #mainCanvas {
+    z-index: 5;
     width: 500px;
     height: 500px;
     background-color: black;
 }
 
 #playButton, #retryButton {
+    z-index: 6;
+    font-family: 'Black Ops One', system-ui;
     position: absolute;
     top: 187.5px;
     left: calc(50%-125px);
@@ -34,6 +33,8 @@ body * {
 }
 
 #resetButton {
+    z-index: 6;
+    font-family: 'Black Ops One', system-ui;
     position: absolute;
     top: 325px;
     left: calc(50%-75px);
@@ -48,4 +49,70 @@ body * {
     border: 0px;
     padding: 0px;
     margin: 0px;
+}
+
+#shopDiv {
+    position: absolute;
+    width: 500px;
+    height: 500px;
+    border: 0px;
+    padding: 0px;
+    margin: 0px;
+    opacity: 0;
+    background-color: rgba(0, 0, 0, 0);
+}
+
+#shopOpt1 {
+    top: 190px;
+    left: 20px;
+}
+
+#shopOpt2 {
+    top: 345px;
+    left: 20px;
+}
+
+#shopOpt3 {
+    top: 190px;
+    right: 20px;
+}
+
+#shopOpt4 {
+    top: 345px;
+    right: 20px;
+}
+
+.shopOption {
+    z-index: 0;
+    position: absolute;
+    height: 150px;
+    width: 225px;
+    display: grid;
+    grid-row: 1fr 1fr 1fr 1fr 1fr;
+    /*justify-content: center;
+    align-items: center;*/
+    font-size: 35px;
+    border-radius: 10px;
+    border: 0px;
+    padding: 0px;
+    margin: 0px;
+    background-color: rgb(207, 156, 116);
+    border: 2.5px solid rgb(138, 93, 59);
+}
+
+.shopOption:hover {
+    cursor: pointer;
+    background-color: rgb(175, 130, 96);
+    border: 2.5px solid rgb(84, 52, 27);
+}
+
+.shopOption .pName{
+    text-align: center;
+    border-bottom: 2.5px dotted black;
+}
+
+.shopOption * {
+    text-align: left;
+    margin: 0;
+    font-size: 20px;
 }

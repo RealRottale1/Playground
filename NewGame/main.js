@@ -1,5 +1,7 @@
 const mainDiv = document.getElementById('mainDiv');
 const mainCanvas = document.getElementById('mainCanvas');
+const shopItems = document.getElementById('shopDiv');
+const shopOptions = shopItems.children;
 const ctx = mainCanvas.getContext('2d');
 
 // variables and settings
@@ -77,6 +79,7 @@ class weaponHands {
     attackDuration = 500;
     attackCoolDown = 150;
     texture = null;
+    displayName = 'Hands';
     sizeX = 0;
     sizeY = 0;
     offset = 0;
@@ -143,6 +146,7 @@ class weaponBow extends weaponHands {
         this.attackCoolDown = 0;
         this.texture = null;
         this.texture = gameTextures.weaponBow;
+        this.displayName = 'Bow';
         this.sizeX = 50;
         this.sizeY = 50;
         this.yOffset = -75;
@@ -167,6 +171,7 @@ class weaponCrossbow extends weaponBow {
         this.fireRate = 5000;
         this.useBullet = crossbow;
         this.texture = gameTextures.weaponCrossbow;
+        this.displayName = 'Crossbow';
     };
 };
 
@@ -176,6 +181,7 @@ class weaponGoldBow extends weaponBow {
         this.fireRate = 750;
         this.useBullet = arrow;
         this.texture = gameTextures.weaponGoldBow;
+        this.displayName = 'Gold Bow';
     };
 };
 
@@ -188,6 +194,7 @@ class weaponDefaultSword extends weaponHands {
         this.attackDuration = 750;
         this.attackCoolDown = 250;
         this.texture = gameTextures.weaponDefaultSword;
+        this.displayName = 'Sword';
         this.sizeX = 50;
         this.sizeY = 50;
         this.offset = -50;
@@ -203,6 +210,7 @@ class weaponLongSword extends weaponHands {
         this.attackDuration = 800;
         this.attackCoolDown = 950;
         this.texture = gameTextures.weaponLongSword;
+        this.displayName = 'Long Sword';
         this.sizeX = 50;
         this.sizeY = 100;
         this.offset = -75;
@@ -497,6 +505,14 @@ const levelData = [
                 [200, goblin, [weaponDefaultSword, weaponBow], [250, 500]],
             ],
         ],
+        shopItems: {
+            weapons: [
+                weaponDefaultSword, weaponLongSword,
+            ],
+            bows: [
+                weaponGoldBow, weaponBow,
+            ],
+        },
     },
 ];
 
@@ -565,6 +581,38 @@ function optionsOnDeath() {
     });
 }
 
+function handleShop() {
+    ctx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+    ctx.fillStyle = 'rgb(0 255 0)';
+    ctx.beginPath();
+    ctx.rect(0, 0, mainCanvas.width, mainCanvas.height);
+    ctx.fill();
+
+    const useShopGear = [levelData[settings.currentLevel-1].shopItems.weapons[0], levelData[settings.currentLevel-1].shopItems.weapons[1], levelData[settings.currentLevel-1].shopItems.bows[0], levelData[settings.currentLevel-1].shopItems.bows[1]];
+    shopItems.style.opacity = 1;
+    shopItems.style.zIndex = 10;
+    for (let i = 0; i < 4; i++) {
+        const useGear = new useShopGear[i];
+        const useShopButton = shopOptions[i];
+        const pName = useShopButton.children[0];
+        const pDamage = useShopButton.children[1];
+        const pSwingDamage = useShopButton.children[2];
+        const pRTime = useShopButton.children[3];
+        const pRange = useShopButton.children[4];
+        pName.textContent = useGear.displayName;
+    };
+
+    
+
+
+    return new Promise((results) => {
+        results();
+    });
+};
+
+settings.currentLevel = 1;
+handleShop();
+
 // loads main menu
 function makeLoadingScreen() {
     makeTitleScreenBackground()
@@ -602,6 +650,7 @@ function bootGame() {
 
 // reloads game
 function reloadGame() {
+    settings.currentLevel = 0;
     settings.currentWave = 0;
     amountSummoned = 0;
     stillEnemiesToSummon = true;
@@ -975,7 +1024,6 @@ async function playLevel() {
         };
 
         if (!stillEnemiesToSummon && currentEnemies.length <= 0) {
-            console.log('Completed wave! Next wave!');
             stillEnemiesToSummon = true;
             setTimeout(() => {
                 if (amountSummoned != 0) {
@@ -1021,11 +1069,16 @@ async function runGame() {
             document.removeEventListener('keyup', establishUserInputUp);
             document.removeEventListener('mousemove', establishMouseInput);
             document.removeEventListener('click', establishMouseClick);
-            const retry = await optionsOnDeath();
-            if (retry) {
+            if (usePlayerProps.health > 0) {
+                await handleShop();
                 reloadGame();
             } else {
-                break;
+                const retry = await optionsOnDeath();
+                if (retry) {
+                    reloadGame();
+                } else {
+                    break;
+                };
             };
         };
     };
