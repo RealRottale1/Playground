@@ -361,14 +361,6 @@ function makePathVisible(source, riskMap) {
     ctx.closePath();
 };
 
-function distanceFromPlayer(position) {
-    const [x, y] = position;
-    const dX = usePlayerProps.x - x;
-    const dY = usePlayerProps.y - y;
-    const distance = Math.sqrt(dX**2 + dY**2); 
-    return(distance);
-};
-
 function getLeastRisky(x, y, currentDirection, riskMap, satisfiedDistance) {
     while (true) {
         const directions = [ // !!!!!!!!should be 25 because smallest!!!!!!!!!!!!
@@ -391,7 +383,7 @@ function getLeastRisky(x, y, currentDirection, riskMap, satisfiedDistance) {
         // -1=go back a point, [key]
         // 0=switching direction [key, xBeforePivot, yBeforePivot, x, y, direction]
         // 1=met satisfiedDistance requirement [key, currentX, currentY]
-        if (!bestDirectionIndex) {
+        if (!bestDirectionIndex || (Math.abs(currentDirection - bestDirectionIndex) == 4)) {
             return([-1]);
         } else {
             const maxDistance = Math.sqrt(mainCanvas.width**2 + mainCanvas.height**2);
@@ -444,7 +436,7 @@ function generatePath(source, riskMap) {
 
             console.log(path);
             if (retreadedPath(path)) {
-                console.log('This is where it should reroute');
+                console.log('Multi-step retread detected!');
                 break;
             };
         } else { // reached saisfied distance
