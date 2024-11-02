@@ -408,7 +408,18 @@ function getLeastRisky(x, y, currentDirection, riskMap, satisfiedDistance) {
 };
 
 function retreadedPath(path) {
-    for 
+    const pathLength = path.length;
+    for (let i = 0; i < pathLength; i++) {
+        for (let j = 0; j < pathLength; j++) {
+            if (path[i][0] == path[j][0] && path[i][1] == path[j][1]) {
+                if (i != j) {
+                    console.log('omg match');
+                    return(true);
+                };
+            };
+        };
+    };
+    return(false);
 };
 
 function generatePath(source, riskMap) {
@@ -431,9 +442,9 @@ function generatePath(source, riskMap) {
             currentY = data[4];
             currentDirection = data[5];
 
+            console.log(path);
             if (retreadedPath(path)) {
                 console.log('This is where it should reroute');
-                console.log(path);
                 break;
             };
         } else { // reached saisfied distance
@@ -766,7 +777,7 @@ const levelData = [
         waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
             [
                 [200, goblin, [weaponDefaultSword, weaponBow], [300, 200]],
-                [200, goblin, [weaponDefaultSword, weaponBow], [350, 250]],
+                [200, goblin, [weaponDefaultSword, weaponBow], [350, 150]],
                 [200, bigGoblin, [weaponDefaultSword, weaponBow], [450, 250]],
                 [200, bigGoblin, [weaponDefaultSword, weaponBow], [250, 250]],
                 [200, goblin, [null, weaponBow], [0, 250]],
