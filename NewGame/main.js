@@ -244,7 +244,7 @@ class playerProps {
         };
     };
     // movment stuff
-    playerMovmentAmount = 2;
+    playerMovmentAmount = 2.5;
     x = settings.startPosition[0];
     y = settings.startPosition[1];
     velocityX = 0;
@@ -276,7 +276,93 @@ class playerProps {
     shooting = false;
     currentWeapon = 'sword';
     weaponData = new weaponDefaultSword;
-    bowData = new weaponCrossbow;
+    bowData = new weaponBow;
+};
+
+function riskDistanceFromPlayer(x, y) {
+    const pdX = (Math.round(usePlayerProps.x/5)*5) - x;
+    const pdY = (Math.round(usePlayerProps.y/5)*5) - y;
+    const playerDistance = Math.sqrt(pdX**2 + pdY**2); 
+
+    const maxDistance = Math.sqrt(mainCanvas.width**2 + mainCanvas.height**2);
+    const nPD = playerDistance/maxDistance;
+
+    return(nPD);
+};
+
+function generateRisks(source, riskMap) {
+    const enemyLength = currentEnemies.length;
+    for (let i = 0; i < enemyLength; i++) {
+        const enemy = currentEnemies[i];
+        if (enemy != source) {
+            console.log(i);
+            const nearestX = Math.round(enemy.x / 5) * 5;
+            const nearestY = Math.round(enemy.y / 5) * 5;
+
+            const minX = nearestX - enemy.hitBoxX;
+            const minY = nearestY - enemy.hitBoxY;
+            const maxX = nearestX + enemy.hitBoxX;
+            const maxY = nearestY + enemy.hitBoxY;
+            for (let x = minX; x < maxX; x+=5) {
+                if (x >= 0 && x <= mainCanvas.width) {
+                    for (let y = minY; y < maxY; y+=5) {
+                        if (y >= 0 && y <= mainCanvas.height) {
+                            if (!riskMap.get(x)[y]) {
+                                riskMap.get(x)[y] = {
+                                    risk: 999,
+                                };
+                            };
+                        };
+                    };
+                };
+            };
+        };
+    };
+
+    for (let x = 0; x < mainCanvas.width; x+=5) {
+        if (Object.entries(riskMap.get(x)).length <= 100) {
+            for (let y = 0; y < mainCanvas.height; y+=5) {
+                if (!riskMap.get(x)[y]) {
+                    riskMap.get(x)[y] = {
+                        risk: riskDistanceFromPlayer(x, y),
+                    };
+                };
+            };
+        };
+    };
+};
+
+function fillRiskMap(source, riskMap) {
+    for (let mapX = 0; mapX < mainCanvas.width; mapX+=5) { // Gets riskMap started
+        riskMap.set(mapX, {});
+    };
+
+    generateRisks(source, riskMap) // Generates risks
+
+
+    for (let x = 0; x < mainCanvas.width; x+=5) {
+        let t = String(x)+': ';
+        for (let y = 0; y < mainCanvas.height; y+=5) {
+            ctx.beginPath();
+            ctx.fillStyle = `rgb(${(riskMap.get(x)[y].risk)*255}, ${(riskMap.get(x)[y].risk)*255}, ${(riskMap.get(x)[y].risk)*255})`;
+            ctx.rect(x, y, 5, 5);
+            ctx.fill();
+            ctx.closePath();
+            t = t + String(riskMap.get(x)[y].risk) + ', ';
+        };
+        console.log(t);
+    };
+    ctx.beginPath();
+    ctx.fillStyle = 'rgb(255, 125, 255)';
+    ctx.rect(source.x-(source.sizeX/2), source.y-(source.sizeY/2), source.sizeX, source.sizeY);
+    ctx.fill();
+    ctx.closePath();
+    debugger;
+};
+
+function makePath(source) {
+    const riskMap = new Map();
+    fillRiskMap(source, riskMap);
 };
 
 class goblin {
@@ -318,81 +404,7 @@ class goblin {
     currentWeapon = 'sword';
     weaponData = new weaponHands;
     bowData = null;
-    move(dX, dY, distance) {
-        const nX = dX/distance;
-        const nY = dY/distance;
-        this.x += nX*this.movementSpeed;
-        this.y += nY*this.movementSpeed;
-
-        const enemyLength = currentEnemies.length;
-        for (let i = 0; i < enemyLength; i++) {
-            const enemy = currentEnemies[i];
-            if (enemy != this) {
-                const enemyDifX = enemy.x - this.x;
-                const enemyDifY = enemy.y - this.y;
-                const enemyDist = Math.sqrt(enemyDifX**2 + enemyDifY**2);
-                const averageHitBox = (this.hitBoxX+this.hitBoxY)/2;
-                const averageEnemyHitBox = (enemy.hitBoxX+enemy.hitBoxY)/2;
-                const strength = (enemyDist>averageHitBox ? 0 : -1*(averageHitBox-enemyDist)/averageHitBox);
-                if (averageHitBox > averageEnemyHitBox) { // If you are bigger you push them
-                    enemy.x += -1*strength*enemyDifX;
-                    enemy.y += -1*strength*enemyDifY;
-                } else {
-                    this.x += strength*enemyDifX;
-                    this.y += strength*enemyDifY;
-                };
-                console.log(strength*enemyDifX);
-            };
-        };
-    };
-    /*
-const enemyDifX = enemy.x - this.x;
-                const enemyDifY = enemy.y - this.y;
-                let enemyDist = Math.sqrt(enemyDifX**2 + enemyDifY**2);
-                if (enemyDist < 100) {
-                    if (enemyDist < 1) {
-                        enemyDist = 1;
-                    };
-                    const strength = (100 - enemyDist)/enemyDist;
-                    console.log(strength);
-                };
-
-
-                const minSeperation = (this.hitBoxX+this.hitBoxY)/2;
-                const tDX = enemy.x - this.x;
-                const tDY = enemy.y - this.y;
-                const disFromEnemy = Math.sqrt(tDX**2 + tDY**2);
-                console.log(disFromEnemy);
-                if (disFromEnemy < minSeperation+5) {
-                    const force = (minSeperation - disFromEnemy)/disFromEnemy;
-                    this.x += tDX*force*this.movementSpeed;
-                    this.y +=  tDY*force*this.movementSpeed;
-                };
-    */
-    attack() {
-        if (this.canAttack) {
-            this.canAttack = false;
-            this.attacking = true;
-            usePlayerProps.health -= this.weaponData.damage*this.attackDamageMultiplier;
-            setTimeout(() => {
-                this.attacking = false;
-                setTimeout(() => {
-                    this.canAttack = true;
-                }, this.weaponData.attackCoolDown);
-            }, this.weaponData.attackDuration);
-        };
-    };
-    shoot() {
-        if (this.canShoot) {
-            this.canShoot = false;
-            this.shooting = true;
-            this.bowData.shoot(this.x, usePlayerProps.x, this.y, usePlayerProps.y, 'enemy');
-            setTimeout(() => {
-                this.canShoot = true;
-                this.shooting = false;
-            }, this.bowData.fireRate);
-        };
-    };
+    
     // movment/tick stuff
     movementSpeed = 1.5;
     checkTick = [0, 10000];
@@ -401,25 +413,23 @@ const enemyDifX = enemy.x - this.x;
     checkToRushTick = 50;
     rushClock= [0, 500];
     isRushing = false;
-    shouldRush() {
-        if (this.cantRush) {
-            return(false);
-        }
-        let enemiesShooting = 0;
-        const summonLength = currentEnemies.length;
-        for (let i = 0; i < summonLength; i++) {
-            if (currentEnemies[i].shooting && currentEnemies[i].canAttack && !currentEnemies[i].isRushing) {
-                enemiesShooting += 1;
+
+    tickAction() {
+       console.log(makePath(this));
+    };    
+};
+/*
+for (let mapY = 0; mapY < 500; mapY+=5) {
+            riskMap.get(mapX)[mapY] = {
+                y: mapY,
+                risk: getInitialRisk(source),
             };
         };
-        if (summonLength > 2 && ((enemiesShooting/summonLength) >= .5)) {
-            return(true);
-        } else {
-            return(false);
-        };
-    };
-    tickAction() {
-        // math stuff
+
+*/
+
+/*
+ // math stuff
         this.checkTick[0] += 1;
         const dX = usePlayerProps.x - this.x;
         const dY = usePlayerProps.y - this.y;
@@ -472,8 +482,100 @@ const enemyDifX = enemy.x - this.x;
             //console.log('move');
             this.move(dX, dY, distance);
         };
-    };    
-};
+move(dX, dY, distance) {
+        const nX = dX/distance;
+        const nY = dY/distance;
+        this.x += nX*this.movementSpeed;
+        this.y += nY*this.movementSpeed;
+
+        const enemyLength = currentEnemies.length;
+        for (let i = 0; i < enemyLength; i++) {
+            const enemy = currentEnemies[i];
+            if (enemy != this) {
+                const enemyDifX = enemy.x - this.x;
+                const enemyDifY = enemy.y - this.y;
+                const enemyDist = Math.sqrt(enemyDifX**2 + enemyDifY**2);
+                const averageHitBox = (this.hitBoxX+this.hitBoxY)/2;
+                const averageEnemyHitBox = (enemy.hitBoxX+enemy.hitBoxY)/2;
+                const strength = (enemyDist>averageHitBox ? 0 : -1*(averageHitBox-enemyDist)/averageHitBox);
+                if (averageHitBox > averageEnemyHitBox) { // If you are bigger you push them
+                    enemy.x += -1*strength*enemyDifX;
+                    enemy.y += -1*strength*enemyDifY;
+                } else {
+                    this.x += strength*enemyDifX;
+                    this.y += strength*enemyDifY;
+                };
+                console.log(strength*enemyDifX);
+            };
+        };
+    };
+    ///
+const enemyDifX = enemy.x - this.x;
+                const enemyDifY = enemy.y - this.y;
+                let enemyDist = Math.sqrt(enemyDifX**2 + enemyDifY**2);
+                if (enemyDist < 100) {
+                    if (enemyDist < 1) {
+                        enemyDist = 1;
+                    };
+                    const strength = (100 - enemyDist)/enemyDist;
+                    console.log(strength);
+                };
+
+
+                const minSeperation = (this.hitBoxX+this.hitBoxY)/2;
+                const tDX = enemy.x - this.x;
+                const tDY = enemy.y - this.y;
+                const disFromEnemy = Math.sqrt(tDX**2 + tDY**2);
+                console.log(disFromEnemy);
+                if (disFromEnemy < minSeperation+5) {
+                    const force = (minSeperation - disFromEnemy)/disFromEnemy;
+                    this.x += tDX*force*this.movementSpeed;
+                    this.y +=  tDY*force*this.movementSpeed;
+                };
+    //
+                attack() {
+                    if (this.canAttack) {
+                        this.canAttack = false;
+                        this.attacking = true;
+                        usePlayerProps.health -= this.weaponData.damage*this.attackDamageMultiplier;
+                        setTimeout(() => {
+                            this.attacking = false;
+                            setTimeout(() => {
+                                this.canAttack = true;
+                            }, this.weaponData.attackCoolDown);
+                        }, this.weaponData.attackDuration);
+                    };
+                };
+                shoot() {
+                    if (this.canShoot) {
+                        this.canShoot = false;
+                        this.shooting = true;
+                        this.bowData.shoot(this.x, usePlayerProps.x, this.y, usePlayerProps.y, 'enemy');
+                        setTimeout(() => {
+                            this.canShoot = true;
+                            this.shooting = false;
+                        }, this.bowData.fireRate);
+                    };
+                };
+
+shouldRush() {
+        if (this.cantRush) {
+            return(false);
+        }
+        let enemiesShooting = 0;
+        const summonLength = currentEnemies.length;
+        for (let i = 0; i < summonLength; i++) {
+            if (currentEnemies[i].shooting && currentEnemies[i].canAttack && !currentEnemies[i].isRushing) {
+                enemiesShooting += 1;
+            };
+        };
+        if (summonLength > 2 && ((enemiesShooting/summonLength) >= .5)) {
+            return(true);
+        } else {
+            return(false);
+        };
+    };
+*/
 
 class armorGoblin extends goblin {
     constructor() {
@@ -546,16 +648,12 @@ const levelData = [
         background: gameTextures.plainsBackground,
         foreground: gameTextures.plainsForeground,
         transition: [
-            [gameTextures.missingTexture, 2000],
+            [gameTextures.missingTexture, 10],
         ],
         waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
             [
-                [200, bigGoblin, [weaponHands, null], [450, 500]],
-                [200, goblin, [weaponHands, null], [0, 450]],
-                [200, goblin, [weaponHands, null], [250, 500]],
-                [200, bigGoblin,[weaponHands, null], [350, 500]],
-                [200, goblin, [weaponHands, null], [0, 350]],
-                [200, goblin, [weaponHands, null], [150, 500]],
+                [200, goblin, [weaponDefaultSword, weaponBow], [450, 500]],
+                [200, goblin, [null, weaponBow], [0, 450]],
             ],
             [
                 [200, goblin, [weaponDefaultSword, weaponBow], [450, 500]],
