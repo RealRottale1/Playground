@@ -7,7 +7,7 @@ const ctx = mainCanvas.getContext('2d');
 // variables and settings
 // settings
 const settings = {
-    gridRes: 25,
+    gridRes: 5,
     refreshRate: 10,
     mouseSwingRate: 50,
     dropHearSize: [50, 50],
@@ -280,8 +280,8 @@ class playerProps {
 };
 
 function riskDistanceFromPlayer(x, y) {
-    const pdX = (Math.round(usePlayerProps.x/5)*5) - x;
-    const pdY = (Math.round(usePlayerProps.y/5)*5) - y;
+    const pdX = (Math.round(usePlayerProps.x/settings.gridRes)*settings.gridRes) - x;
+    const pdY = (Math.round(usePlayerProps.y/settings.gridRes)*settings.gridRes) - y;
     const playerDistance = Math.sqrt(pdX**2 + pdY**2); 
 
     const maxDistance = Math.sqrt(mainCanvas.width**2 + mainCanvas.height**2);
@@ -296,16 +296,18 @@ function generateRisks(source, riskMap) {
         const enemy = currentEnemies[i];
         if (enemy != source) {
             console.log(i);
-            const nearestX = Math.round(enemy.x / 5) * 5;
-            const nearestY = Math.round(enemy.y / 5) * 5;
+            const nearestX = Math.round(enemy.x / settings.gridRes) * settings.gridRes;
+            const nearestY = Math.round(enemy.y / settings.gridRes) * settings.gridRes;
+            const nearestHitBoxX = Math.round(((enemy.hitBoxX/2)+(source.hitBoxX/2)) / settings.gridRes) * settings.gridRes;
+            const nearestHitBoxY = Math.round(((enemy.hitBoxY/2)+(source.hitBoxY/2)) / settings.gridRes) * settings.gridRes;
 
-            const minX = nearestX - enemy.hitBoxX;
-            const minY = nearestY - enemy.hitBoxY;
-            const maxX = nearestX + enemy.hitBoxX;
-            const maxY = nearestY + enemy.hitBoxY;
-            for (let x = minX; x < maxX; x+=5) {
+            const minX = nearestX - nearestHitBoxX;
+            const minY = nearestY - nearestHitBoxY;
+            const maxX = nearestX + nearestHitBoxX;
+            const maxY = nearestY + nearestHitBoxY;
+            for (let x = minX; x < maxX; x+=settings.gridRes) {
                 if (x >= 0 && x <= mainCanvas.width) {
-                    for (let y = minY; y < maxY; y+=5) {
+                    for (let y = minY; y < maxY; y+=settings.gridRes) {
                         if (y >= 0 && y <= mainCanvas.height) {
                             if (!riskMap.get(x)[y]) {
                                 riskMap.get(x)[y] = {
@@ -319,9 +321,9 @@ function generateRisks(source, riskMap) {
         };
     };
 
-    for (let x = 0; x < mainCanvas.width; x+=5) {
+    for (let x = 0; x < mainCanvas.width; x+=settings.gridRes) {
         if (Object.entries(riskMap.get(x)).length <= 100) {
-            for (let y = 0; y < mainCanvas.height; y+=5) {
+            for (let y = 0; y < mainCanvas.height; y+=settings.gridRes) {
                 if (!riskMap.get(x)[y]) {
                     riskMap.get(x)[y] = {
                         risk: riskDistanceFromPlayer(x, y),
@@ -332,31 +334,142 @@ function generateRisks(source, riskMap) {
     };
 };
 
-function fillRiskMap(source, riskMap) {
-    for (let mapX = 0; mapX < mainCanvas.width; mapX+=5) { // Gets riskMap started
-        riskMap.set(mapX, {});
-    };
-
-    generateRisks(source, riskMap) // Generates risks
-
-
-    for (let x = 0; x < mainCanvas.width; x+=5) {
-        let t = String(x)+': ';
-        for (let y = 0; y < mainCanvas.height; y+=5) {
+function makePathVisible(source, riskMap) {
+    for (let x = 0; x < mainCanvas.width; x+=settings.gridRes) {
+        //let t = String(x)+': ';
+        for (let y = 0; y < mainCanvas.height; y+=settings.gridRes) {
             ctx.beginPath();
-            ctx.fillStyle = `rgb(${(riskMap.get(x)[y].risk)*255}, ${(riskMap.get(x)[y].risk)*255}, ${(riskMap.get(x)[y].risk)*255})`;
-            ctx.rect(x, y, 5, 5);
+            const risk = 255-((riskMap.get(x)[y].risk)*255);
+            ctx.fillStyle = `rgb(${risk}, ${risk}, ${risk})`;
+            ctx.rect(x, y, settings.gridRes, settings.gridRes);
             ctx.fill();
             ctx.closePath();
-            t = t + String(riskMap.get(x)[y].risk) + ', ';
+            //t = t + String(riskMap.get(x)[y].risk) + ', ';
         };
-        console.log(t);
+        //console.log(t);
     };
     ctx.beginPath();
     ctx.fillStyle = 'rgb(255, 125, 255)';
     ctx.rect(source.x-(source.sizeX/2), source.y-(source.sizeY/2), source.sizeX, source.sizeY);
     ctx.fill();
     ctx.closePath();
+
+    ctx.beginPath();
+    ctx.fillStyle = 'rgb(125, 255, 125)';
+    ctx.rect(usePlayerProps.x-(usePlayerProps.sizeX/2), usePlayerProps.y-(usePlayerProps.sizeY/2), usePlayerProps.sizeX, usePlayerProps.sizeY);
+    ctx.fill();
+    ctx.closePath();
+};
+
+function distanceFromPlayer(position) {
+    const [x, y] = position;
+    const dX = usePlayerProps.x - x;
+    const dY = usePlayerProps.y - y;
+    const distance = Math.sqrt(dX**2 + dY**2); 
+    return(distance);
+};
+
+function getLeastRisky(x, y, currentDirection, riskMap, satisfiedDistance) {
+    while (true) {
+        const directions = [ // !!!!!!!!should be 25 because smallest!!!!!!!!!!!!
+            [x, y+settings.gridRes, ((riskMap.get(x)[y+settings.gridRes]) ? riskMap.get(x)[y+settings.gridRes].risk : 999)], // north
+            [x+settings.gridRes, y+settings.gridRes, ((riskMap.get(x+settings.gridRes)) ? ((riskMap.get(x+settings.gridRes)[y+settings.gridRes]) ? riskMap.get(x+settings.gridRes)[y+settings.gridRes].risk : 999) : 999)], // north east
+            [x+settings.gridRes, y, ((riskMap.get(x+settings.gridRes)) ? riskMap.get(x+settings.gridRes)[y].risk : 999)], // east
+            [x+settings.gridRes, y-settings.gridRes, ((riskMap.get(x+settings.gridRes)) ? ((riskMap.get(x+settings.gridRes)[y-settings.gridRes]) ? riskMap.get(x+settings.gridRes)[y-settings.gridRes].risk : 999) : 999)], // south east
+            [x, y-settings.gridRes, ((riskMap.get(x)[y-settings.gridRes]) ? riskMap.get(x)[y-settings.gridRes].risk : 999)], // south
+            [x-settings.gridRes, y-settings.gridRes,((riskMap.get(x-settings.gridRes)) ? ((riskMap.get(x-settings.gridRes)[y-settings.gridRes]) ? riskMap.get(x-settings.gridRes)[y-settings.gridRes].risk : 999) : 999)], // south west
+            [x-settings.gridRes, y, ((riskMap.get(x-settings.gridRes)) ? riskMap.get(x-settings.gridRes)[y].risk : 999)], // west
+            [x-settings.gridRes, y+settings.gridRes, ((riskMap.get(x-settings.gridRes)) ? ((riskMap.get(x-settings.gridRes)[y+settings.gridRes]) ? riskMap.get(x-settings.gridRes)[y+settings.gridRes].risk : 999) : 999)], // north west
+        ];
+        let bestDirectionIndex = null;
+        for (let i = 0; i < 8; i++) {
+            if ((!bestDirectionIndex || directions[bestDirectionIndex][2] > directions[i][2]) && directions[i][2] < 999) {
+                bestDirectionIndex = i;
+            };
+        };
+        //return key: 
+        // -1=go back a point, [key]
+        // 0=switching direction [key, xBeforePivot, yBeforePivot, x, y, direction]
+        // 1=met satisfiedDistance requirement [key, currentX, currentY]
+        if (!bestDirectionIndex) {
+            return([-1]);
+        } else {
+            const maxDistance = Math.sqrt(mainCanvas.width**2 + mainCanvas.height**2);
+            if ((directions[bestDirectionIndex][2]*maxDistance) <= satisfiedDistance) {
+                return([1, directions[bestDirectionIndex][0], directions[bestDirectionIndex][1]]);
+            } else if (currentDirection != bestDirectionIndex) {
+                return([0, x, y, directions[bestDirectionIndex][0], directions[bestDirectionIndex][1], bestDirectionIndex]);
+            } else {
+                x = directions[bestDirectionIndex][0];
+                y = directions[bestDirectionIndex][1];
+            };
+        };
+    };
+};
+
+function retreadedPath(path) {
+    for 
+};
+
+function generatePath(source, riskMap) {
+    const satisfiedDistance = 25;
+
+    let retries = 0; // 8 max
+
+    let currentX = Math.round(source.x / settings.gridRes) * settings.gridRes;
+    let currentY = Math.round(source.y / settings.gridRes) * settings.gridRes;
+    let currentDirection = null;
+    const path = [];//[currentX, currentY, currentDirection]
+    while (true) {
+        const data = getLeastRisky(currentX, currentY, currentDirection, riskMap, satisfiedDistance)
+        if (data[0] == -1) { // go back
+            console.log('ahhh! go back!');
+            debugger;
+        } else if (data[0] == 0) { // change direction
+            path.push([data[1], data[2], currentDirection]);
+            currentX = data[3];
+            currentY = data[4];
+            currentDirection = data[5];
+
+            if (retreadedPath(path)) {
+                console.log('This is where it should reroute');
+                console.log(path);
+                break;
+            };
+        } else { // reached saisfied distance
+            path.push([data[1], data[2], currentDirection]);
+            currentX = data[3];
+            currentY = data[4];
+            currentDirection = data[5];
+            console.log(data);
+            console.log(path);
+            break;
+        };
+    };
+
+    makePathVisible(source, riskMap)
+
+    for (let i = 0; i < path.length; i++) {
+        ctx.beginPath();
+        ctx.fillStyle = 'rgb(255, 0, 0)';
+        ctx.rect(path[i][0], path[i][1], settings.gridRes, settings.gridRes);
+        ctx.fill();
+        ctx.closePath();
+    };
+    debugger;
+};
+
+function fillRiskMap(source, riskMap) {
+    for (let mapX = 0; mapX < mainCanvas.width; mapX+=settings.gridRes) { // Gets riskMap started
+        riskMap.set(mapX, {});
+    };
+
+    generateRisks(source, riskMap) // Generates risks
+
+    const path = generatePath(source, riskMap);
+
+    makePathVisible(source, riskMap)
+    
     debugger;
 };
 
@@ -652,8 +765,11 @@ const levelData = [
         ],
         waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
             [
-                [200, goblin, [weaponDefaultSword, weaponBow], [450, 500]],
-                [200, goblin, [null, weaponBow], [0, 450]],
+                [200, goblin, [weaponDefaultSword, weaponBow], [300, 200]],
+                [200, goblin, [weaponDefaultSword, weaponBow], [350, 250]],
+                [200, bigGoblin, [weaponDefaultSword, weaponBow], [450, 250]],
+                [200, bigGoblin, [weaponDefaultSword, weaponBow], [250, 250]],
+                [200, goblin, [null, weaponBow], [0, 250]],
             ],
             [
                 [200, goblin, [weaponDefaultSword, weaponBow], [450, 500]],
