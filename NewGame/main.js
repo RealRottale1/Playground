@@ -77,6 +77,7 @@ class weaponHands {
     swingable = false;
     attackRange = 5;
     damage = 15;
+    swingDamge = 0;
     attackDuration = 500;
     attackCoolDown = 150;
     texture = null;
@@ -143,9 +144,9 @@ class weaponBow extends weaponHands {
         this.swingable = false;
         this.attackRange = 250;
         this.damage = 0;
+        this.swingDamge = 0;
         this.attackDuration = 0;
         this.attackCoolDown = 0;
-        this.texture = null;
         this.texture = gameTextures.weaponBow;
         this.displayName = 'Bow';
         this.sizeX = 50;
@@ -180,7 +181,7 @@ class weaponGoldBow extends weaponBow {
     constructor() {
         super();
         this.fireRate = 750;
-        this.useBullet = arrow;
+        this.useBullet = goldArrow;
         this.texture = gameTextures.weaponGoldBow;
         this.displayName = 'Gold Bow';
     };
@@ -192,6 +193,7 @@ class weaponDefaultSword extends weaponHands {
         this.swingable = true;
         this.attackRange = 80;
         this.damage = 35;
+        this.swingDamge = 4.6;
         this.attackDuration = 750;
         this.attackCoolDown = 250;
         this.texture = gameTextures.weaponDefaultSword;
@@ -208,6 +210,7 @@ class weaponLongSword extends weaponHands {
         this.swingable = true;
         this.attackRange = 125;
         this.damage = 85;
+        this.swingDamge = 11.3;
         this.attackDuration = 800;
         this.attackCoolDown = 950;
         this.texture = gameTextures.weaponLongSword;
@@ -241,7 +244,7 @@ class playerProps {
         };
     };
     // movment stuff
-    playerMovmentAmount = 2.5;
+    playerMovmentAmount = 2;
     x = settings.startPosition[0];
     y = settings.startPosition[1];
     velocityX = 0;
@@ -651,25 +654,89 @@ function handleShop() {
     shopItems.style.zIndex = 10;
     for (let i = 0; i < 4; i++) {
         const useGear = new useShopGear[i];
-        const useShopButton = shopOptions[i];
+        useShopGear[i] = useGear;
+        console.log(useGear);
+        let useArrow = null;
+        if (i > 1) {
+            useArrow = new useGear.useBullet;
+        };
+        const useShopButton = shopOptions[i+1];
         const pName = useShopButton.children[0];
         const pDamage = useShopButton.children[1];
         const pSwingDamage = useShopButton.children[2];
         const pRTime = useShopButton.children[3];
         const pRange = useShopButton.children[4];
         pName.textContent = useGear.displayName;
+        if (!useArrow) {
+            pDamage.textContent = 'Dmg: '+String(useGear.damage)+'hp';
+            pRTime.textContent = 'Dur: '+String(useGear.attackDuration/100)+'sec | Cd: '+String(useGear.attackCoolDown/100)+'sec';
+            pRange.textContent = 'Range: '+String(useGear.attackRange)+'px';
+        } else {
+            pDamage.textContent = 'Dmg: '+String(useArrow.damage)+'hp';
+            pRTime.textContent = 'Cd: '+String(useGear.fireRate/1000)+'sec';
+            pRange.textContent = 'Range: Unlimited';
+        };
+        pSwingDamage.textContent = 'Swing Dmg: '+String(useGear.swingDamge)+'hp';
     };
-
-    
 
 
     return new Promise((results) => {
-        results();
+        const SelectedGear = [null, null];
+        for (let i = 0; i < 4; i++) {
+            const useGear = useShopGear[i];
+            const useShopButton = shopOptions[i+1];
+            const useIndex = ((i < 2) ? 0 : 1);
+            let mouseOver = false;
+            useShopButton.addEventListener('mouseenter', function() {
+                if (SelectedGear[useIndex] != useShopGear[i]) {
+                    mouseOver = true;
+                    useShopButton.style.backgroundColor = 'rgb(175, 130, 96)';
+                    useShopButton.style.border = '2.5px solid rgb(84, 52, 27)';
+                };
+            });
+            useShopButton.addEventListener('mouseleave', function() {
+                if (SelectedGear[useIndex] != useShopGear[i]) {
+                    mouseOver = false;
+                    useShopButton.style.backgroundColor = 'rgb(207, 156, 116)';
+                    useShopButton.style.border = '2.5px solid rgb(138, 93, 59)';
+                };
+            });
+            useShopButton.addEventListener('click', function() {
+                if (SelectedGear[useIndex] != useShopGear[i]) {
+                    const oppIndex = (!(i-(useIndex*2))+(useIndex*2));
+                    if (SelectedGear[useIndex] == useShopGear[oppIndex]) {
+                        const oppButton = shopOptions[oppIndex+1];
+                        oppButton.style.backgroundColor = 'rgb(207, 156, 116)';
+                        oppButton.style.borderColor = 'rgb(84, 52, 27)';
+                    };
+                    SelectedGear[useIndex] = useGear;
+                    useShopButton.style.backgroundColor = 'rgb(90, 59, 36)';
+                    useShopButton.style.borderColor = 'rgb(58, 32, 12)';
+                } else {
+                    SelectedGear[useIndex] = null;
+                    if (mouseOver) {
+                        useShopButton.style.backgroundColor = 'rgb(175, 130, 96)';
+                        useShopButton.style.border = '2.5px solid rgb(84, 52, 27)';
+                    } else {
+                        useShopButton.style.backgroundColor = 'rgb(207, 156, 116)';
+                        useShopButton.style.borderColor = 'rgb(84, 52, 27)';
+                    };
+                };
+            });
+        };
+        shopOptions[0].addEventListener('click', function() {
+            if (SelectedGear[0]) {
+                usePlayerProps.weaponData = SelectedGear[0];
+            };
+            if (SelectedGear[1]) {
+                usePlayerProps.bowData = SelectedGear[1];
+            };
+            shopItems.style.opacity = 0;
+            shopItems.style.zIndex = 0;
+            results();
+        });
     });
 };
-
-//settings.currentLevel = 1;
-//handleShop();
 
 // loads main menu
 function makeLoadingScreen() {
@@ -1056,7 +1123,11 @@ async function playLevel() {
                         } else {
                             //console.log('Swing');
                             selectedEnemy.wasSwingAttacked = true;
-                            selectedEnemy.health -= usePlayerProps.weaponData.damage/7.5;
+                            if (usePlayerProps.currentWeapon == 'sword') {
+                                selectedEnemy.health -= usePlayerProps.weaponData.swingDamge;
+                            } else {
+                                selectedEnemy.health -= usePlayerProps.bowData.swingDamge;
+                            };
                         };
                         if (selectedEnemy.health <= 0) {
                             dropHeart(selectedEnemy.x, selectedEnemy.y);
