@@ -292,16 +292,6 @@ function riskDistanceFromPlayer(x, y) {
 
 function generateRisks(source, riskMap) {
     const enemyLength = currentEnemies.length;
-    for (let x = 0; x < mainCanvas.width; x+=settings.gridRes) {
-        for (let y = 0; y < mainCanvas.height; y+=settings.gridRes) {
-            if (!riskMap.get(x)[y]) {
-                riskMap.get(x)[y] = {
-                    risk: riskDistanceFromPlayer(x, y),
-                };
-            };
-        };
-    };
-
     for (let i = 0; i < enemyLength; i++) {
         const enemy = currentEnemies[i];
         if (enemy != source) {
@@ -315,45 +305,48 @@ function generateRisks(source, riskMap) {
             const minY = nearestY - nearestHitBoxY;
             const maxX = nearestX + nearestHitBoxX;
             const maxY = nearestY + nearestHitBoxY;
-
-            const nearestPX = Math.round(usePlayerProps.x / settings.gridRes) * settings.gridRes;
-            const nearestPY = Math.round(usePlayerProps.y / settings.gridRes) * settings.gridRes;
-            const innerX = minX-settings.gridRes;
-            const innerY = minY-settings.gridRes;
-            const OuterX = maxX+settings.gridRes;
-            const OuterY = maxY+settings.gridRes;
-
-            const padding = [null, null, null, null] // top, right, bottom, left
-            if (nearestPX > nearestX) {
-                padding[1] = true;
-            } else if (nearestPX < nearestX) {
-                padding[3] = true;
-            } else {
-                padding[1] = true;
-                padding[3] = true;
-            };
-            if (nearestPY > nearestY) {
-                padding[0] = true;
-            } else if (nearestPY < nearestY) {
-                padding[2] = true;
-            } else {
-                padding[0] = true;
-                padding[2] = true;
-            };
-
-            console.log(padding);
             for (let x = minX-settings.gridRes; x < maxX+settings.gridRes; x+=settings.gridRes) {
                 if (x >= 0 && x <= mainCanvas.width) {
                     for (let y = minY-settings.gridRes; y < maxY+settings.gridRes; y+=settings.gridRes) {
                         if (y >= 0 && y <= mainCanvas.height) {
-                            if (x == innerX || x == OuterX || y == innerY || y == OuterY) {
-                                riskMap.get(x)[y].risk = .15;
-                            } else {
+                            if (!riskMap.get(x)[y]) {
                                 riskMap.get(x)[y] = {
                                     risk: 999,
                                 };
-                            }
+                            };
                         };
+                    };
+                };
+            };
+        };
+    };
+
+    for (let x = 0; x < mainCanvas.width; x+=settings.gridRes) {
+        if (Object.entries(riskMap.get(x)).length <= 100) {
+            for (let y = 0; y < mainCanvas.height; y+=settings.gridRes) {
+                if (!riskMap.get(x)[y]) {
+                    let risk = riskDistanceFromPlayer(x, y);
+
+                    const leftX = riskMap.get(x-settings.gridRes);
+                    const rightX = riskMap.get(x+settings.gridRes);
+                    const upX = riskMap.get(x)[y+5];
+                    const downX = riskMap.get(x)[y-5];
+                    if (leftX && leftX[y] && leftX[y].risk == 999) {
+                        risk = .1;
+                    };
+                    if (rightX && rightX[y] && rightX[y].risk == 999) {
+                        risk = .1;
+                    };
+                    if (upX && upX.risk == 999) {
+                        risk = .1;
+                    };
+                    if (downX && downX.risk == 999) {
+                        risk = .1;
+                    };
+
+
+                    riskMap.get(x)[y] = {
+                        risk: risk,
                     };
                 };
             };
@@ -388,7 +381,19 @@ function makePathVisible(source, riskMap) {
     ctx.closePath();
 };
 
+function inRangeOfPlayer(x, y, minDistance) {
+    const dX = usePlayerProps.x - x;
+    const dY = usePlayerProps.y - y;
+    const distance = Math.sqrt(dX**2 + dY**2);
+    return((distance <= minDistance ? true : false));
+};
+
+//return key: 
+// -1=go back a point, [key]
+// 0=switching direction [key, xBeforePivot, yBeforePivot, x, y, direction]
+// 1=met satisfiedDistance requirement [key, currentX, currentY]
 function getLeastRisky(x, y, currentDirection, riskMap, satisfiedDistance) {
+    const tiedPoints = [];
     while (true) {
         const directions = [
             [x, y+settings.gridRes, ((riskMap.get(x)[y+settings.gridRes]) ? riskMap.get(x)[y+settings.gridRes].risk : 999)], // north
@@ -402,22 +407,21 @@ function getLeastRisky(x, y, currentDirection, riskMap, satisfiedDistance) {
         ];
         let bestDirectionIndex = null;
         for (let i = 0; i < 8; i++) {
-            if ((!bestDirectionIndex || directions[bestDirectionIndex][2] > directions[i][2]) && directions[i][2] < 999) {
+            if ((!bestDirectionIndex || directions[bestDirectionIndex][2] > directions[i][2]) && directions[i][2] < 999 && (Math.abs(currentDirection - i) != 4)) {
                 bestDirectionIndex = i;
             };
-        };
-        //return key: 
-        // -1=go back a point, [key]
-        // 0=switching direction [key, xBeforePivot, yBeforePivot, x, y, direction]
-        // 1=met satisfiedDistance requirement [key, currentX, currentY]
+        }; // tiedPoints.push([directions[i][0], directions[i][1], i]);
         if (!bestDirectionIndex || (Math.abs(currentDirection - bestDirectionIndex) == 4)) {
-            return([-1]);
+            //console.log(!bestDirectionIndex);
+            //console.log((Math.abs(currentDirection - bestDirectionIndex) == 4));
+            return([-1, tiedPoints]);
         } else {
-            const maxDistance = Math.sqrt(mainCanvas.width**2 + mainCanvas.height**2);
-            if ((directions[bestDirectionIndex][2]*maxDistance) <= satisfiedDistance) {
-                return([1, directions[bestDirectionIndex][0], directions[bestDirectionIndex][1]]);
+            //const maxDistance = Math.sqrt(mainCanvas.width**2 + mainCanvas.height**2);
+            //(directions[bestDirectionIndex][2]*maxDistance) <= satisfiedDistance
+            if (inRangeOfPlayer(directions[bestDirectionIndex][0], directions[bestDirectionIndex][1], satisfiedDistance)) {
+                return([1, directions[bestDirectionIndex][0], directions[bestDirectionIndex][1]], tiedPoints);
             } else if (currentDirection != bestDirectionIndex) {
-                return([0, x, y, directions[bestDirectionIndex][0], directions[bestDirectionIndex][1], bestDirectionIndex]);
+                return([0, x, y, directions[bestDirectionIndex][0], directions[bestDirectionIndex][1], bestDirectionIndex], tiedPoints);
             } else {
                 x = directions[bestDirectionIndex][0];
                 y = directions[bestDirectionIndex][1];
@@ -449,13 +453,15 @@ function generatePath(source, riskMap) {
     let currentX = Math.round(source.x / settings.gridRes) * settings.gridRes;
     let currentY = Math.round(source.y / settings.gridRes) * settings.gridRes;
     let currentDirection = null;
-    const path = [];//[currentX, currentY, currentDirection]
+    let path = []; //[currentX, currentY, currentDirection]
+    const tiedPoints = []; //[currentX, currentY, currentDirection]
     while (true) {
         const data = getLeastRisky(currentX, currentY, currentDirection, riskMap, satisfiedDistance)
         if (data[0] == -1) { // go back
             console.log('ahhh! go back!');
-            debugger;
+            break;
         } else if (data[0] == 0) { // change direction
+            tiedPoints = [...tiedPoints, ...data[6]];
             path.push([data[1], data[2], currentDirection]);
             currentX = data[3];
             currentY = data[4];
@@ -463,6 +469,7 @@ function generatePath(source, riskMap) {
 
             console.log(path);
             if (retreadedPath(path)) {
+                console.log(tiedPoints);
                 console.log('Multi-step retread detected!');
                 break;
             };
@@ -471,6 +478,8 @@ function generatePath(source, riskMap) {
             currentX = data[3];
             currentY = data[4];
             currentDirection = data[5];
+            console.log(data);
+            console.log(path);
             console.log('done!');
             break;
         };
@@ -480,7 +489,7 @@ function generatePath(source, riskMap) {
 
     for (let i = 0; i < path.length; i++) {
         ctx.beginPath();
-        ctx.fillStyle = 'rgb(255, 0, 0)';
+        ctx.fillStyle = `rgb(${255-(5*(i+1))}, ${255-(5*(i+1))}, 0)`;
         ctx.rect(path[i][0], path[i][1], settings.gridRes, settings.gridRes);
         ctx.fill();
         ctx.closePath();
