@@ -445,12 +445,23 @@ function retreadedPath(path) {
         for (let j = 0; j < pathLength; j++) {
             if (path[i][0] == path[j][0] && path[i][1] == path[j][1]) {
                 if (i != j) {
-                    return(i);
+                    return(true);
                 };
             };
         };
     };
     return(false);
+};
+
+// if it is a possible reroute and exist then don't allow it to make another
+function reroutePath(path) {
+    const pathLength = path.length;
+    for (let i = pathLength-1; i > -1; i--) {
+        const reroutePath = path[i][3][0];
+        if (reroutePath) {
+            return([reroutePath, path[i][3]]);
+        };
+    };
 };
 
 function generatePath(source, riskMap) {
@@ -475,20 +486,27 @@ function generatePath(source, riskMap) {
             currentY = data[4];
             currentDirection = data[5];
 
-            const location = retreadedPath(path);
-            if (location) {
-                console.log(location);
+            if (retreadedPath(path)) {
+                const data = reroutePath(path);
+                if (!data) {
+                    break;
+                };
+                const rerouteTo = data[0];
+                const possiblePaths = data[1];
+                //path.push([rerouteTo[0], rerouteTo[1], rerouteTo[2], []]);
+                currentX = rerouteTo[0];
+                currentY = rerouteTo[1];
+                currentDirection = rerouteTo[2];
+                possiblePaths.splice(0, 1);
                 console.log(path);
                 console.log('Multi-step retread detected!');
-                break;
+                //break;
             };
         } else if (data[0] == 1) { // reached saisfied distance
-            path.push([data[1], data[2], currentDirection]);
+            path.push([data[1], data[2], currentDirection, data[6]]);
             currentX = data[3];
             currentY = data[4];
             currentDirection = data[5];
-            console.log(data);
-            console.log(path);
             console.log('done!');
             break;
         };
@@ -498,7 +516,7 @@ function generatePath(source, riskMap) {
 
     for (let i = 0; i < path.length; i++) {
         ctx.beginPath();
-        ctx.fillStyle = `rgb(${255-(5*(i+1))}, ${255-(5*(i+1))}, 0)`;
+        ctx.fillStyle = `rgb(${255-(10*(i+1))}, ${255-(10*(i+1))}, 0)`;
         ctx.rect(path[i][0], path[i][1], settings.gridRes, settings.gridRes);
         ctx.fill();
         ctx.closePath();
