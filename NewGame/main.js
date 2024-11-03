@@ -392,8 +392,8 @@ function inRangeOfPlayer(x, y, minDistance) {
 // -1=go back a point, [key]
 // 0=switching direction [key, xBeforePivot, yBeforePivot, x, y, direction]
 // 1=met satisfiedDistance requirement [key, currentX, currentY]
-function getLeastRisky(x, y, currentDirection, riskMap, satisfiedDistance) {
-    const tiedPoints = [];
+function getLeastRisky(x, y, currentDirection, riskMap, satisfiedDistance, path) {
+    const tiedPoints = []; // x, y, dir, position in path
     while (true) {
         const directions = [
             [x, y+settings.gridRes, ((riskMap.get(x)[y+settings.gridRes]) ? riskMap.get(x)[y+settings.gridRes].risk : 999)], // north
@@ -407,11 +407,19 @@ function getLeastRisky(x, y, currentDirection, riskMap, satisfiedDistance) {
         ];
         let bestDirectionIndex = null;
         for (let i = 0; i < 8; i++) {
-            if ((!bestDirectionIndex || directions[bestDirectionIndex][2] > directions[i][2]) && directions[i][2] < 999 && (Math.abs(currentDirection - i) != 4)) {
-                bestDirectionIndex = i;
+            if (directions[i][2] < 999 && (Math.abs(currentDirection - i) != 4)) { // is a valid direction
+                if (bestDirectionIndex == null) {
+                    bestDirectionIndex = i;
+                } else {
+                    if (directions[bestDirectionIndex][2] > directions[i][2]) {
+                        bestDirectionIndex = i;
+                    } else if (directions[bestDirectionIndex][2] == directions[i][2]) {
+                        tiedPoints.push([directions[i][0], directions[i][1], i, path.length-1]);
+                    };
+                }
             };
-        }; // tiedPoints.push([directions[i][0], directions[i][1], i]);
-        if (!bestDirectionIndex || (Math.abs(currentDirection - bestDirectionIndex) == 4)) {
+        };
+        if (bestDirectionIndex == null || (Math.abs(currentDirection - bestDirectionIndex) == 4)) {
             //console.log(!bestDirectionIndex);
             //console.log((Math.abs(currentDirection - bestDirectionIndex) == 4));
             return([-1, tiedPoints]);
@@ -419,9 +427,9 @@ function getLeastRisky(x, y, currentDirection, riskMap, satisfiedDistance) {
             //const maxDistance = Math.sqrt(mainCanvas.width**2 + mainCanvas.height**2);
             //(directions[bestDirectionIndex][2]*maxDistance) <= satisfiedDistance
             if (inRangeOfPlayer(directions[bestDirectionIndex][0], directions[bestDirectionIndex][1], satisfiedDistance)) {
-                return([1, directions[bestDirectionIndex][0], directions[bestDirectionIndex][1]], tiedPoints);
+                return([1, directions[bestDirectionIndex][0], directions[bestDirectionIndex][1], tiedPoints]);
             } else if (currentDirection != bestDirectionIndex) {
-                return([0, x, y, directions[bestDirectionIndex][0], directions[bestDirectionIndex][1], bestDirectionIndex], tiedPoints);
+                return([0, x, y, directions[bestDirectionIndex][0], directions[bestDirectionIndex][1], bestDirectionIndex, tiedPoints]);
             } else {
                 x = directions[bestDirectionIndex][0];
                 y = directions[bestDirectionIndex][1];
@@ -436,13 +444,24 @@ function retreadedPath(path) {
         for (let j = 0; j < pathLength; j++) {
             if (path[i][0] == path[j][0] && path[i][1] == path[j][1]) {
                 if (i != j) {
-                    console.log('omg match');
-                    return(true);
+                    return(i);
                 };
             };
         };
     };
     return(false);
+};
+
+function reroutePath(path, tiedPoints, location) {
+    path.splice(0, location);
+    const tiedLength = tiedPoints.length;
+    const tryTiedPoints = [];
+    for (let i = 0; i < tiedLength; i++) {
+        if (tiedPoints[i][4] == location) {
+            path.push([tiedPoints[i][0], tiedPoints[i][1], tiedPoints[i][2]]);
+            tiedPoints = [];
+        };
+    };
 };
 
 function generatePath(source, riskMap) {
@@ -454,26 +473,30 @@ function generatePath(source, riskMap) {
     let currentY = Math.round(source.y / settings.gridRes) * settings.gridRes;
     let currentDirection = null;
     let path = []; //[currentX, currentY, currentDirection]
-    const tiedPoints = []; //[currentX, currentY, currentDirection]
+    let tiedPoints = []; //[currentX, currentY, currentDirection, path position]
     while (true) {
-        const data = getLeastRisky(currentX, currentY, currentDirection, riskMap, satisfiedDistance)
+        const data = getLeastRisky(currentX, currentY, currentDirection, riskMap, satisfiedDistance, path);
         if (data[0] == -1) { // go back
             console.log('ahhh! go back!');
             break;
         } else if (data[0] == 0) { // change direction
+            console.log(data[6]);
             tiedPoints = [...tiedPoints, ...data[6]];
             path.push([data[1], data[2], currentDirection]);
             currentX = data[3];
             currentY = data[4];
             currentDirection = data[5];
 
-            console.log(path);
-            if (retreadedPath(path)) {
+            const location = retreadedPath(path);
+            if (location) {
+                reroutePath(path, tiedPoints, location);
+                console.log(location);
                 console.log(tiedPoints);
+                console.log(path);
                 console.log('Multi-step retread detected!');
                 break;
             };
-        } else { // reached saisfied distance
+        } else if (data[0] == 1) { // reached saisfied distance
             path.push([data[1], data[2], currentDirection]);
             currentX = data[3];
             currentY = data[4];
