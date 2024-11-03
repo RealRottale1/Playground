@@ -292,6 +292,16 @@ function riskDistanceFromPlayer(x, y) {
 
 function generateRisks(source, riskMap) {
     const enemyLength = currentEnemies.length;
+    for (let x = 0; x < mainCanvas.width; x+=settings.gridRes) {
+        for (let y = 0; y < mainCanvas.height; y+=settings.gridRes) {
+            if (!riskMap.get(x)[y]) {
+                riskMap.get(x)[y] = {
+                    risk: riskDistanceFromPlayer(x, y),
+                };
+            };
+        };
+    };
+
     for (let i = 0; i < enemyLength; i++) {
         const enemy = currentEnemies[i];
         if (enemy != source) {
@@ -305,28 +315,45 @@ function generateRisks(source, riskMap) {
             const minY = nearestY - nearestHitBoxY;
             const maxX = nearestX + nearestHitBoxX;
             const maxY = nearestY + nearestHitBoxY;
-            for (let x = minX; x < maxX; x+=settings.gridRes) {
+
+            const nearestPX = Math.round(usePlayerProps.x / settings.gridRes) * settings.gridRes;
+            const nearestPY = Math.round(usePlayerProps.y / settings.gridRes) * settings.gridRes;
+            const innerX = minX-settings.gridRes;
+            const innerY = minY-settings.gridRes;
+            const OuterX = maxX+settings.gridRes;
+            const OuterY = maxY+settings.gridRes;
+
+            const padding = [null, null, null, null] // top, right, bottom, left
+            if (nearestPX > nearestX) {
+                padding[1] = true;
+            } else if (nearestPX < nearestX) {
+                padding[3] = true;
+            } else {
+                padding[1] = true;
+                padding[3] = true;
+            };
+            if (nearestPY > nearestY) {
+                padding[0] = true;
+            } else if (nearestPY < nearestY) {
+                padding[2] = true;
+            } else {
+                padding[0] = true;
+                padding[2] = true;
+            };
+
+            console.log(padding);
+            for (let x = minX-settings.gridRes; x < maxX+settings.gridRes; x+=settings.gridRes) {
                 if (x >= 0 && x <= mainCanvas.width) {
-                    for (let y = minY; y < maxY; y+=settings.gridRes) {
+                    for (let y = minY-settings.gridRes; y < maxY+settings.gridRes; y+=settings.gridRes) {
                         if (y >= 0 && y <= mainCanvas.height) {
-                            if (!riskMap.get(x)[y]) {
+                            if (x == innerX || x == OuterX || y == innerY || y == OuterY) {
+                                riskMap.get(x)[y].risk = .15;
+                            } else {
                                 riskMap.get(x)[y] = {
                                     risk: 999,
                                 };
-                            };
+                            }
                         };
-                    };
-                };
-            };
-        };
-    };
-
-    for (let x = 0; x < mainCanvas.width; x+=settings.gridRes) {
-        if (Object.entries(riskMap.get(x)).length <= 100) {
-            for (let y = 0; y < mainCanvas.height; y+=settings.gridRes) {
-                if (!riskMap.get(x)[y]) {
-                    riskMap.get(x)[y] = {
-                        risk: riskDistanceFromPlayer(x, y),
                     };
                 };
             };
@@ -363,7 +390,7 @@ function makePathVisible(source, riskMap) {
 
 function getLeastRisky(x, y, currentDirection, riskMap, satisfiedDistance) {
     while (true) {
-        const directions = [ // !!!!!!!!should be 25 because smallest!!!!!!!!!!!!
+        const directions = [
             [x, y+settings.gridRes, ((riskMap.get(x)[y+settings.gridRes]) ? riskMap.get(x)[y+settings.gridRes].risk : 999)], // north
             [x+settings.gridRes, y+settings.gridRes, ((riskMap.get(x+settings.gridRes)) ? ((riskMap.get(x+settings.gridRes)[y+settings.gridRes]) ? riskMap.get(x+settings.gridRes)[y+settings.gridRes].risk : 999) : 999)], // north east
             [x+settings.gridRes, y, ((riskMap.get(x+settings.gridRes)) ? riskMap.get(x+settings.gridRes)[y].risk : 999)], // east
@@ -444,8 +471,7 @@ function generatePath(source, riskMap) {
             currentX = data[3];
             currentY = data[4];
             currentDirection = data[5];
-            console.log(data);
-            console.log(path);
+            console.log('done!');
             break;
         };
     };
