@@ -394,7 +394,6 @@ function inRangeOfPlayer(x, y, minDistance) {
 // 1=met satisfiedDistance requirement [key, currentX, currentY]
 function getLeastRisky(x, y, currentDirection, riskMap, satisfiedDistance, path) {
     while (true) {
-        const tiedPoints = []; // x, y, dir
         const directions = [
             [x, y+settings.gridRes, ((riskMap.get(x)[y+settings.gridRes]) ? riskMap.get(x)[y+settings.gridRes].risk : 999)], // north
             [x+settings.gridRes, y+settings.gridRes, ((riskMap.get(x+settings.gridRes)) ? ((riskMap.get(x+settings.gridRes)[y+settings.gridRes]) ? riskMap.get(x+settings.gridRes)[y+settings.gridRes].risk : 999) : 999)], // north east
@@ -413,27 +412,22 @@ function getLeastRisky(x, y, currentDirection, riskMap, satisfiedDistance, path)
                 } else {
                     if (directions[bestDirectionIndex][2] > directions[i][2]) {
                         bestDirectionIndex = i;
-                    } else if (directions[bestDirectionIndex][2] == directions[i][2]) {
-                        tiedPoints.push([directions[i][0], directions[i][1], i]);
                     };
-                }
+                };
             };
         };
         if (bestDirectionIndex == null || (Math.abs(currentDirection - bestDirectionIndex) == 4)) {
-            return([-1, tiedPoints]);
+            return([-1]);
         } else {
             //const maxDistance = Math.sqrt(mainCanvas.width**2 + mainCanvas.height**2);
             //(directions[bestDirectionIndex][2]*maxDistance) <= satisfiedDistance
             if (inRangeOfPlayer(directions[bestDirectionIndex][0], directions[bestDirectionIndex][1], satisfiedDistance)) {
-                return([1, directions[bestDirectionIndex][0], directions[bestDirectionIndex][1], tiedPoints]);
+                return([1, directions[bestDirectionIndex][0], directions[bestDirectionIndex][1]]);
             } else if (currentDirection != bestDirectionIndex) {
-                return([0, x, y, directions[bestDirectionIndex][0], directions[bestDirectionIndex][1], bestDirectionIndex, tiedPoints]);
+                return([0, x, y, directions[bestDirectionIndex][0], directions[bestDirectionIndex][1], bestDirectionIndex]);
             } else {
                 x = directions[bestDirectionIndex][0];
                 y = directions[bestDirectionIndex][1];
-                if (tiedPoints[0]) {
-                    path.push([x, y, bestDirectionIndex, tiedPoints]);
-                };
             };
         };
     };
@@ -445,7 +439,7 @@ function retreadedPath(path) {
         for (let j = 0; j < pathLength; j++) {
             if (path[i][0] == path[j][0] && path[i][1] == path[j][1]) {
                 if (i != j) {
-                    return(true);
+                    return(i);
                 };
             };
         };
@@ -453,15 +447,13 @@ function retreadedPath(path) {
     return(false);
 };
 
-// if it is a possible reroute and exist then don't allow it to make another
-function reroutePath(path) {
+function addDeadPath(riskMap, path, location) {
     const pathLength = path.length;
-    for (let i = pathLength-1; i > -1; i--) {
-        const reroutePath = path[i][3][0];
-        if (reroutePath) {
-            return([reroutePath, path[i][3]]);
-        };
+    for (let i = location; i < pathLength; i++) {
+        const currentPath = path[i];
+        riskMap.get(currentPath[0])[currentPath[1]].risk = 999;
     };
+    path.splice(location);
 };
 
 function generatePath(source, riskMap) {
@@ -481,29 +473,18 @@ function generatePath(source, riskMap) {
             console.log('ahhh! go back!');
             break;
         } else if (data[0] == 0) { // change direction
-            path.push([data[1], data[2], currentDirection, data[6]]);
+            path.push([data[1], data[2], currentDirection]);
             currentX = data[3];
             currentY = data[4];
             currentDirection = data[5];
 
+            const location = retreadedPath(path);
             if (retreadedPath(path)) {
-                const data = reroutePath(path);
-                if (!data) {
-                    break;
-                };
-                const rerouteTo = data[0];
-                const possiblePaths = data[1];
-                //path.push([rerouteTo[0], rerouteTo[1], rerouteTo[2], []]);
-                currentX = rerouteTo[0];
-                currentY = rerouteTo[1];
-                currentDirection = rerouteTo[2];
-                possiblePaths.splice(0, 1);
-                console.log(path);
-                console.log('Multi-step retread detected!');
+                addDeadPath(riskMap, path, location);
                 //break;
             };
         } else if (data[0] == 1) { // reached saisfied distance
-            path.push([data[1], data[2], currentDirection, data[6]]);
+            path.push([data[1], data[2], currentDirection]);
             currentX = data[3];
             currentY = data[4];
             currentDirection = data[5];
