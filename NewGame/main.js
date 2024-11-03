@@ -279,9 +279,9 @@ class playerProps {
     bowData = new weaponBow;
 };
 
-function riskDistanceFromPlayer(x, y) {
-    const pdX = (Math.round(usePlayerProps.x/settings.gridRes)*settings.gridRes) - x;
-    const pdY = (Math.round(usePlayerProps.y/settings.gridRes)*settings.gridRes) - y;
+function riskDistanceFromPlayer(x, y, pX, pY) {
+    const pdX = pX - x;
+    const pdY = pY - y;
     const playerDistance = Math.sqrt(pdX**2 + pdY**2); 
 
     const maxDistance = Math.sqrt(mainCanvas.width**2 + mainCanvas.height**2);
@@ -309,10 +309,9 @@ function generateRisks(source, riskMap) {
                 if (x >= 0 && x <= mainCanvas.width) {
                     for (let y = minY-settings.gridRes; y < maxY+settings.gridRes; y+=settings.gridRes) {
                         if (y >= 0 && y <= mainCanvas.height) {
-                            if (!riskMap.get(x)[y]) {
-                                riskMap.get(x)[y] = {
-                                    risk: 999,
-                                };
+                            riskMap.get(x)[y] = {
+                                risk: 999,
+                                isOutline: false,
                             };
                         };
                     };
@@ -321,32 +320,59 @@ function generateRisks(source, riskMap) {
         };
     };
 
+    const nearestPX = Math.round(usePlayerProps.x / settings.gridRes) * settings.gridRes;
+    const nearestPY = Math.round(usePlayerProps.y / settings.gridRes) * settings.gridRes;
     for (let x = 0; x < mainCanvas.width; x+=settings.gridRes) {
         if (Object.entries(riskMap.get(x)).length <= 100) {
             for (let y = 0; y < mainCanvas.height; y+=settings.gridRes) {
                 if (!riskMap.get(x)[y]) {
-                    let risk = riskDistanceFromPlayer(x, y);
+                    let risk = riskDistanceFromPlayer(x, y, nearestPX, nearestPY);
+                    let isOutline = false;
 
-                    const leftX = riskMap.get(x-settings.gridRes);
-                    const rightX = riskMap.get(x+settings.gridRes);
-                    const upX = riskMap.get(x)[y+5];
-                    const downX = riskMap.get(x)[y-5];
-                    if (leftX && leftX[y] && leftX[y].risk == 999) {
-                        risk = .1;
+                    const upX = [x, y+settings.gridRes, 1];
+                    const neX = [x+settings.gridRes, y+settings.gridRes, 2];
+                    const rightX = [x+settings.gridRes, y, 0];
+                    const seX = [x+settings.gridRes, y-settings.gridRes, 2];
+                    const downX = [x, y-settings.gridRes, 1];
+                    const swX = [x-settings.gridRes, y-settings.gridRes, 2];
+                    const leftX = [x-settings.gridRes, y, 0];
+                    const nwX = [x-settings.gridRes, y+settings.gridRes, 2];
+                    const directions = [upX, neX, rightX, seX, downX, swX, leftX, nwX];
+
+                    for (let i = 0; i < 8; i++) {
+                        const dir = directions[i];
+                        const oppDir = Math.abs(dir - i);
+
+                        const dirValues = (riskMap.get(dir[0]) ? ((riskMap.get(dir[0])[dir[1]]) ? riskMap.get(dir[0])[dir[1]] : null) : null)
+                        const oppDirValues = (riskMap.get(oppDir[0]) ? ((riskMap.get(oppDir[0])[oppDir[1]]) ? riskMap.get(oppDir[0])[oppDir[1]] : null) : null)
+                        
+                        if (oppDirValues.risk == 999) {
+                            if (dir[2] == 0) {
+                                if ()
+                            } else if (dir[2] == 1) {
+    
+                            } else {
+    
+                            };
+                        };
                     };
-                    if (rightX && rightX[y] && rightX[y].risk == 999) {
-                        risk = .1;
+                    //if ((leftX && leftX[y]) && (rightX && rightX[y])) {
+                    //    if (rightX[y].risk === 999 && nearestPX >= leftX[y])
+                    //};
+                    /*
+                    if ((leftX && leftX[y] && leftX[y].risk == 999) 
+                    || (rightX && rightX[y] && rightX[y].risk == 999)
+                    || (upX && upX.risk == 999)
+                    || (downX && downX.risk == 999)) {
+                        console.log('wowowowow');
+                        //isOutline = true;
                     };
-                    if (upX && upX.risk == 999) {
-                        risk = .1;
-                    };
-                    if (downX && downX.risk == 999) {
-                        risk = .1;
-                    };
+                    */
 
 
                     riskMap.get(x)[y] = {
                         risk: risk,
+                        isOutline: isOutline,
                     };
                 };
             };
@@ -360,7 +386,7 @@ function makePathVisible(source, riskMap) {
         for (let y = 0; y < mainCanvas.height; y+=settings.gridRes) {
             ctx.beginPath();
             const risk = 255-((riskMap.get(x)[y].risk)*255);
-            ctx.fillStyle = `rgb(${risk}, ${risk}, ${risk})`;
+            ctx.fillStyle = `rgb(${risk}, ${risk}, ${(riskMap.get(x)[y].isOutline) ? 0 : 255})`;
             ctx.rect(x, y, settings.gridRes, settings.gridRes);
             ctx.fill();
             ctx.closePath();
@@ -392,10 +418,8 @@ function inRangeOfPlayer(x, y, minDistance) {
 // -1=go back a point, [key]
 // 0=switching direction [key, xBeforePivot, yBeforePivot, x, y, direction]
 // 1=met satisfiedDistance requirement [key, currentX, currentY]
-function getLeastRisky(x, y, currentDirection, riskMap, satisfiedDistance, path) {
-    while (true) {
-        const directions = [
-            [x, y+settings.gridRes, ((riskMap.get(x)[y+settings.gridRes]) ? riskMap.get(x)[y+settings.gridRes].risk : 999)], // north
+/*
+[x, y+settings.gridRes, ((riskMap.get(x)[y+settings.gridRes]) ? riskMap.get(x)[y+settings.gridRes].risk : 999)], // north
             [x+settings.gridRes, y+settings.gridRes, ((riskMap.get(x+settings.gridRes)) ? ((riskMap.get(x+settings.gridRes)[y+settings.gridRes]) ? riskMap.get(x+settings.gridRes)[y+settings.gridRes].risk : 999) : 999)], // north east
             [x+settings.gridRes, y, ((riskMap.get(x+settings.gridRes)) ? riskMap.get(x+settings.gridRes)[y].risk : 999)], // east
             [x+settings.gridRes, y-settings.gridRes, ((riskMap.get(x+settings.gridRes)) ? ((riskMap.get(x+settings.gridRes)[y-settings.gridRes]) ? riskMap.get(x+settings.gridRes)[y-settings.gridRes].risk : 999) : 999)], // south east
@@ -403,9 +427,35 @@ function getLeastRisky(x, y, currentDirection, riskMap, satisfiedDistance, path)
             [x-settings.gridRes, y-settings.gridRes,((riskMap.get(x-settings.gridRes)) ? ((riskMap.get(x-settings.gridRes)[y-settings.gridRes]) ? riskMap.get(x-settings.gridRes)[y-settings.gridRes].risk : 999) : 999)], // south west
             [x-settings.gridRes, y, ((riskMap.get(x-settings.gridRes)) ? riskMap.get(x-settings.gridRes)[y].risk : 999)], // west
             [x-settings.gridRes, y+settings.gridRes, ((riskMap.get(x-settings.gridRes)) ? ((riskMap.get(x-settings.gridRes)[y+settings.gridRes]) ? riskMap.get(x-settings.gridRes)[y+settings.gridRes].risk : 999) : 999)], // north west
+*/
+function getLeastRisky(x, y, currentDirection, riskMap, satisfiedDistance, path) {
+    while (true) {
+        const directions = [
+            [x, y+settings.gridRes, ((riskMap.get(x)[y+settings.gridRes]) ? riskMap.get(x)[y+settings.gridRes] : null)], // north
+            [x+settings.gridRes, y+settings.gridRes, ((riskMap.get(x+settings.gridRes)) ? ((riskMap.get(x+settings.gridRes)[y+settings.gridRes]) ? riskMap.get(x+settings.gridRes)[y+settings.gridRes] : null) : null)], // north east
+            [x+settings.gridRes, y, ((riskMap.get(x+settings.gridRes)) ? riskMap.get(x+settings.gridRes)[y] : null)], // east
+            [x+settings.gridRes, y-settings.gridRes, ((riskMap.get(x+settings.gridRes)) ? ((riskMap.get(x+settings.gridRes)[y-settings.gridRes]) ? riskMap.get(x+settings.gridRes)[y-settings.gridRes] : null) : null)], // south east
+            [x, y-settings.gridRes, ((riskMap.get(x)[y-settings.gridRes]) ? riskMap.get(x)[y-settings.gridRes] : null)], // south
+            [x-settings.gridRes, y-settings.gridRes,((riskMap.get(x-settings.gridRes)) ? ((riskMap.get(x-settings.gridRes)[y-settings.gridRes]) ? riskMap.get(x-settings.gridRes)[y-settings.gridRes] : null) : null)], // south west
+            [x-settings.gridRes, y, ((riskMap.get(x-settings.gridRes)) ? riskMap.get(x-settings.gridRes)[y] : null)], // west
+            [x-settings.gridRes, y+settings.gridRes, ((riskMap.get(x-settings.gridRes)) ? ((riskMap.get(x-settings.gridRes)[y+settings.gridRes]) ? riskMap.get(x-settings.gridRes)[y+settings.gridRes] : null) : null)], // north west
         ];
         let bestDirectionIndex = null;
         for (let i = 0; i < 8; i++) {
+            if (directions[i][2]) {
+                //console.log(directions[i][2].risk);
+                //console.log((Math.abs(currentDirection - i) != 4));
+                if (directions[i][2].risk < 999 && (Math.abs(currentDirection - i) != 4)) {
+                    if (bestDirectionIndex == null) {
+                        bestDirectionIndex = i;
+                    } else {
+                        if (directions[bestDirectionIndex][2].risk > directions[i][2].risk) {
+                            bestDirectionIndex = i;
+                        };
+                    };
+                };
+            };
+            /*
             if (directions[i][2] < 999 && (Math.abs(currentDirection - i) != 4)) { // is a valid direction
                 if (bestDirectionIndex == null) {
                     bestDirectionIndex = i;
@@ -415,8 +465,11 @@ function getLeastRisky(x, y, currentDirection, riskMap, satisfiedDistance, path)
                     };
                 };
             };
+            */
         };
         if (bestDirectionIndex == null || (Math.abs(currentDirection - bestDirectionIndex) == 4)) {
+            //console.log(bestDirectionIndex);
+            //console.log((Math.abs(currentDirection - bestDirectionIndex) == 4));
             return([-1]);
         } else {
             //const maxDistance = Math.sqrt(mainCanvas.width**2 + mainCanvas.height**2);
@@ -451,7 +504,11 @@ function addDeadPath(riskMap, path, location) {
     const pathLength = path.length;
     for (let i = location; i < pathLength; i++) {
         const currentPath = path[i];
-        riskMap.get(currentPath[0])[currentPath[1]].risk = 999;
+        const gridPiece = riskMap.get(currentPath[0])[currentPath[1]];
+        console.log(gridPiece.isOutline);
+        if (gridPiece.isOutline) {
+            gridPiece.risk = 999;
+        };
     };
     path.splice(location);
 };
@@ -481,6 +538,11 @@ function generatePath(source, riskMap) {
             const location = retreadedPath(path);
             if (retreadedPath(path)) {
                 addDeadPath(riskMap, path, location);
+                retries += 1;
+                if (retries > 8) {
+                    console.log('nope');
+                    break;
+                };
                 //break;
             };
         } else if (data[0] == 1) { // reached saisfied distance
@@ -497,15 +559,18 @@ function generatePath(source, riskMap) {
 
     for (let i = 0; i < path.length; i++) {
         ctx.beginPath();
-        ctx.fillStyle = `rgb(${255-(10*(i+1))}, ${255-(10*(i+1))}, 0)`;
+        ctx.fillStyle = `rgb(${255-(10*(i+1))}, 0, 0)`;
         ctx.rect(path[i][0], path[i][1], settings.gridRes, settings.gridRes);
         ctx.fill();
         ctx.closePath();
     };
+    
+    console.log(path);
     debugger;
 };
 
 function fillRiskMap(source, riskMap) {
+    console.log('executed');
     for (let mapX = 0; mapX < mainCanvas.width; mapX+=settings.gridRes) { // Gets riskMap started
         riskMap.set(mapX, {});
     };
@@ -815,6 +880,8 @@ const levelData = [
                 [200, goblin, [weaponDefaultSword, weaponBow], [350, 150]],
                 [200, bigGoblin, [weaponDefaultSword, weaponBow], [450, 250]],
                 [200, bigGoblin, [weaponDefaultSword, weaponBow], [250, 250]],
+                [200, bigGoblin, [weaponDefaultSword, weaponBow], [325, 300]],
+                [200, bigGoblin, [weaponDefaultSword, weaponBow], [375, 300]],
                 [200, goblin, [null, weaponBow], [0, 250]],
             ],
             [
