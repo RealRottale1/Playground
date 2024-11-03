@@ -393,8 +393,8 @@ function inRangeOfPlayer(x, y, minDistance) {
 // 0=switching direction [key, xBeforePivot, yBeforePivot, x, y, direction]
 // 1=met satisfiedDistance requirement [key, currentX, currentY]
 function getLeastRisky(x, y, currentDirection, riskMap, satisfiedDistance, path) {
-    const tiedPoints = []; // x, y, dir, position in path
     while (true) {
+        const tiedPoints = []; // x, y, dir
         const directions = [
             [x, y+settings.gridRes, ((riskMap.get(x)[y+settings.gridRes]) ? riskMap.get(x)[y+settings.gridRes].risk : 999)], // north
             [x+settings.gridRes, y+settings.gridRes, ((riskMap.get(x+settings.gridRes)) ? ((riskMap.get(x+settings.gridRes)[y+settings.gridRes]) ? riskMap.get(x+settings.gridRes)[y+settings.gridRes].risk : 999) : 999)], // north east
@@ -414,14 +414,12 @@ function getLeastRisky(x, y, currentDirection, riskMap, satisfiedDistance, path)
                     if (directions[bestDirectionIndex][2] > directions[i][2]) {
                         bestDirectionIndex = i;
                     } else if (directions[bestDirectionIndex][2] == directions[i][2]) {
-                        tiedPoints.push([directions[i][0], directions[i][1], i, path.length-1]);
+                        tiedPoints.push([directions[i][0], directions[i][1], i]);
                     };
                 }
             };
         };
         if (bestDirectionIndex == null || (Math.abs(currentDirection - bestDirectionIndex) == 4)) {
-            //console.log(!bestDirectionIndex);
-            //console.log((Math.abs(currentDirection - bestDirectionIndex) == 4));
             return([-1, tiedPoints]);
         } else {
             //const maxDistance = Math.sqrt(mainCanvas.width**2 + mainCanvas.height**2);
@@ -433,6 +431,9 @@ function getLeastRisky(x, y, currentDirection, riskMap, satisfiedDistance, path)
             } else {
                 x = directions[bestDirectionIndex][0];
                 y = directions[bestDirectionIndex][1];
+                if (tiedPoints[0]) {
+                    path.push([x, y, bestDirectionIndex, tiedPoints]);
+                };
             };
         };
     };
@@ -452,18 +453,6 @@ function retreadedPath(path) {
     return(false);
 };
 
-function reroutePath(path, tiedPoints, location) {
-    path.splice(0, location);
-    const tiedLength = tiedPoints.length;
-    const tryTiedPoints = [];
-    for (let i = 0; i < tiedLength; i++) {
-        if (tiedPoints[i][4] == location) {
-            path.push([tiedPoints[i][0], tiedPoints[i][1], tiedPoints[i][2]]);
-            tiedPoints = [];
-        };
-    };
-};
-
 function generatePath(source, riskMap) {
     const satisfiedDistance = 25;
 
@@ -472,26 +461,23 @@ function generatePath(source, riskMap) {
     let currentX = Math.round(source.x / settings.gridRes) * settings.gridRes;
     let currentY = Math.round(source.y / settings.gridRes) * settings.gridRes;
     let currentDirection = null;
-    let path = []; //[currentX, currentY, currentDirection]
-    let tiedPoints = []; //[currentX, currentY, currentDirection, path position]
+
+
+    let path = []; //[currentX, currentY, currentDirection, allTiedPoints]
     while (true) {
         const data = getLeastRisky(currentX, currentY, currentDirection, riskMap, satisfiedDistance, path);
         if (data[0] == -1) { // go back
             console.log('ahhh! go back!');
             break;
         } else if (data[0] == 0) { // change direction
-            console.log(data[6]);
-            tiedPoints = [...tiedPoints, ...data[6]];
-            path.push([data[1], data[2], currentDirection]);
+            path.push([data[1], data[2], currentDirection, data[6]]);
             currentX = data[3];
             currentY = data[4];
             currentDirection = data[5];
 
             const location = retreadedPath(path);
             if (location) {
-                reroutePath(path, tiedPoints, location);
                 console.log(location);
-                console.log(tiedPoints);
                 console.log(path);
                 console.log('Multi-step retread detected!');
                 break;
