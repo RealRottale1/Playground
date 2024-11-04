@@ -314,9 +314,9 @@ function fillMap(source, pathMap) {
         };
     };
 
-    for (let x = 0; x < mainCanvas.width; x+=settings.gridRes) {
+    for (let x = 0; x < mainCanvas.width+settings.gridRes; x+=settings.gridRes) {
         if (Object.entries(pathMap.get(x)).length <= 100) {
-            for (let y = 0; y < mainCanvas.height; y+=settings.gridRes) {
+            for (let y = 0; y < mainCanvas.height+settings.gridRes; y+=settings.gridRes) {
                 if (!pathMap.get(x)[y]) {
                     pathMap.get(x)[y] = {
                         x: x,
@@ -454,18 +454,18 @@ function makePath(start, end, pathMap) {
 
 function handlePathing(source) {
     const pathMap = new Map();
-    for (let mapX = 0; mapX < mainCanvas.width; mapX+=settings.gridRes) {
+    for (let mapX = 0; mapX < mainCanvas.width+settings.gridRes; mapX+=settings.gridRes) {
         pathMap.set(mapX, {});
     };
 
     fillMap(source, pathMap);
+    console.log(pathMap);
     
     const eX = Math.round(source.x / settings.gridRes) * settings.gridRes;
     const eY = Math.round(source.y / settings.gridRes) * settings.gridRes;
     const pX = Math.round(usePlayerProps.x / settings.gridRes) * settings.gridRes;
     const pY = Math.round(usePlayerProps.y / settings.gridRes) * settings.gridRes;
     const start = pathMap.get(eX)[eY];
-    console.log(pX+' , '+pY);
     const end = pathMap.get(pX)[pY];
 
     const path = makePath(start, end, pathMap);
@@ -885,8 +885,13 @@ const levelData = [
         ],
         waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
             [
-                [200, goblin, [weaponDefaultSword, weaponBow], [300, 200]],
-                [200, goblin, [null, weaponBow], [0, 250]],
+                [200, goblin, [weaponDefaultSword, null], [300, 200]],
+                [200, goblin, [null, null], [0, 250]],
+                [200, goblin, [null, null], [50, 250]],
+                [200, goblin, [null, null], [100, 250]],
+                [200, goblin, [null, null], [150, 250]],
+                [200, goblin, [null, null], [200, 250]],
+                [200, goblin, [null, null], [250, 250]],
             ],
             [
                 [200, goblin, [weaponDefaultSword, weaponBow], [450, 500]],
