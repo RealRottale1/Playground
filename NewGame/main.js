@@ -333,12 +333,73 @@ function fillMap(source, pathMap) {
     };
 };
 
+function heuristic(pos0, pos1) {
+    return(Math.abs(pos1.x - pos0.x) + Math.abs(pos1.y - pos0.y));
+};
+
 function getNeighbors(x, y, pathMap) {
     const neighbors = [];
-    if (pathMap.get(x)[y+pathMap.gridRes])
+    if (pathMap.get(x)[y+settings.gridRes]) { // up
+        const entry = pathMap.get(x)[y+settings.gridRes]; 
+        if (entry.walkAble) {
+            neighbors.push(entry);
+        };
+    };
+    if (pathMap.get(x+settings.gridRes)) { // north east
+        const entry = pathMap.get(x+settings.gridRes)[y+settings.gridRes]; 
+        if (entry) {
+            if (entry.walkAble) {
+                neighbors.push(entry);
+            };
+        };
+    };
+    if (pathMap.get(x+settings.gridRes)) { // right
+        const entry = pathMap.get(x+settings.gridRes)[y];
+        if (entry.walkAble) {
+            neighbors.push(entry);
+        };
+    };
+    if (pathMap.get(x+settings.gridRes)) { // south east
+        const entry = pathMap.get(x+settings.gridRes)[y-settings.gridRes]; 
+        if (entry) {
+            if (entry.walkAble) {
+                neighbors.push(entry);
+            };
+        };
+    };
+    if (pathMap.get(x)[y-settings.gridRes]) { // down
+        const entry = pathMap.get(x)[y-settings.gridRes];
+        if (entry.walkAble) {
+            neighbors.push(entry);
+        };
+    };
+    if (pathMap.get(x-settings.gridRes)) { // south west
+        const entry = pathMap.get(x-settings.gridRes)[y-settings.gridRes]; 
+        if (entry) {
+            if (entry.walkAble) {
+                neighbors.push(entry);
+            };
+        };
+    };
+    if (pathMap.get(x-settings.gridRes)) { // left
+        const entry = pathMap.get(x-settings.gridRes)[y];
+        if (entry.walkAble) {
+            neighbors.push(entry);
+        };
+    };
+    if (pathMap.get(x-settings.gridRes)) { // north west
+        const entry = pathMap.get(x-settings.gridRes)[y+settings.gridRes]; 
+        if (entry) {
+            if (entry.walkAble) {
+                neighbors.push(entry);
+            };
+        };
+    };
+    return(neighbors);
 };
 
 function makePath(start, end, pathMap) {
+    const path = [];
     const openSet = [start];
     const closedSet = [];
     while (openSet.length > 0) {
@@ -353,20 +414,46 @@ function makePath(start, end, pathMap) {
 
         let currentPoint = openSet[lowestIndex];
         if (currentPoint === end) {
-            // Handle reached path end
+            let temp = currentPoint;
+            path.push(temp);
+            while (temp.parent) {
+                path.push(temp.parent);
+                temp = temp.parent;
+            };
+            return(path.reverse());
         };
 
         openSet.splice(lowestIndex, 1);
         closedSet.push(currentPoint);
 
         const neighbors = getNeighbors(currentPoint.x, currentPoint.y, pathMap);
+        const totalNeighbors = neighbors.length;
+        for (let i = 0; i < totalNeighbors; i++) {
+            const neighbor = neighbors[i];
+
+            if (!closedSet.includes(neighbor)) {
+                const possibleG = currentPoint.g + 1;
+
+                if (!openSet.includes(neighbor)) {
+                    openSet.push(neighbor);
+                } else if (possibleG >= neighbor.g) {
+                    continue;
+                };
+
+                neighbor.g = possibleG;
+                neighbor.h = heuristic(neighbor, end);
+                neighbor.f = neighbor.g + neighbor.h;
+                neighbor.parent = currentPoint;
+            };
+        };
     };
 
     return([]); // no path
 };
 
 
-function fillPathMap(source, pathMap) {
+function handlePathing(source) {
+    const pathMap = new Map();
     for (let mapX = 0; mapX < mainCanvas.width; mapX+=settings.gridRes) {
         pathMap.set(mapX, {});
     };
@@ -378,16 +465,15 @@ function fillPathMap(source, pathMap) {
     const pX = Math.round(usePlayerProps.x / settings.gridRes) * settings.gridRes;
     const pY = Math.round(usePlayerProps.y / settings.gridRes) * settings.gridRes;
     const start = pathMap.get(eX)[eY];
+    console.log(pX+' , '+pY);
     const end = pathMap.get(pX)[pY];
 
-    makePath(start, end, pathMap);
+    const path = makePath(start, end, pathMap);
+    if (path[0]) {
+        path.splice(0, 1);
+    };
 
-    debugger;
-};
-
-function makePath(source) {
-    const riskMap = new Map();
-    fillRiskMap(source, riskMap);
+    return(path);
 };
 
 class goblin {
@@ -438,21 +524,120 @@ class goblin {
     checkToRushTick = 50;
     rushClock= [0, 500];
     isRushing = false;
+    path = [];
+
+    move(dX, dY, distance) {
+        const nX = dX/distance;
+        const nY = dY/distance;
+        this.x += nX*this.movementSpeed;
+        this.y += nY*this.movementSpeed;
+
+        const enemyLength = currentEnemies.length;
+        for (let i = 0; i < enemyLength; i++) {
+            const enemy = currentEnemies[i];
+            if (enemy != this) {
+                const enemyDifX = enemy.x - this.x;
+                const enemyDifY = enemy.y - this.y;
+                const enemyDist = Math.sqrt(enemyDifX**2 + enemyDifY**2);
+                const averageHitBox = (this.hitBoxX+this.hitBoxY)/2;
+                const averageEnemyHitBox = (enemy.hitBoxX+enemy.hitBoxY)/2;
+                const strength = (enemyDist>averageHitBox ? 0 : -1*(averageHitBox-enemyDist)/averageHitBox);
+                if (averageHitBox > averageEnemyHitBox) { // If you are bigger you push them
+                    enemy.x += -1*strength*enemyDifX;
+                    enemy.y += -1*strength*enemyDifY;
+                } else {
+                    this.x += strength*enemyDifX;
+                    this.y += strength*enemyDifY;
+                };
+            };
+        };
+    };
+
+    handleMovment() {
+        this.path = handlePathing(this);
+        if (this.path[0]) {
+            console.log(this.path[0]);
+            console.log(this.path[0].x+' , '+this.x);
+            const dX = this.path[0].x - this.x;
+            const dY = this.path[0].y - this.y;
+            const distance = Math.sqrt(dX**2 + dY**2);
+            this.move(dX, dY, distance);
+        } else {
+            console.log('path blocked AHHHHHH!');
+        };
+        // move to next segment
+        // if near next segment delete it
+    };
+
+    shouldRush() {
+        if (this.cantRush) {
+            return(false);
+        }
+        let enemiesShooting = 0;
+        const summonLength = currentEnemies.length;
+        for (let i = 0; i < summonLength; i++) {
+            if (currentEnemies[i].shooting && currentEnemies[i].canAttack && !currentEnemies[i].isRushing) {
+                enemiesShooting += 1;
+            };
+        };
+        if (summonLength > 2 && ((enemiesShooting/summonLength) >= .5)) {
+            return(true);
+        } else {
+            return(false);
+        };
+    };
 
     tickAction() {
-       console.log(makePath(this));
-    };    
-};
-/*
-for (let mapY = 0; mapY < 500; mapY+=5) {
-            riskMap.get(mapX)[mapY] = {
-                y: mapY,
-                risk: getInitialRisk(source),
+        this.checkTick[0] += 1;
+        const dX = usePlayerProps.x - this.x;
+        const dY = usePlayerProps.y - this.y;
+        const distance = Math.sqrt(dX**2 + dY**2);
+        const trueDistance = distance-(this.hitBoxX+this.hitBoxY)/2;
+
+        // rush ability stuff
+        if (!this.isRushing && ((this.checkTick[0] % this.checkToRushTick) == 0)) {
+            const withinRange = (this.bowData ? trueDistance <= this.bowData.attackRange : true);
+            this.isRushing = (this.shouldRush() && withinRange);
+        };
+        if (this.isRushing) {
+            if (this.rushClock[0] >= this.rushClock[1]) {
+                this.isRushing = false;
+            } else {
+                this.rushClock[0] += 1;
             };
         };
 
-*/
+        // swing tick stuff
+        if (this.checkTick[0] >= this.checkTick[1]) {
+            this.checkTick[0] = 0;
+        };
+        if (this.wasSwingAttacked) {
+            this.swingAttackClock[0] += 1;
+            if (this.swingAttackClock[0] >= this.swingAttackClock[1]) {
+                this.swingAttackClock[0] = 0;
+                this.wasSwingAttacked = false;
+            };
+        };
 
+        // action stuff
+        if (this.weaponData && (trueDistance <= this.weaponData.attackRange*this.attackRangeMultiplier*5/3) || this.isRushing) {
+            this.currentWeapon = 'sword';
+            if (trueDistance > this.weaponData.attackRange*this.attackRangeMultiplier) {
+                this.handleMovment();
+            } else {
+                //this.attack();
+            };
+        } else if (this.bowData && (trueDistance <= this.bowData.attackRange*5/3)) {
+            if (trueDistance > this.bowData.attackRange) {
+                this.handleMovment();
+            };
+            this.currentWeapon = 'bow';
+            //this.shoot();
+        } else {
+            this.handleMovment();
+        };
+    };    
+};
 /*
  // math stuff
         this.checkTick[0] += 1;
@@ -602,6 +787,29 @@ shouldRush() {
     };
 */
 
+/* Shows path
+    for (let i = 0; i < path.length; i++) {
+        ctx.fillStyle = 'rgb(255 0 0)';
+        ctx.beginPath();
+        ctx.rect(path[i].x, path[i].y, 5, 5);
+        ctx.fill();
+        ctx.closePath();
+    }
+
+    for (let x = 0; x < mainCanvas.width; x+=settings.gridRes) {
+        for (let y = 0; y < mainCanvas.height; y+=settings.gridRes) {
+            if (!pathMap.get(x)[y].walkAble) {
+                ctx.fillStyle = 'rgb(0, 0, 0)';
+                ctx.beginPath();
+                ctx.rect(x, y, 5, 5);
+                ctx.fill();
+                ctx.closePath();
+            };
+        };
+    };
+
+*/
+
 class armorGoblin extends goblin {
     constructor() {
         super();
@@ -678,11 +886,6 @@ const levelData = [
         waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
             [
                 [200, goblin, [weaponDefaultSword, weaponBow], [300, 200]],
-                [200, goblin, [weaponDefaultSword, weaponBow], [350, 150]],
-                [200, bigGoblin, [weaponDefaultSword, weaponBow], [450, 250]],
-                [200, bigGoblin, [weaponDefaultSword, weaponBow], [250, 250]],
-                [200, bigGoblin, [weaponDefaultSword, weaponBow], [325, 300]],
-                [200, bigGoblin, [weaponDefaultSword, weaponBow], [375, 300]],
                 [200, goblin, [null, weaponBow], [0, 250]],
             ],
             [
