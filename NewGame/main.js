@@ -22,6 +22,22 @@ const settings = {
     waveDisplayTime: 250,
 };
 
+function inBounds(x, y) {
+    if (x < 0) {
+        x = 0;
+    };
+    if (x > mainCanvas.width) {
+        x = mainCanvas.width;
+    };
+    if (y < 0) {
+        y = 0;
+    };
+    if (y > mainCanvas.height) {
+        y = mainCanvas.height;
+    };
+    return([x, y]);
+}
+
 function makeImage(url) {
     const image = new Image();
     try {
@@ -82,19 +98,22 @@ class weaponHands {
     swingDamge = 0;
     attackDuration = 500;
     attackCoolDown = 150;
+    canBlock = false;
+    blockDuration = 0;
+    blockCoolDown = 0;
     texture = null;
     displayName = 'Hands';
     sizeX = 0;
     sizeY = 0;
     offset = 0;
-    draw(x, y, angle, offsetX, offsetY) {
+    draw(x, y, angle, offsetX, offsetY, blocking) {
         if (!this.texture || !this.sizeX || !this.sizeY) {
             return(false);
         };
         ctx.save();
         ctx.translate(x, y);
-        ctx.rotate(angle);
-        ctx.drawImage(this.texture, offsetX, offsetY, this.sizeX, this.sizeY);
+        ctx.rotate(angle+(blocking ? (Math.PI/2) : 0));
+        ctx.drawImage(this.texture, (blocking ? offsetY*2/3 : offsetX), (blocking ? offsetX : offsetY), this.sizeX, this.sizeY);
         ctx.restore();
     };
 };
@@ -198,6 +217,9 @@ class weaponDefaultSword extends weaponHands {
         this.swingDamge = 4.6;
         this.attackDuration = 750;
         this.attackCoolDown = 250;
+        this.canBlock = true;
+        this.blockDuration = 1000;
+        this.blockCoolDown = 500;
         this.texture = gameTextures.weaponDefaultSword;
         this.displayName = 'Sword';
         this.sizeX = 50;
@@ -273,6 +295,8 @@ class playerProps {
     isSwinging = false;
     canAttack = true;
     attacking = false;
+    canBlock = true;
+    blocking = false;
     isShooting = false;
     canShoot = true;
     shooting = false;
@@ -342,58 +366,50 @@ function getNeighbors(x, y, pathMap) {
     const neighbors = [];
     if (pathMap.get(x)[y+settings.gridRes]) { // up
         const entry = pathMap.get(x)[y+settings.gridRes]; 
-        if (entry.walkAble) {
+        if (entry && entry.walkAble) {
             neighbors.push(entry);
         };
     };
     if (pathMap.get(x+settings.gridRes)) { // north east
         const entry = pathMap.get(x+settings.gridRes)[y+settings.gridRes]; 
-        if (entry) {
-            if (entry.walkAble) {
-                neighbors.push(entry);
-            };
+        if (entry && entry.walkAble) {
+            neighbors.push(entry);
         };
     };
     if (pathMap.get(x+settings.gridRes)) { // right
         const entry = pathMap.get(x+settings.gridRes)[y];
-        if (entry.walkAble) {
+        if (entry && entry.walkAble) {
             neighbors.push(entry);
         };
     };
     if (pathMap.get(x+settings.gridRes)) { // south east
         const entry = pathMap.get(x+settings.gridRes)[y-settings.gridRes]; 
-        if (entry) {
-            if (entry.walkAble) {
-                neighbors.push(entry);
-            };
+        if (entry && entry.walkAble) {
+            neighbors.push(entry);
         };
     };
     if (pathMap.get(x)[y-settings.gridRes]) { // down
         const entry = pathMap.get(x)[y-settings.gridRes];
-        if (entry.walkAble) {
+        if (entry && entry.walkAble) {
             neighbors.push(entry);
         };
     };
     if (pathMap.get(x-settings.gridRes)) { // south west
         const entry = pathMap.get(x-settings.gridRes)[y-settings.gridRes]; 
-        if (entry) {
-            if (entry.walkAble) {
-                neighbors.push(entry);
-            };
+        if (entry && entry.walkAble) {
+            neighbors.push(entry);
         };
     };
     if (pathMap.get(x-settings.gridRes)) { // left
         const entry = pathMap.get(x-settings.gridRes)[y];
-        if (entry.walkAble) {
+        if (entry && entry.walkAble) {
             neighbors.push(entry);
         };
     };
     if (pathMap.get(x-settings.gridRes)) { // north west
         const entry = pathMap.get(x-settings.gridRes)[y+settings.gridRes]; 
-        if (entry) {
-            if (entry.walkAble) {
-                neighbors.push(entry);
-            };
+        if (entry && entry.walkAble) {
+            neighbors.push(entry);
         };
     };
     return(neighbors);
@@ -412,6 +428,10 @@ function makePath(start, end, maxIterations, pathMap) {
         let lowestIndex = 0;
         const openLength = openSet.length;
         for (let i = 0; i < openLength; i++) {
+            if (!openSet[i]) {
+                console.log(openSet);
+                debugger;
+            };
             if (openSet[i].f < openSet[lowestIndex].f) {
                 lowestIndex = i;
             };
@@ -457,10 +477,8 @@ function makePath(start, end, maxIterations, pathMap) {
 };
 
 function handlePathing(source) {
-    const eX = Math.round(source.x / settings.gridRes) * settings.gridRes;
-    const eY = Math.round(source.y / settings.gridRes) * settings.gridRes;
-    const pX = Math.round(usePlayerProps.x / settings.gridRes) * settings.gridRes;
-    const pY = Math.round(usePlayerProps.y / settings.gridRes) * settings.gridRes;
+    const [eX, eY] = inBounds(Math.round(source.x / settings.gridRes) * settings.gridRes, Math.round(source.y / settings.gridRes) * settings.gridRes);
+    const [pX, pY] = inBounds(Math.round(usePlayerProps.x / settings.gridRes) * settings.gridRes, Math.round(usePlayerProps.y / settings.gridRes) * settings.gridRes);
     const maxIterations = Math.round(Math.sqrt((pX - eX)**2 + (pY - eY)**2)*1.5);
 
     if (maxIterations <= 25) {
@@ -474,7 +492,7 @@ function handlePathing(source) {
 
     fillMap([source], source.hitBoxX, source.hitBoxY, pathMap);
 
-    console.log(eX+' , '+eY);
+    //console.log(eX+' , '+eY);
     const start = pathMap.get(eX)[eY];
     const end = pathMap.get(pX)[pY];
     const path = makePath(start, end, maxIterations, pathMap);
@@ -537,7 +555,7 @@ class goblin {
     bowData = null;
     
     // movment/tick stuff
-    movementSpeed = 2.5;
+    movementSpeed = 1.5;
     checkTick = [0, 10000];
     currentRushTick = 0;
     swingAttackClock = [0, 10];
@@ -574,12 +592,12 @@ class goblin {
                 };
             };
         };
+
         const pDX = usePlayerProps.x - this.x;
         const pDY = usePlayerProps.y - this.y;
         const playerDistance = Math.sqrt(pDX**2 + pDY**2);
         const averagePlayerHitBox = (usePlayerProps.sizeX+usePlayerProps.sizeY)/2;
         if (playerDistance <= averageHitBox+averagePlayerHitBox) {
-            console.log('repeling')
             const strength = (playerDistance>averageHitBox ? 0 : -1*(averageHitBox-playerDistance)/averageHitBox);
             this.x += strength*pDX;
             this.y += strength*pDY;
@@ -591,6 +609,7 @@ class goblin {
         const hord = (this.isRushing ? false : getMyHord(this));
         if (hord) {
             if (hord.path[0]) {
+                //console.log(hord.path);
                 endPos[0] = this.x + (hord.path[0].x - hord.x);
                 endPos[1] = this.y + (hord.path[0].y - hord.y);
             } else {
@@ -628,6 +647,45 @@ class goblin {
             return(true);
         } else {
             return(false);
+        };
+    };
+
+    attack() {
+        if (this.canAttack) {
+            this.canAttack = false;
+            this.attacking = true;
+            if (usePlayerProps.blocking) {
+                const dX = (usePlayerProps.x - this.x);
+                const dY = (usePlayerProps.y - this.y);
+                const attackAngle = Math.atan2(dY, dX);
+                const playerAngle = getMouseAngle();
+                const difference = Math.abs(playerAngle-attackAngle);
+
+                if (difference < (29*Math.PI/36) || difference > (43*Math.PI/36)) {
+                    console.log('FREE HIT!');
+                    usePlayerProps.health -= this.weaponData.damage*this.attackDamageMultiplier;
+                };
+            } else {
+                usePlayerProps.health -= this.weaponData.damage*this.attackDamageMultiplier;
+            }
+            setTimeout(() => {
+                this.attacking = false;
+                setTimeout(() => {
+                    this.canAttack = true;
+                }, this.weaponData.attackCoolDown);
+            }, this.weaponData.attackDuration);
+        };
+    };
+
+    shoot() {
+        if (this.canShoot) {
+            this.canShoot = false;
+            this.shooting = true;
+            this.bowData.shoot(this.x, usePlayerProps.x, this.y, usePlayerProps.y, 'enemy');
+            setTimeout(() => {
+                this.canShoot = true;
+                this.shooting = false;
+            }, this.bowData.fireRate);
         };
     };
 
@@ -671,7 +729,7 @@ class goblin {
                 this.handleMovment();
             } else {
                 this.moving = false;
-                //this.attack();
+                this.attack();
             };
         } else if (this.bowData && (trueDistance <= this.bowData.attackRange*5/3)) {
             if (trueDistance > this.bowData.attackRange) {
@@ -681,184 +739,13 @@ class goblin {
                 this.moving = false;
             };
             this.currentWeapon = 'bow';
-            //this.shoot();
+            this.shoot();
         } else {
             this.moving = true;
             this.handleMovment();
         };
     };    
 };
-/*
- // math stuff
-        this.checkTick[0] += 1;
-        const dX = usePlayerProps.x - this.x;
-        const dY = usePlayerProps.y - this.y;
-        const distance = Math.sqrt(dX**2 + dY**2);
-        const trueDistance = distance-(this.hitBoxX+this.hitBoxY)/2;
-
-        // rush ability stuff
-        if (!this.isRushing && ((this.checkTick[0] % this.checkToRushTick) == 0)) {
-            const withinRange = (this.bowData ? trueDistance <= this.bowData.attackRange : true);
-            this.isRushing = (this.shouldRush() && withinRange);
-        };
-        if (this.isRushing) {
-            if (this.rushClock[0] >= this.rushClock[1]) {
-                this.isRushing = false;
-            } else {
-                this.rushClock[0] += 1;
-            };
-        };
-
-        // swing tick stuff
-        if (this.checkTick[0] >= this.checkTick[1]) {
-            this.checkTick[0] = 0;
-        };
-        if (this.wasSwingAttacked) {
-            this.swingAttackClock[0] += 1;
-            if (this.swingAttackClock[0] >= this.swingAttackClock[1]) {
-                this.swingAttackClock[0] = 0;
-                this.wasSwingAttacked = false;
-            };
-        };
-
-        // action stuff
-        if (this.weaponData && (trueDistance <= this.weaponData.attackRange*this.attackRangeMultiplier*5/3) || this.isRushing) {
-            this.currentWeapon = 'sword';
-            if (trueDistance > this.weaponData.attackRange*this.attackRangeMultiplier) {
-                this.move(dX, dY, distance)
-                //console.log('rush');
-            } else {
-                //console.log('stab');
-                this.attack();
-            };
-        } else if (this.bowData && (trueDistance <= this.bowData.attackRange*5/3)) {
-            if (trueDistance > this.bowData.attackRange) {
-                this.move(dX, dY, distance);
-            };
-            //console.log('shoot');
-            this.currentWeapon = 'bow';
-            this.shoot();
-        } else {
-            //console.log('move');
-            this.move(dX, dY, distance);
-        };
-move(dX, dY, distance) {
-        const nX = dX/distance;
-        const nY = dY/distance;
-        this.x += nX*this.movementSpeed;
-        this.y += nY*this.movementSpeed;
-
-        const enemyLength = currentEnemies.length;
-        for (let i = 0; i < enemyLength; i++) {
-            const enemy = currentEnemies[i];
-            if (enemy != this) {
-                const enemyDifX = enemy.x - this.x;
-                const enemyDifY = enemy.y - this.y;
-                const enemyDist = Math.sqrt(enemyDifX**2 + enemyDifY**2);
-                const averageHitBox = (this.hitBoxX+this.hitBoxY)/2;
-                const averageEnemyHitBox = (enemy.hitBoxX+enemy.hitBoxY)/2;
-                const strength = (enemyDist>averageHitBox ? 0 : -1*(averageHitBox-enemyDist)/averageHitBox);
-                if (averageHitBox > averageEnemyHitBox) { // If you are bigger you push them
-                    enemy.x += -1*strength*enemyDifX;
-                    enemy.y += -1*strength*enemyDifY;
-                } else {
-                    this.x += strength*enemyDifX;
-                    this.y += strength*enemyDifY;
-                };
-                console.log(strength*enemyDifX);
-            };
-        };
-    };
-    ///
-const enemyDifX = enemy.x - this.x;
-                const enemyDifY = enemy.y - this.y;
-                let enemyDist = Math.sqrt(enemyDifX**2 + enemyDifY**2);
-                if (enemyDist < 100) {
-                    if (enemyDist < 1) {
-                        enemyDist = 1;
-                    };
-                    const strength = (100 - enemyDist)/enemyDist;
-                    console.log(strength);
-                };
-
-
-                const minSeperation = (this.hitBoxX+this.hitBoxY)/2;
-                const tDX = enemy.x - this.x;
-                const tDY = enemy.y - this.y;
-                const disFromEnemy = Math.sqrt(tDX**2 + tDY**2);
-                console.log(disFromEnemy);
-                if (disFromEnemy < minSeperation+5) {
-                    const force = (minSeperation - disFromEnemy)/disFromEnemy;
-                    this.x += tDX*force*this.movementSpeed;
-                    this.y +=  tDY*force*this.movementSpeed;
-                };
-    //
-                attack() {
-                    if (this.canAttack) {
-                        this.canAttack = false;
-                        this.attacking = true;
-                        usePlayerProps.health -= this.weaponData.damage*this.attackDamageMultiplier;
-                        setTimeout(() => {
-                            this.attacking = false;
-                            setTimeout(() => {
-                                this.canAttack = true;
-                            }, this.weaponData.attackCoolDown);
-                        }, this.weaponData.attackDuration);
-                    };
-                };
-                shoot() {
-                    if (this.canShoot) {
-                        this.canShoot = false;
-                        this.shooting = true;
-                        this.bowData.shoot(this.x, usePlayerProps.x, this.y, usePlayerProps.y, 'enemy');
-                        setTimeout(() => {
-                            this.canShoot = true;
-                            this.shooting = false;
-                        }, this.bowData.fireRate);
-                    };
-                };
-
-shouldRush() {
-        if (this.cantRush) {
-            return(false);
-        }
-        let enemiesShooting = 0;
-        const summonLength = currentEnemies.length;
-        for (let i = 0; i < summonLength; i++) {
-            if (currentEnemies[i].shooting && currentEnemies[i].canAttack && !currentEnemies[i].isRushing) {
-                enemiesShooting += 1;
-            };
-        };
-        if (summonLength > 2 && ((enemiesShooting/summonLength) >= .5)) {
-            return(true);
-        } else {
-            return(false);
-        };
-    };
-*/
-
-/* Shows path
-    for (let i = 0; i < path.length; i++) {
-        ctx.fillStyle = 'rgb(255 0 0)';
-        ctx.beginPath();
-        ctx.rect(path[i].x, path[i].y, 5, 5);
-        ctx.fill();
-        ctx.closePath();
-    }
-
-    for (let x = 0; x < mainCanvas.width; x+=settings.gridRes) {
-        for (let y = 0; y < mainCanvas.height; y+=settings.gridRes) {
-            if (!pathMap.get(x)[y].walkAble) {
-                ctx.fillStyle = 'rgb(0, 0, 0)';
-                ctx.beginPath();
-                ctx.rect(x, y, 5, 5);
-                ctx.fill();
-                ctx.closePath();
-            };
-        };
-    };
-
-*/
 
 class armorGoblin extends goblin {
     constructor() {
@@ -936,19 +823,6 @@ const levelData = [
         waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
             [
                 [200, goblin, [weaponDefaultSword, null], [300, 200]],
-                [200, goblin, [null, null], [0, 250]],
-                [200, goblin, [null, null], [50, 250]],
-                [200, goblin, [null, null], [100, 250]],
-                [200, goblin, [null, null], [150, 250]],
-                [200, bigGoblin, [null, null], [200, 250]],
-                [200, bigGoblin, [null, null], [250, 250]],
-                /*[200, goblin, [weaponDefaultSword, null], [50, 200]],
-                [200, goblin, [null, null], [0, 300]],
-                [200, goblin, [null, null], [50, 350]],
-                [200, goblin, [null, null], [100, 450]],
-                [200, goblin, [null, null], [150, 500]],
-                [200, goblin, [null, null], [200, 150]],
-                [200, goblin, [null, null], [250, 100]],*/
             ],
             [
                 [200, goblin, [weaponDefaultSword, weaponBow], [450, 500]],
@@ -1274,6 +1148,7 @@ function establishMouseClick(event) {
         if (usePlayerProps.canAttack) {
             usePlayerProps.canAttack = false;
             usePlayerProps.attacking = true;
+            usePlayerProps.blocking = false;
             setTimeout(() => {
                 usePlayerProps.attacking = false;
                 setTimeout(() => {
@@ -1298,6 +1173,23 @@ function establishMouseClick(event) {
         };
     };
 };
+
+// gets right mouse click
+function establishRightMouseClick(event) {
+    event.preventDefault();
+    const useWeapon = (usePlayerProps.currentWeapon == 'sword' ? usePlayerProps.weaponData : usePlayerProps.bowData);
+    if (useWeapon && usePlayerProps.canBlock) {
+        usePlayerProps.canBlock = false;
+        usePlayerProps.blocking = true;
+        setTimeout(() => {
+            usePlayerProps.blocking = false;
+            setTimeout(() => {
+                usePlayerProps.canBlock = true;
+            }, useWeapon.blockCoolDown);
+        }, useWeapon.blockDuration);
+    };
+};
+
 
 // draws the HUD
 function drawHUD() {
@@ -1500,12 +1392,9 @@ function makeHords() {
         centerPos[1] = centerPos[1]/memberLength;
         hord.x = centerPos[0];
         hord.y = centerPos[1];
-        //
 
-        const eX = Math.round(hord.x / settings.gridRes) * settings.gridRes;
-        const eY = Math.round(hord.y / settings.gridRes) * settings.gridRes;
-        const pX = Math.round(usePlayerProps.x / settings.gridRes) * settings.gridRes;
-        const pY = Math.round(usePlayerProps.y / settings.gridRes) * settings.gridRes;
+        const [eX, eY] = inBounds(Math.round(hord.x / settings.gridRes) * settings.gridRes, Math.round(hord.y / settings.gridRes) * settings.gridRes);
+        const [pX, pY] = inBounds(Math.round(usePlayerProps.x / settings.gridRes) * settings.gridRes, Math.round(usePlayerProps.y / settings.gridRes) * settings.gridRes);
         const maxIterations = Math.round(Math.sqrt((pX - eX)**2 + (pY - eY)**2)*1.5);
 
         if (maxIterations <= 25) {
@@ -1592,7 +1481,7 @@ async function playLevel() {
             selectedEnemy.tickAction();
             selectedEnemy.draw(selectedEnemy.x, selectedEnemy.y);
             const averageHitBox = (selectedEnemy.hitBoxX+selectedEnemy.hitBoxY)/2;
-            if ((!selectedEnemy.wasAttacked && usePlayerProps.attacking) || (!selectedEnemy.wasSwingAttacked && usePlayerProps.isSwinging && ((usePlayerProps.currentWeapon == 'sword' && usePlayerProps.weaponData.swingable) || (usePlayerProps.currentWeapon == 'bow' && usePlayerProps.bowData.swingable)))) {
+            if ((!selectedEnemy.wasAttacked && usePlayerProps.attacking) || (!selectedEnemy.wasSwingAttacked && usePlayerProps.isSwinging && !usePlayerProps.blocking && ((usePlayerProps.currentWeapon == 'sword' && usePlayerProps.weaponData.swingable) || (usePlayerProps.currentWeapon == 'bow' && usePlayerProps.bowData.swingable)))) {
                 const startAt = ((offsetY+(usePlayerProps.weaponData.offset*-1))/averageHitBox)*-1+1;
                 for (let j = startAt; j <= (offsetY*-1)/averageHitBox; j++) {
                     const m = (j*averageHitBox*-1);
@@ -1639,16 +1528,15 @@ async function playLevel() {
             };
         };
         if (usePlayerProps.currentWeapon == 'sword') {
-            usePlayerProps.weaponData.draw(usePlayerProps.x, usePlayerProps.y, angle, offsetX, offsetY);
+            usePlayerProps.weaponData.draw(usePlayerProps.x, usePlayerProps.y, angle, offsetX, offsetY, usePlayerProps.blocking);
         } else {
-            usePlayerProps.bowData.draw(usePlayerProps.x, usePlayerProps.y, angle, offsetX, usePlayerProps.bowData.yOffset);
+            usePlayerProps.bowData.draw(usePlayerProps.x, usePlayerProps.y, angle, offsetX, usePlayerProps.bowData.yOffset, usePlayerProps.blocking);
         };
 
-        /*
         const hordLength = currentHords.length; // Debug for hords
         for (let i = 0; i < hordLength; i++) {
             const hord = currentHords[i];
-            const color = `rgb(${i*25}, ${i*25}, ${i*25})`;
+            const color = `rgb(${i*25}, ${255-(i*25)}, ${i*25})`;
             const memberLength = hord.members.length;
             for (let j = 0; j < memberLength; j++) {
                 const member = hord.members[j];
@@ -1659,7 +1547,6 @@ async function playLevel() {
                 ctx.closePath();
             };
         };
-        */
 
         if (!stillEnemiesToSummon && currentEnemies.length <= 0) {
             stillEnemiesToSummon = true;
@@ -1703,11 +1590,13 @@ async function runGame() {
             document.addEventListener('keyup', establishUserInputUp);
             document.addEventListener('mousemove', establishMouseInput);
             document.addEventListener('click', establishMouseClick);
+            document.addEventListener('contextmenu', establishRightMouseClick);
             await playLevel();
             document.removeEventListener('keydown', establishUserInputDown);
             document.removeEventListener('keyup', establishUserInputUp);
             document.removeEventListener('mousemove', establishMouseInput);
             document.removeEventListener('click', establishMouseClick);
+            document.removeEventListener('contextmenu', establishRightMouseClick);
             currentHords.splice(0, currentHords.length);
             if (usePlayerProps.health > 0) {
                 await handleShop();
