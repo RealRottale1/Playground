@@ -7,7 +7,7 @@ const ctx = mainCanvas.getContext('2d');
 // variables and settings
 // settings
 const settings = {
-    minHordRange: 10,
+    minHordRange: 5,
     gridRes: 5,
     refreshRate: 10,
     mouseSwingRate: 50,
@@ -474,6 +474,7 @@ function handlePathing(source) {
 
     fillMap([source], source.hitBoxX, source.hitBoxY, pathMap);
 
+    console.log(eX+' , '+eY);
     const start = pathMap.get(eX)[eY];
     const end = pathMap.get(pX)[pY];
     const path = makePath(start, end, maxIterations, pathMap);
@@ -551,6 +552,7 @@ class goblin {
         const nY = dY/distance;
         this.x += nX*this.movementSpeed;
         this.y += nY*this.movementSpeed;
+        const averageHitBox = (this.hitBoxX+this.hitBoxY)/2;
 
         const enemyLength = currentEnemies.length;
         for (let i = 0; i < enemyLength; i++) {
@@ -559,23 +561,34 @@ class goblin {
                 const enemyDifX = enemy.x - this.x;
                 const enemyDifY = enemy.y - this.y;
                 const enemyDist = Math.sqrt(enemyDifX**2 + enemyDifY**2);
-                const averageHitBox = (this.hitBoxX+this.hitBoxY)/2;
                 const averageEnemyHitBox = (enemy.hitBoxX+enemy.hitBoxY)/2;
-                const strength = (enemyDist>averageHitBox ? 0 : -1*(averageHitBox-enemyDist)/averageHitBox);
-                if (averageHitBox > averageEnemyHitBox) { // If you are bigger you push them
-                    enemy.x += -1*strength*enemyDifX;
-                    enemy.y += -1*strength*enemyDifY;
-                } else {
-                    this.x += strength*enemyDifX;
-                    this.y += strength*enemyDifY;
+                if (enemyDist <= averageHitBox+averageEnemyHitBox) {
+                    const strength = (enemyDist>averageHitBox ? 0 : -1*(averageHitBox-enemyDist)/averageHitBox);
+                    if (averageHitBox > averageEnemyHitBox) { // If you are bigger you push them
+                        enemy.x += -1*strength*enemyDifX;
+                        enemy.y += -1*strength*enemyDifY;
+                    } else {
+                        this.x += strength*enemyDifX;
+                        this.y += strength*enemyDifY;
+                    };
                 };
             };
+        };
+        const pDX = usePlayerProps.x - this.x;
+        const pDY = usePlayerProps.y - this.y;
+        const playerDistance = Math.sqrt(pDX**2 + pDY**2);
+        const averagePlayerHitBox = (usePlayerProps.sizeX+usePlayerProps.sizeY)/2;
+        if (playerDistance <= averageHitBox+averagePlayerHitBox) {
+            console.log('repeling')
+            const strength = (playerDistance>averageHitBox ? 0 : -1*(averageHitBox-playerDistance)/averageHitBox);
+            this.x += strength*pDX;
+            this.y += strength*pDY;
         };
     };
 
     handleMovment() {
         const endPos = [0, 0];
-        const hord = getMyHord(this);
+        const hord = (this.isRushing ? false : getMyHord(this));
         if (hord) {
             if (hord.path[0]) {
                 endPos[0] = this.x + (hord.path[0].x - hord.x);
@@ -927,15 +940,15 @@ const levelData = [
                 [200, goblin, [null, null], [50, 250]],
                 [200, goblin, [null, null], [100, 250]],
                 [200, goblin, [null, null], [150, 250]],
-                [200, goblin, [null, null], [200, 250]],
-                [200, goblin, [null, null], [250, 250]],
-                [200, goblin, [weaponDefaultSword, null], [50, 200]],
+                [200, bigGoblin, [null, null], [200, 250]],
+                [200, bigGoblin, [null, null], [250, 250]],
+                /*[200, goblin, [weaponDefaultSword, null], [50, 200]],
                 [200, goblin, [null, null], [0, 300]],
                 [200, goblin, [null, null], [50, 350]],
                 [200, goblin, [null, null], [100, 450]],
                 [200, goblin, [null, null], [150, 500]],
                 [200, goblin, [null, null], [200, 150]],
-                [200, goblin, [null, null], [250, 100]],
+                [200, goblin, [null, null], [250, 100]],*/
             ],
             [
                 [200, goblin, [weaponDefaultSword, weaponBow], [450, 500]],
@@ -1446,7 +1459,7 @@ function makeHords() {
                 const dY = (otherEnemy.x - enemy.x);
                 const distance = Math.sqrt(dX**2 + dY**2);
 
-                if (distance <= settings.minHordRange+enemySize+otherSize) {
+                if (distance <= settings.minHordRange+enemySize) {
                     addToHord.push(otherEnemy);
                 };
             };
@@ -1466,6 +1479,7 @@ function makeHords() {
             }
         };
         if (!alreadyInAHord) {
+            addToHord.push(enemy);
             currentHords.push({
                 members: addToHord,
             });
@@ -1629,6 +1643,23 @@ async function playLevel() {
         } else {
             usePlayerProps.bowData.draw(usePlayerProps.x, usePlayerProps.y, angle, offsetX, usePlayerProps.bowData.yOffset);
         };
+
+        /*
+        const hordLength = currentHords.length; // Debug for hords
+        for (let i = 0; i < hordLength; i++) {
+            const hord = currentHords[i];
+            const color = `rgb(${i*25}, ${i*25}, ${i*25})`;
+            const memberLength = hord.members.length;
+            for (let j = 0; j < memberLength; j++) {
+                const member = hord.members[j];
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.rect(member.x-member.sizeY/2, member.y-member.sizeY/2, member.sizeX, member.sizeY);
+                ctx.fill();
+                ctx.closePath();
+            };
+        };
+        */
 
         if (!stillEnemiesToSummon && currentEnemies.length <= 0) {
             stillEnemiesToSummon = true;
