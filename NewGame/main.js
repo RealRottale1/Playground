@@ -7,6 +7,7 @@ const ctx = mainCanvas.getContext('2d');
 // variables and settings
 // settings
 const settings = {
+    minHordRange: 10,
     gridRes: 5,
     refreshRate: 10,
     mouseSwingRate: 50,
@@ -62,6 +63,7 @@ let usePlayerProps = null;
 const currentBullets = [];
 const currentDropItems = [];
 const currentEnemies = [];
+const currentHords = [];
 
 // function for calculating weapon position
 function getWeaponPosition(x, y, mouseX, mouseY, sizeX, sizeY, offset, attacking) {
@@ -279,16 +281,15 @@ class playerProps {
     bowData = new weaponBow;
 };
 
-function fillMap(source, pathMap) {
+function fillMap(sources, sSX, sSY, pathMap) {
     const enemyLength = currentEnemies.length;
     for (let i = 0; i < enemyLength; i++) {
         const enemy = currentEnemies[i];
-        if (enemy != source) {
-            console.log(i);
+        if (!sources.includes(enemy)) {
             const nearestX = Math.round(enemy.x / settings.gridRes) * settings.gridRes;
             const nearestY = Math.round(enemy.y / settings.gridRes) * settings.gridRes;
-            const nearestHitBoxX = Math.round(((enemy.hitBoxX/2)+(source.hitBoxX/2)) / settings.gridRes) * settings.gridRes;
-            const nearestHitBoxY = Math.round(((enemy.hitBoxY/2)+(source.hitBoxY/2)) / settings.gridRes) * settings.gridRes;
+            const nearestHitBoxX = Math.round(((enemy.hitBoxX/2)+(sSX/2)) / settings.gridRes) * settings.gridRes;
+            const nearestHitBoxY = Math.round(((enemy.hitBoxY/2)+(sSY/2)) / settings.gridRes) * settings.gridRes;
 
             const minX = nearestX - nearestHitBoxX;
             const minY = nearestY - nearestHitBoxY;
@@ -455,7 +456,6 @@ function makePath(start, end, maxIterations, pathMap) {
     return([]); // no path
 };
 
-
 function handlePathing(source) {
     const eX = Math.round(source.x / settings.gridRes) * settings.gridRes;
     const eY = Math.round(source.y / settings.gridRes) * settings.gridRes;
@@ -472,8 +472,8 @@ function handlePathing(source) {
         pathMap.set(mapX, {});
     };
 
-    fillMap(source, pathMap);
-    
+    fillMap([source], source.hitBoxX, source.hitBoxY, pathMap);
+
     const start = pathMap.get(eX)[eY];
     const end = pathMap.get(pX)[pY];
     const path = makePath(start, end, maxIterations, pathMap);
@@ -482,6 +482,17 @@ function handlePathing(source) {
     };
     
     return(path);
+};
+
+function getMyHord(source) {
+    const hordLength = currentHords.length;
+    for (let i = 0; i < hordLength; i++) {
+        const hord = currentHords[i];
+        if (hord.members.includes(source)) {
+            return(hord);
+        }
+    };
+    return(false);
 };
 
 class goblin {
@@ -533,6 +544,7 @@ class goblin {
     rushClock= [0, 500];
     isRushing = false;
     path = [];
+    moving = false;
 
     move(dX, dY, distance) {
         const nX = dX/distance;
@@ -562,20 +574,30 @@ class goblin {
     };
 
     handleMovment() {
-        this.path = handlePathing(this);
-        if (this.path[0]) {
-            const dX = this.path[0].x - this.x;
-            const dY = this.path[0].y - this.y;
-            const distance = Math.sqrt(dX**2 + dY**2);
-            this.move(dX, dY, distance);
+        const endPos = [0, 0];
+        const hord = getMyHord(this);
+        if (hord) {
+            if (hord.path[0]) {
+                endPos[0] = this.x + (hord.path[0].x - hord.x);
+                endPos[1] = this.y + (hord.path[0].y - hord.y);
+            } else {
+                endPos[0] = usePlayerProps.x;
+                endPos[1] = usePlayerProps.y;
+            };
         } else {
-            const dX = usePlayerProps.x - this.x;
-            const dY = usePlayerProps.y - this.y;
-            const distance = Math.sqrt(dX**2 + dY**2);
-            this.move(dX, dY, distance);
+            this.path = handlePathing(this);
+            if (this.path[0]) {
+                endPos[0] = this.path[0].x;
+                endPos[1] = this.path[1].y;
+            } else {
+                endPos[0] = usePlayerProps.x;
+                endPos[1] = usePlayerProps.y;
+            };
         };
-        // move to next segment
-        // if near next segment delete it
+        const dX = endPos[0] - this.x;
+        const dY = endPos[1] - this.y;
+        const distance = Math.sqrt(dX**2 + dY**2);
+        this.move(dX, dY, distance);
     };
 
     shouldRush() {
@@ -632,17 +654,23 @@ class goblin {
         if (this.weaponData && (trueDistance <= this.weaponData.attackRange*this.attackRangeMultiplier*5/3) || this.isRushing) {
             this.currentWeapon = 'sword';
             if (trueDistance > this.weaponData.attackRange*this.attackRangeMultiplier) {
+                this.moving = true;
                 this.handleMovment();
             } else {
+                this.moving = false;
                 //this.attack();
             };
         } else if (this.bowData && (trueDistance <= this.bowData.attackRange*5/3)) {
             if (trueDistance > this.bowData.attackRange) {
+                this.moving = true;
                 this.handleMovment();
+            } else {
+                this.moving = false;
             };
             this.currentWeapon = 'bow';
             //this.shoot();
         } else {
+            this.moving = true;
             this.handleMovment();
         };
     };    
@@ -1392,6 +1420,103 @@ async function playTransition() {
     };
 };
 
+// assigns enemys to hords
+function makeHords() {
+    const enemyLength = currentEnemies.length;
+    for (let i = 0; i < enemyLength; i ++) {
+        const enemy = currentEnemies[i];
+        if (!enemy.moving) {
+            continue;
+        };
+        const enemySize = (enemy.hitBoxX + enemy.hitBoxY)/2;
+        const addToHord = [];
+
+        for (let j = 0; j < enemyLength; j ++) {
+            if (i != j) {
+                const otherEnemy = currentEnemies[j];
+                if (!otherEnemy.moving || enemy.movementSpeed != otherEnemy.movementSpeed) {
+                    continue;
+                };
+                const otherSize = (otherEnemy.hitBoxX + otherEnemy.hitBoxY)/2;
+                if (enemySize != otherSize) {
+                    continue;
+                };
+
+                const dX = (otherEnemy.x - enemy.x);
+                const dY = (otherEnemy.x - enemy.x);
+                const distance = Math.sqrt(dX**2 + dY**2);
+
+                if (distance <= settings.minHordRange+enemySize+otherSize) {
+                    addToHord.push(otherEnemy);
+                };
+            };
+        };
+        if (!addToHord[0]) {
+            continue;
+        };
+
+        let alreadyInAHord = false;
+        const hordLength = currentHords.length;
+        for (let j = 0; j < hordLength; j++) {
+            const hord = currentHords[j];
+            if (hord.members.includes(this)) {
+                alreadyInAHord = true;
+                hord.members = [...hord.members, ...addToHord];
+                break;
+            }
+        };
+        if (!alreadyInAHord) {
+            currentHords.push({
+                members: addToHord,
+            });
+        };
+    };
+
+    const hordLength = currentHords.length;
+    for (let i = 0; i < hordLength; i++) {
+        const hord = currentHords[i];
+        const centerPos = [0, 0];
+        const memberLength = hord.members.length;
+        for (let j = 0; j < memberLength; j++) {
+            const member = hord.members[j];
+            centerPos[0] += member.x;
+            centerPos[1] += member.y;
+        };
+        centerPos[0] = centerPos[0]/memberLength;
+        centerPos[1] = centerPos[1]/memberLength;
+        hord.x = centerPos[0];
+        hord.y = centerPos[1];
+        //
+
+        const eX = Math.round(hord.x / settings.gridRes) * settings.gridRes;
+        const eY = Math.round(hord.y / settings.gridRes) * settings.gridRes;
+        const pX = Math.round(usePlayerProps.x / settings.gridRes) * settings.gridRes;
+        const pY = Math.round(usePlayerProps.y / settings.gridRes) * settings.gridRes;
+        const maxIterations = Math.round(Math.sqrt((pX - eX)**2 + (pY - eY)**2)*1.5);
+
+        if (maxIterations <= 25) {
+            hord.path = [];
+            continue;
+        };
+
+        const pathMap = new Map();
+        for (let mapX = 0; mapX < mainCanvas.width+settings.gridRes; mapX+=settings.gridRes) {
+            pathMap.set(mapX, {});
+        };
+
+        fillMap(hord.members, hord.members[0].hitBoxX, hord.members[0].hitBoxY, pathMap);
+
+        const start = pathMap.get(eX)[eY];
+        const end = pathMap.get(pX)[pY];
+        const path = makePath(start, end, maxIterations, pathMap);
+        if (path[0]) {
+            path.splice(0, 1);
+        };
+        
+       hord.path = path;
+    };
+};
+
 // main game loop
 let amountSummoned = 0;
 let stillEnemiesToSummon = true;
@@ -1446,6 +1571,7 @@ async function playLevel() {
         usePlayerProps.draw(usePlayerProps.x, usePlayerProps.y);
         const [angle, offsetX, offsetY] = getWeaponPosition(usePlayerProps.x, usePlayerProps.y, usePlayerProps.mouseX, usePlayerProps.mouseY, usePlayerProps.weaponData.sizeX, usePlayerProps.weaponData.sizeY, usePlayerProps.weaponData.offset, usePlayerProps.attacking);
         const currentEnemyLength = currentEnemies.length;
+        makeHords();
         for (let i = currentEnemyLength - 1; i >= 0; i--) {
             const selectedEnemy = currentEnemies[i];
             selectedEnemy.getUseTexture();
@@ -1523,6 +1649,7 @@ async function playLevel() {
         };
 
         // End check
+        currentHords.splice(0, currentHords.length);
         if (usePlayerProps.health <= 0) {
             break;
         } else {
@@ -1550,6 +1677,7 @@ async function runGame() {
             document.removeEventListener('keyup', establishUserInputUp);
             document.removeEventListener('mousemove', establishMouseInput);
             document.removeEventListener('click', establishMouseClick);
+            currentHords.splice(0, currentHords.length);
             if (usePlayerProps.health > 0) {
                 await handleShop();
                 reloadGame();
