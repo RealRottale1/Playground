@@ -398,12 +398,16 @@ function getNeighbors(x, y, pathMap) {
     return(neighbors);
 };
 
-function makePath(start, end, pathMap) {
+function makePath(start, end, maxIterations, pathMap) {
     const path = [];
     const openSet = [start];
     const closedSet = [];
+    let iterations = 0;
     while (openSet.length > 0) {
-
+        iterations += 1;
+        if (iterations > maxIterations) {
+            break;
+        };
         let lowestIndex = 0;
         const openLength = openSet.length;
         for (let i = 0; i < openLength; i++) {
@@ -453,26 +457,30 @@ function makePath(start, end, pathMap) {
 
 
 function handlePathing(source) {
+    const eX = Math.round(source.x / settings.gridRes) * settings.gridRes;
+    const eY = Math.round(source.y / settings.gridRes) * settings.gridRes;
+    const pX = Math.round(usePlayerProps.x / settings.gridRes) * settings.gridRes;
+    const pY = Math.round(usePlayerProps.y / settings.gridRes) * settings.gridRes;
+    const maxIterations = Math.round(Math.sqrt((pX - eX)**2 + (pY - eY)**2)*1.5);
+
+    if (maxIterations <= 25) {
+        return([]);
+    };
+
     const pathMap = new Map();
     for (let mapX = 0; mapX < mainCanvas.width+settings.gridRes; mapX+=settings.gridRes) {
         pathMap.set(mapX, {});
     };
 
     fillMap(source, pathMap);
-    console.log(pathMap);
     
-    const eX = Math.round(source.x / settings.gridRes) * settings.gridRes;
-    const eY = Math.round(source.y / settings.gridRes) * settings.gridRes;
-    const pX = Math.round(usePlayerProps.x / settings.gridRes) * settings.gridRes;
-    const pY = Math.round(usePlayerProps.y / settings.gridRes) * settings.gridRes;
     const start = pathMap.get(eX)[eY];
     const end = pathMap.get(pX)[pY];
-
-    const path = makePath(start, end, pathMap);
+    const path = makePath(start, end, maxIterations, pathMap);
     if (path[0]) {
         path.splice(0, 1);
     };
-
+    
     return(path);
 };
 
@@ -517,7 +525,7 @@ class goblin {
     bowData = null;
     
     // movment/tick stuff
-    movementSpeed = 1.5;
+    movementSpeed = 2.5;
     checkTick = [0, 10000];
     currentRushTick = 0;
     swingAttackClock = [0, 10];
@@ -556,14 +564,15 @@ class goblin {
     handleMovment() {
         this.path = handlePathing(this);
         if (this.path[0]) {
-            console.log(this.path[0]);
-            console.log(this.path[0].x+' , '+this.x);
             const dX = this.path[0].x - this.x;
             const dY = this.path[0].y - this.y;
             const distance = Math.sqrt(dX**2 + dY**2);
             this.move(dX, dY, distance);
         } else {
-            console.log('path blocked AHHHHHH!');
+            const dX = usePlayerProps.x - this.x;
+            const dY = usePlayerProps.y - this.y;
+            const distance = Math.sqrt(dX**2 + dY**2);
+            this.move(dX, dY, distance);
         };
         // move to next segment
         // if near next segment delete it
@@ -892,6 +901,13 @@ const levelData = [
                 [200, goblin, [null, null], [150, 250]],
                 [200, goblin, [null, null], [200, 250]],
                 [200, goblin, [null, null], [250, 250]],
+                [200, goblin, [weaponDefaultSword, null], [50, 200]],
+                [200, goblin, [null, null], [0, 300]],
+                [200, goblin, [null, null], [50, 350]],
+                [200, goblin, [null, null], [100, 450]],
+                [200, goblin, [null, null], [150, 500]],
+                [200, goblin, [null, null], [200, 150]],
+                [200, goblin, [null, null], [250, 100]],
             ],
             [
                 [200, goblin, [weaponDefaultSword, weaponBow], [450, 500]],
