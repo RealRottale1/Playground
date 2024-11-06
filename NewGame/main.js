@@ -823,6 +823,27 @@ const levelData = [
         waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
             [
                 [200, goblin, [weaponDefaultSword, null], [300, 200]],
+                [200, goblin, [weaponDefaultSword, null], [300, 200]],
+                [200, goblin, [weaponDefaultSword, null], [300, 200]],
+                [200, goblin, [weaponDefaultSword, null], [300, 200]],
+                [200, goblin, [weaponDefaultSword, null], [300, 200]],
+                [200, goblin, [weaponDefaultSword, null], [300, 200]],
+                [200, goblin, [weaponDefaultSword, null], [300, 200]],
+                [200, goblin, [weaponDefaultSword, null], [300, 200]],
+                [200, goblin, [weaponDefaultSword, null], [300, 200]],
+                [200, goblin, [weaponDefaultSword, null], [300, 200]],
+                [200, goblin, [weaponDefaultSword, null], [300, 200]],
+                [200, goblin, [weaponDefaultSword, null], [300, 200]],
+                [200, goblin, [weaponDefaultSword, null], [300, 200]],
+                [200, goblin, [weaponDefaultSword, null], [300, 200]],
+                [200, goblin, [weaponDefaultSword, null], [300, 200]],
+                [200, goblin, [weaponDefaultSword, null], [300, 200]],
+                [200, goblin, [weaponDefaultSword, null], [300, 200]],
+                [200, goblin, [weaponDefaultSword, null], [300, 200]],
+                [200, goblin, [weaponDefaultSword, null], [300, 200]],
+                [200, goblin, [weaponDefaultSword, null], [300, 200]],
+                [200, goblin, [weaponDefaultSword, null], [300, 200]],
+                [200, goblin, [weaponDefaultSword, null], [300, 200]],
             ],
             [
                 [200, goblin, [weaponDefaultSword, weaponBow], [450, 500]],
@@ -1178,16 +1199,7 @@ function establishMouseClick(event) {
 function establishRightMouseClick(event) {
     event.preventDefault();
     const useWeapon = (usePlayerProps.currentWeapon == 'sword' ? usePlayerProps.weaponData : usePlayerProps.bowData);
-    if (useWeapon && usePlayerProps.canBlock) {
-        usePlayerProps.canBlock = false;
-        usePlayerProps.blocking = true;
-        setTimeout(() => {
-            usePlayerProps.blocking = false;
-            setTimeout(() => {
-                usePlayerProps.canBlock = true;
-            }, useWeapon.blockCoolDown);
-        }, useWeapon.blockDuration);
-    };
+    usePlayerProps.blocking = !usePlayerProps.blocking;
 };
 
 
