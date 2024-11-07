@@ -73,6 +73,7 @@ const gameTextures = {
     heart: makeImage('textures/drops/heart.png'),
     plainsBackground: makeImage('textures/areas/plainBackground.png'),
     plainsForeground: makeImage('textures/areas/plainForeground.png'),
+    shopBackground1: makeImage('textures/shopBackground/background1.png'),
 };
 
 let usePlayerProps = null;
@@ -823,35 +824,9 @@ const levelData = [
         waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
             [
                 [200, goblin, [weaponDefaultSword, null], [300, 200]],
-                [200, goblin, [weaponDefaultSword, null], [300, 200]],
-                [200, goblin, [weaponDefaultSword, null], [300, 200]],
-                [200, goblin, [weaponDefaultSword, null], [300, 200]],
-                [200, goblin, [weaponDefaultSword, null], [300, 200]],
-                [200, goblin, [weaponDefaultSword, null], [300, 200]],
-                [200, goblin, [weaponDefaultSword, null], [300, 200]],
-                [200, goblin, [weaponDefaultSword, null], [300, 200]],
-                [200, goblin, [weaponDefaultSword, null], [300, 200]],
-                [200, goblin, [weaponDefaultSword, null], [300, 200]],
-                [200, goblin, [weaponDefaultSword, null], [300, 200]],
-                [200, goblin, [weaponDefaultSword, null], [300, 200]],
-                [200, goblin, [weaponDefaultSword, null], [300, 200]],
-                [200, goblin, [weaponDefaultSword, null], [300, 200]],
-                [200, goblin, [weaponDefaultSword, null], [300, 200]],
-                [200, goblin, [weaponDefaultSword, null], [300, 200]],
-                [200, goblin, [weaponDefaultSword, null], [300, 200]],
-                [200, goblin, [weaponDefaultSword, null], [300, 200]],
-                [200, goblin, [weaponDefaultSword, null], [300, 200]],
-                [200, goblin, [weaponDefaultSword, null], [300, 200]],
-                [200, goblin, [weaponDefaultSword, null], [300, 200]],
-                [200, goblin, [weaponDefaultSword, null], [300, 200]],
             ],
             [
                 [200, goblin, [weaponDefaultSword, weaponBow], [450, 500]],
-                [200, goblin, [weaponDefaultSword, weaponBow], [0, 450]],
-                [200, goblin, [weaponDefaultSword, weaponBow], [250, 500]],
-                [200, goblin, [weaponDefaultSword, weaponBow], [350, 500]],
-                [200, goblin, [weaponDefaultSword, weaponBow], [0, 350]],
-                [200, goblin, [weaponDefaultSword, weaponBow], [150, 500]],
             ],
         ],
         shopItems: {
@@ -932,10 +907,9 @@ function optionsOnDeath() {
 
 function handleShop() {
     ctx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
-    ctx.fillStyle = 'rgb(0 255 0)';
     ctx.beginPath();
-    ctx.rect(0, 0, mainCanvas.width, mainCanvas.height);
-    ctx.fill();
+    ctx.drawImage(gameTextures.shopBackground1, 0, 0);
+    ctx.closePath();
 
     const useShopGear = [levelData[settings.currentLevel-1].shopItems.weapons[0], levelData[settings.currentLevel-1].shopItems.weapons[1], levelData[settings.currentLevel-1].shopItems.bows[0], levelData[settings.currentLevel-1].shopItems.bows[1]];
     shopItems.style.opacity = 1;
@@ -1021,6 +995,11 @@ function handleShop() {
             };
             shopItems.style.opacity = 0;
             shopItems.style.zIndex = 0;
+            for (let i = 0; i < 4; i++) {
+                const useShopButton = shopOptions[i+1];
+                useShopButton.style.backgroundColor = 'rgb(207, 156, 116)';
+                useShopButton.style.border = '2.5px solid rgb(138, 93, 59)';
+            }
             results();
         });
     });
@@ -1199,7 +1178,9 @@ function establishMouseClick(event) {
 function establishRightMouseClick(event) {
     event.preventDefault();
     const useWeapon = (usePlayerProps.currentWeapon == 'sword' ? usePlayerProps.weaponData : usePlayerProps.bowData);
-    usePlayerProps.blocking = !usePlayerProps.blocking;
+    if (useWeapon.canBlock) {
+        usePlayerProps.blocking = !usePlayerProps.blocking;
+    };
 };
 
 
