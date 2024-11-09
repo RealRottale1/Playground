@@ -354,6 +354,7 @@ class playerProps {
     isSwinging = false;
     canAttack = true;
     attacking = false;
+    initialAttackAngle = 0;
     canBlock = true;
     blocking = false;
     isShooting = false;
@@ -1012,7 +1013,13 @@ const levelData = [
         waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
             [
                 [200, biterGoblin, [null, null], [300, 200]],
-                [200, goblin, [weaponDefaultSword, null], [450, 500]],
+                [200, biterGoblin, [null, null], [300, 200]],
+                [200, biterGoblin, [null, null], [300, 200]],
+                [200, biterGoblin, [null, null], [300, 200]],
+                [200, biterGoblin, [null, null], [300, 200]],
+                [200, biterGoblin, [null, null], [300, 200]],
+                [200, biterGoblin, [null, null], [300, 200]],
+                [200, biterGoblin, [null, null], [300, 200]],
             ],
             [
                 [200, goblin, [weaponDefaultSword, weaponBow], [450, 500]],
@@ -1257,6 +1264,8 @@ function reloadGame() {
     usePlayerProps.canShoot = true;
     usePlayerProps.shooting = false;
     usePlayerProps.currentWeapon = 'sword';
+    usePlayerProps.bites = 0;
+    usePlayerProps.initialAttackAngle = 0;
 
     currentEnemies.splice(0, currentEnemies.length);
     currentBullets.splice(0, currentBullets.length);
@@ -1330,9 +1339,7 @@ function handelSwingingCheck() {
             break
         };
     };
-    if (!usePlayerProps.isSwinging) {
-        console.log('not swinging');
-    };
+    //console.log('results='+usePlayerProps.isSwinging);
     savedMouseDirections = [];
 };
 
@@ -1343,8 +1350,10 @@ function establishMouseClick(event) {
             usePlayerProps.canAttack = false;
             usePlayerProps.attacking = true;
             usePlayerProps.blocking = false;
+            usePlayerProps.initialAttackAngle = getMouseAngle();
             setTimeout(() => {
                 usePlayerProps.attacking = false;
+                usePlayerProps.initialAttackAngle = 0;
                 setTimeout(() => {
                     usePlayerProps.canAttack = true;
                     const currentEnemyLength = currentEnemies.length;
@@ -1648,6 +1657,15 @@ async function playLevel() {
         moveBullets();
         drawDroppedItems();
 
+        // Sword stab and slash debuff
+        let stabSwinging = false;
+        if (usePlayerProps.attacking) {
+            const currentMouseAngle = getMouseAngle();
+            if (Math.abs(usePlayerProps.initialAttackAngle - currentMouseAngle) > .5) {
+                stabSwinging = true;
+            };
+        };
+
         // Draw player and enemies
         usePlayerProps.draw(usePlayerProps.x, usePlayerProps.y);
         const [angle, offsetX, offsetY] = getWeaponPosition(usePlayerProps.x, usePlayerProps.y, usePlayerProps.mouseX, usePlayerProps.mouseY, usePlayerProps.weaponData.sizeX, usePlayerProps.weaponData.sizeY, usePlayerProps.weaponData.offset, usePlayerProps.attacking);
@@ -1663,9 +1681,9 @@ async function playLevel() {
             selectedEnemy.draw(selectedEnemy.x, selectedEnemy.y);
             const averageHitBox = (selectedEnemy.hitBoxX + selectedEnemy.hitBoxY) / 2;
             const canStab = (!selectedEnemy.wasAttacked && usePlayerProps.attacking);
-            
-            if (canStab || (!selectedEnemy.wasSwingAttacked && usePlayerProps.isSwinging && !usePlayerProps.blocking && ((usePlayerProps.currentWeapon == 'sword' && usePlayerProps.weaponData.swingable) || (usePlayerProps.currentWeapon == 'bow' && usePlayerProps.bowData.swingable)))) {
-                const initialOffset = (canStab ? 0 : usePlayerProps.weaponData.offset);
+            const canSwing = (!selectedEnemy.wasSwingAttacked && usePlayerProps.isSwinging && !usePlayerProps.blocking && ((usePlayerProps.currentWeapon == 'sword' && usePlayerProps.weaponData.swingable) || (usePlayerProps.currentWeapon == 'bow' && usePlayerProps.bowData.swingable)));
+            if (canStab || canSwing) {
+                const initialOffset = ((canStab && !stabSwinging) ? 0 : usePlayerProps.weaponData.offset);
                 const x1 = usePlayerProps.x + (initialOffset * Math.cos(angle + Math.PI / 2));
                 const y1 = usePlayerProps.y + (initialOffset * Math.sin(angle + Math.PI / 2));
                 const x2 = usePlayerProps.x + (offsetY * Math.cos(angle + Math.PI / 2));
@@ -1677,7 +1695,7 @@ async function playLevel() {
                 const yMax = selectedEnemy.y + selectedEnemy.hitBoxY/2;
 
                 if (lineIntersects(x1, y1, x2, y2, xMin, yMin, xMax, yMax)) {
-                    if (canStab) {
+                    if ((canStab && !stabSwinging)) {
                         selectedEnemy.wasAttacked = true;
                         selectedEnemy.health -= usePlayerProps.weaponData.damage;
                     } else {
