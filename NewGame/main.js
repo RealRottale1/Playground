@@ -59,9 +59,15 @@ const gameTextures = {
     bigGoblinFullHealth: makeImage('textures/enemies/bigGoblin/bigGoblin3.png'),
     bigGoblinHalfHealth: makeImage('textures/enemies/bigGoblin/bigGoblin2.png'),
     bigGoblinNearDeath: makeImage('textures/enemies/bigGoblin/bigGoblin1.png'),
-    armorGoblinFullHealth: makeImage('textures/enemies/armorGoblin/armorGoblin3.png'),
-    armorGoblinHalfHealth: makeImage('textures/enemies/armorGoblin/armorGoblin2.png'),
-    armorGoblinNearDeath: makeImage('textures/enemies/armorGoblin/armorGoblin1.png'),
+    berserkerGoblinFullHealth: makeImage('textures/enemies/berserkerGoblin/berserkerGoblin3.png'),
+    berserkerGoblinHalfHealth: makeImage('textures/enemies/berserkerGoblin/berserkerGoblin2.png'),
+    berserkerGoblinNearDeath: makeImage('textures/enemies/berserkerGoblin/berserkerGoblin1.png'),
+    archerGoblinFullHealth: makeImage('textures/enemies/archerGoblin/archerGoblin3.png'),
+    archerGoblinHalfHealth: makeImage('textures/enemies/archerGoblin/archerGoblin2.png'),
+    archerGoblinNearDeath: makeImage('textures/enemies/archerGoblin/archerGoblin1.png'),
+    bombGoblinFullHealth: makeImage('textures/enemies/bombGoblin/bombGoblin3.png'),
+    bombGoblinHalfHealth: makeImage('textures/enemies/bombGoblin/bombGoblin2.png'),
+    bombGoblinNearDeath: makeImage('textures/enemies/bombGoblin/bombGoblin1.png'),
     weaponDefaultSword: makeImage('textures/weapons/defaultSword.png'),
     weaponLongSword: makeImage('textures/weapons/longSword.png'),
     weaponBow: makeImage('textures/weapons/bow.png'),
@@ -748,15 +754,42 @@ class goblin {
     };    
 };
 
-class armorGoblin extends goblin {
+class archerGoblin extends goblin {
     constructor() {
         super();
-        this.fullHealth = gameTextures.armorGoblinFullHealth;
-        this.halfHealth = gameTextures.armorGoblinHalfHealth;
-        this.nearDeath = gameTextures.armorGoblinNearDeath;
-        this.starterHealth = 200;
-        this.health = 200;
-        this.movementSpeed = 1;
+        this.sizeX = 50;
+        this.sizeY = 50;
+        this.fullHealth = gameTextures.archerGoblinFullHealth;
+        this.halfHealth = gameTextures.archerGoblinHalfHealth;
+        this.nearDeath = gameTextures.archerGoblinNearDeath;
+        this.starterHealth = 100;
+        this.health = 100;
+    };
+};
+
+class berserkerGoblin extends goblin {
+    constructor() {
+        super();
+        this.sizeX = 50;
+        this.sizeY = 50;
+        this.fullHealth = gameTextures.berserkerGoblinFullHealth;
+        this.halfHealth = gameTextures.berserkerGoblinHalfHealth;
+        this.nearDeath = gameTextures.berserkerGoblinNearDeath;
+        this.starterHealth = 75;
+        this.health = 75;
+    };
+};
+
+class bombGoblin extends goblin {
+    constructor() {
+        super();
+        this.sizeX = 50;
+        this.sizeY = 50;
+        this.fullHealth = gameTextures.bombGoblinFullHealth;
+        this.halfHealth = gameTextures.bombGoblinHalfHealth;
+        this.nearDeath = gameTextures.bombGoblinNearDeath;
+        this.starterHealth = 100;
+        this.health = 100;
     };
 };
 
@@ -776,12 +809,6 @@ class bigGoblin extends goblin {
         this.attackDamageMultiplier = 1.5;
         this.movementSpeed = .5;
     };
-};
-
-const enemiesProps = {
-    goblin: goblin,
-    armorGoblin: armorGoblin,
-    bigGoblin: bigGoblin,
 };
 
 class dropItem {
@@ -823,7 +850,7 @@ const levelData = [
         ],
         waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
             [
-                [200, goblin, [weaponDefaultSword, null], [300, 200]],
+                [200, bombGoblin, [null, weaponBow], [300, 200]],
             ],
             [
                 [200, goblin, [weaponDefaultSword, weaponBow], [450, 500]],
