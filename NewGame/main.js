@@ -37,7 +37,27 @@ function inBounds(x, y) {
         y = mainCanvas.height;
     };
     return ([x, y]);
-}
+};
+
+function lineIntersects(x1, y1, x2, y2, xMin, yMin, xMax, yMax) {
+    function ccw(x1, y1, x2, y2, x3, y3) {
+        return((y3 - y1) * (x2 - x1) > (y2 - y1) * (x3 - x1));
+    };
+
+    function intersect(x1, y1, x2, y2, x3, y3, x4, y4) {
+        return(ccw(x1, y1, x3, y3, x4, y4) !== ccw(x2, y2, x3, y3, x4, y4) && ccw(x1, y1, x2, y2, x3, y3) !== ccw(x1, y1, x2, y2, x4, y4));
+    };
+
+    if (
+        intersect(x1, y1, x2, y2, xMin, yMin, xMin, yMax) ||
+        intersect(x1, y1, x2, y2, xMin, yMax, xMax, yMax) ||
+        intersect(x1, y1, x2, y2, xMax, yMax, xMax, yMin) ||
+        intersect(x1, y1, x2, y2, xMax, yMin, xMin, yMin)
+    ) {
+        return(true);
+    }
+    return(false);
+};
 
 function getDistance(point1, point2) {
     const dX = (point2.x - point1.x);
@@ -992,6 +1012,7 @@ const levelData = [
         waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
             [
                 [200, biterGoblin, [null, null], [300, 200]],
+                [200, goblin, [weaponDefaultSword, null], [450, 500]],
             ],
             [
                 [200, goblin, [weaponDefaultSword, weaponBow], [450, 500]],
@@ -1308,6 +1329,9 @@ function handelSwingingCheck() {
             usePlayerProps.isSwinging = true;
             break
         };
+    };
+    if (!usePlayerProps.isSwinging) {
+        console.log('not swinging');
     };
     savedMouseDirections = [];
 };
@@ -1629,6 +1653,7 @@ async function playLevel() {
         const [angle, offsetX, offsetY] = getWeaponPosition(usePlayerProps.x, usePlayerProps.y, usePlayerProps.mouseX, usePlayerProps.mouseY, usePlayerProps.weaponData.sizeX, usePlayerProps.weaponData.sizeY, usePlayerProps.weaponData.offset, usePlayerProps.attacking);
         const currentEnemyLength = currentEnemies.length;
         makeHords();
+        const holdingSword = (usePlayerProps.currentWeapon == 'sword');
         for (let i = currentEnemyLength - 1; i >= 0; i--) {
             const selectedEnemy = currentEnemies[i];
             if (!selectedEnemy.singleTexture) {
@@ -1637,41 +1662,37 @@ async function playLevel() {
             selectedEnemy.tickAction();
             selectedEnemy.draw(selectedEnemy.x, selectedEnemy.y);
             const averageHitBox = (selectedEnemy.hitBoxX + selectedEnemy.hitBoxY) / 2;
-            if ((!selectedEnemy.wasAttacked && usePlayerProps.attacking) || (!selectedEnemy.wasSwingAttacked && usePlayerProps.isSwinging && !usePlayerProps.blocking && ((usePlayerProps.currentWeapon == 'sword' && usePlayerProps.weaponData.swingable) || (usePlayerProps.currentWeapon == 'bow' && usePlayerProps.bowData.swingable)))) {
-                const startAt = ((offsetY + (usePlayerProps.weaponData.offset * -1)) / averageHitBox) * -1 + 1;
-                for (let j = startAt; j <= (offsetY * -1) / averageHitBox; j++) {
-                    const m = (j * averageHitBox * -1);
-                    const x = usePlayerProps.x + (m * Math.cos(angle + Math.PI / 2));
-                    const y = usePlayerProps.y + (m * Math.sin(angle + Math.PI / 2));
-                    
-                    ctx.beginPath(); // For debugging!
-                    ctx.fillStyle = 'blue';
-                    ctx.rect(x, y, 5, 5);
-                    ctx.fill();
-                    ctx.closePath();
-                    
-                    const distance = Math.sqrt((selectedEnemy.x - x) ** 2 + (selectedEnemy.y - y) ** 2);
-                    const enemyHit = (distance < averageHitBox);
-                    if (enemyHit) {
-                        if (!selectedEnemy.wasAttacked && usePlayerProps.attacking) {
-                            //console.log('Stab');
-                            selectedEnemy.wasAttacked = true;
-                            selectedEnemy.health -= usePlayerProps.weaponData.damage;
+            const canStab = (!selectedEnemy.wasAttacked && usePlayerProps.attacking);
+            
+            if (canStab || (!selectedEnemy.wasSwingAttacked && usePlayerProps.isSwinging && !usePlayerProps.blocking && ((usePlayerProps.currentWeapon == 'sword' && usePlayerProps.weaponData.swingable) || (usePlayerProps.currentWeapon == 'bow' && usePlayerProps.bowData.swingable)))) {
+                const initialOffset = (canStab ? 0 : usePlayerProps.weaponData.offset);
+                const x1 = usePlayerProps.x + (initialOffset * Math.cos(angle + Math.PI / 2));
+                const y1 = usePlayerProps.y + (initialOffset * Math.sin(angle + Math.PI / 2));
+                const x2 = usePlayerProps.x + (offsetY * Math.cos(angle + Math.PI / 2));
+                const y2 = usePlayerProps.y + (offsetY * Math.sin(angle + Math.PI / 2));
+
+                const xMin = selectedEnemy.x - selectedEnemy.hitBoxX/2;
+                const xMax = selectedEnemy.x + selectedEnemy.hitBoxX/2;
+                const yMin = selectedEnemy.y - selectedEnemy.hitBoxY/2;
+                const yMax = selectedEnemy.y + selectedEnemy.hitBoxY/2;
+
+                if (lineIntersects(x1, y1, x2, y2, xMin, yMin, xMax, yMax)) {
+                    if (canStab) {
+                        selectedEnemy.wasAttacked = true;
+                        selectedEnemy.health -= usePlayerProps.weaponData.damage;
+                    } else {
+                        selectedEnemy.wasSwingAttacked = true;
+                        if (holdingSword) {
+                            selectedEnemy.health -= usePlayerProps.weaponData.swingDamge;
                         } else {
-                            //console.log('Swing');
-                            selectedEnemy.wasSwingAttacked = true;
-                            if (usePlayerProps.currentWeapon == 'sword') {
-                                selectedEnemy.health -= usePlayerProps.weaponData.swingDamge;
-                            } else {
-                                selectedEnemy.health -= usePlayerProps.bowData.swingDamge;
-                            };
+                            selectedEnemy.health -= usePlayerProps.bowData.swingDamge;
                         };
-                        if (selectedEnemy.health <= 0) {
-                            selectedEnemy.die();
-                        };
-                        break;
+                    };
+                    if (selectedEnemy.health <= 0) {
+                        selectedEnemy.die();
                     };
                 };
+                
             };
 
             if (selectedEnemy.currentWeapon == 'sword') {
@@ -1682,7 +1703,7 @@ async function playLevel() {
                 selectedEnemy.bowData.draw(selectedEnemy.x, selectedEnemy.y, enemyAngle, enemyOffsetX, selectedEnemy.bowData.yOffset);
             };
         };
-        if (usePlayerProps.currentWeapon == 'sword') {
+        if (holdingSword) {
             usePlayerProps.weaponData.draw(usePlayerProps.x, usePlayerProps.y, angle, offsetX, offsetY, usePlayerProps.blocking);
         } else {
             usePlayerProps.bowData.draw(usePlayerProps.x, usePlayerProps.y, angle, offsetX, usePlayerProps.bowData.yOffset, usePlayerProps.blocking);
