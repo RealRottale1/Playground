@@ -79,6 +79,7 @@ const gameTextures = {
     bombGoblinFullHealthLit: makeImage('textures/enemies/bombGoblin/bombGoblinLit3.png'),
     bombGoblinHalfHealthLit: makeImage('textures/enemies/bombGoblin/bombGoblinLit2.png'),
     bombGoblinNearDeathLit: makeImage('textures/enemies/bombGoblin/bombGoblinLit1.png'),
+    biterGoblinFullHealth: makeImage('textures/enemies/biterGoblin/biterGoblin3.png'),
     weaponDefaultSword: makeImage('textures/weapons/defaultSword.png'),
     weaponLongSword: makeImage('textures/weapons/longSword.png'),
     weaponBow: makeImage('textures/weapons/bow.png'),
@@ -313,7 +314,11 @@ class playerProps {
         s: 0,
         d: 0,
     };
+    bites = 0;
     updateXY() {
+        if (this.bites > 0) {
+            return;
+        };
         const newX = this.x + (this.keyMovment.d - this.keyMovment.a) * this.playerMovmentAmount;
         const newY = this.y + (this.keyMovment.s - this.keyMovment.w) * this.playerMovmentAmount;
         if (newX >= 0 && newX <= mainCanvas.width) {
@@ -462,10 +467,6 @@ function makePath(start, end, maxIterations, pathMap) {
         let lowestIndex = 0;
         const openLength = openSet.length;
         for (let i = 0; i < openLength; i++) {
-            if (!openSet[i]) {
-                console.log(openSet);
-                debugger;
-            };
             if (openSet[i].f < openSet[lowestIndex].f) {
                 lowestIndex = i;
             };
@@ -895,6 +896,45 @@ class bombGoblin extends goblin {
     };
 };
 
+class biterGoblin extends goblin {
+    constructor() {
+        super();
+        this.sizeX = 20;
+        this.sizeY = 20;
+        this.hitBoxX = 20;
+        this.hitBoxY = 20;
+        this.useTexture = gameTextures.biterGoblinFullHealth;
+        this.starterHealth = 25;
+        this.health = 25;
+        this.movementSpeed = 3.5;
+        this.singleTexture = true;
+        this.bit = false;
+        this.biteDamage = 10;
+        this.biteRange = 5;
+    };
+
+    tickAction() { // for biter goblin
+        const trueDistance = this.criticalTickAction();
+        if (this.bit) {
+            return;
+        };
+
+        // action stuff
+        if (trueDistance <= this.biteRange) {
+            usePlayerProps.bites += 1;
+            usePlayerProps.health -= this.biteDamage;
+            this.bit = true
+        } else {
+            this.handleMovment();
+        };
+    };
+
+    die() {
+        usePlayerProps.bites -= 1;
+        super.die();
+    }
+};
+
 class bigGoblin extends goblin {
     constructor() {
         super();
@@ -951,7 +991,7 @@ const levelData = [
         ],
         waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
             [
-                [200, bombGoblin, [null, null], [300, 200]],
+                [200, biterGoblin, [null, null], [300, 200]],
             ],
             [
                 [200, goblin, [weaponDefaultSword, weaponBow], [450, 500]],
@@ -1591,7 +1631,9 @@ async function playLevel() {
         makeHords();
         for (let i = currentEnemyLength - 1; i >= 0; i--) {
             const selectedEnemy = currentEnemies[i];
-            selectedEnemy.getUseTexture();
+            if (!selectedEnemy.singleTexture) {
+                selectedEnemy.getUseTexture();
+            };
             selectedEnemy.tickAction();
             selectedEnemy.draw(selectedEnemy.x, selectedEnemy.y);
             const averageHitBox = (selectedEnemy.hitBoxX + selectedEnemy.hitBoxY) / 2;
@@ -1601,13 +1643,13 @@ async function playLevel() {
                     const m = (j * averageHitBox * -1);
                     const x = usePlayerProps.x + (m * Math.cos(angle + Math.PI / 2));
                     const y = usePlayerProps.y + (m * Math.sin(angle + Math.PI / 2));
-                    /*
+                    
                     ctx.beginPath(); // For debugging!
                     ctx.fillStyle = 'blue';
                     ctx.rect(x, y, 5, 5);
                     ctx.fill();
                     ctx.closePath();
-                    */
+                    
                     const distance = Math.sqrt((selectedEnemy.x - x) ** 2 + (selectedEnemy.y - y) ** 2);
                     const enemyHit = (distance < averageHitBox);
                     if (enemyHit) {
