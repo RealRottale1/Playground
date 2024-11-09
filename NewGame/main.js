@@ -100,6 +100,13 @@ const gameTextures = {
     bombGoblinHalfHealthLit: makeImage('textures/enemies/bombGoblin/bombGoblinLit2.png'),
     bombGoblinNearDeathLit: makeImage('textures/enemies/bombGoblin/bombGoblinLit1.png'),
     biterGoblinFullHealth: makeImage('textures/enemies/biterGoblin/biterGoblin3.png'),
+    mirrorGoblinFullHealth: makeImage('textures/enemies/mirrorGoblin/mirrorGoblin3.png'),
+    mirrorGoblinHalfHealth: makeImage('textures/enemies/mirrorGoblin/mirrorGoblin2.png'),
+    mirrorGoblinNearDeath: makeImage('textures/enemies/mirrorGoblin/mirrorGoblin1.png'),
+    ghostGoblinFullHealth: makeImage('textures/enemies/ghostGoblin/ghostGoblin3.png'),
+    poisonGoblinFullHealth: makeImage('textures/enemies/poisonGoblin/poisonGoblin3.png'),
+    poisonGoblinHalfHealth: makeImage('textures/enemies/poisonGoblin/poisonGoblin2.png'),
+    poisonGoblinNearDeath: makeImage('textures/enemies/poisonGoblin/poisonGoblin1.png'),
     weaponDefaultSword: makeImage('textures/weapons/defaultSword.png'),
     weaponLongSword: makeImage('textures/weapons/longSword.png'),
     weaponBow: makeImage('textures/weapons/bow.png'),
@@ -789,8 +796,6 @@ class archerGoblin extends goblin {
         this.fullHealth = gameTextures.archerGoblinFullHealth;
         this.halfHealth = gameTextures.archerGoblinHalfHealth;
         this.nearDeath = gameTextures.archerGoblinNearDeath;
-        this.starterHealth = 100;
-        this.health = 100;
     };
 };
 
@@ -925,10 +930,10 @@ class biterGoblin extends goblin {
         this.hitBoxX = 20;
         this.hitBoxY = 20;
         this.useTexture = gameTextures.biterGoblinFullHealth;
+        this.singleTexture = true;
         this.starterHealth = 25;
         this.health = 25;
         this.movementSpeed = 3.5;
-        this.singleTexture = true;
         this.bit = false;
         this.biteDamage = 10;
         this.biteRange = 5;
@@ -951,9 +956,43 @@ class biterGoblin extends goblin {
     };
 
     die() {
-        usePlayerProps.bites -= 1;
+        if (this.bit) {
+            usePlayerProps.bites -= 1;
+        };
         super.die();
     }
+};
+
+class mirrorGoblin extends goblin {
+    constructor() {
+        super();
+        this.sizeX = 50;
+        this.sizeY = 50;
+        this.fullHealth = gameTextures.mirrorGoblinFullHealth;
+        this.halfHealth = gameTextures.mirrorGoblinHalfHealth;
+        this.nearDeath = gameTextures.mirrorGoblinNearDeath;
+    };
+};
+
+class ghostGoblin extends goblin {
+    constructor() {
+        super();
+        this.sizeX = 50;
+        this.sizeY = 50;
+        this.useTexture = gameTextures.ghostGoblinFullHealth;
+        this.singleTexture = true;
+    };
+};
+
+class poisonGoblin extends goblin {
+    constructor() {
+        super();
+        this.sizeX = 50;
+        this.sizeY = 50;
+        this.fullHealth = gameTextures.poisonGoblinFullHealth;
+        this.halfHealth = gameTextures.poisonGoblinHalfHealth;
+        this.nearDeath = gameTextures.poisonGoblinNearDeath;
+    };
 };
 
 class bigGoblin extends goblin {
@@ -1012,14 +1051,7 @@ const levelData = [
         ],
         waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
             [
-                [200, biterGoblin, [null, null], [300, 200]],
-                [200, biterGoblin, [null, null], [300, 200]],
-                [200, biterGoblin, [null, null], [300, 200]],
-                [200, biterGoblin, [null, null], [300, 200]],
-                [200, biterGoblin, [null, null], [300, 200]],
-                [200, biterGoblin, [null, null], [300, 200]],
-                [200, biterGoblin, [null, null], [300, 200]],
-                [200, biterGoblin, [null, null], [300, 200]],
+                [200, poisonGoblin, [null, null], [300, 200]],
             ],
             [
                 [200, goblin, [weaponDefaultSword, weaponBow], [450, 500]],
