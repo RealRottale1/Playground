@@ -110,6 +110,9 @@ const gameTextures = {
     poisonGoblinFullHealth: makeImage('textures/enemies/poisonGoblin/poisonGoblin3.png'),
     poisonGoblinHalfHealth: makeImage('textures/enemies/poisonGoblin/poisonGoblin2.png'),
     poisonGoblinNearDeath: makeImage('textures/enemies/poisonGoblin/poisonGoblin1.png'),
+    ninjaGoblinFullHealth: makeImage('textures/enemies/ninjaGoblin/ninjaGoblin3.png'),
+    ninjaGoblinHalfHealth: makeImage('textures/enemies/ninjaGoblin/ninjaGoblin2.png'),
+    ninjaGoblinNearDeath: makeImage('textures/enemies/ninjaGoblin/ninjaGoblin1.png'),
     weaponDefaultSword: makeImage('textures/weapons/defaultSword.png'),
     weaponLongSword: makeImage('textures/weapons/longSword.png'),
     weaponBow: makeImage('textures/weapons/bow.png'),
@@ -627,7 +630,9 @@ class goblin {
         };
     };
     draw(x, y) {
+        ctx.globalAlpha = (this.opacity ? this.opacity : 1);
         ctx.drawImage(this.useTexture, x - this.sizeX / 2, y - this.sizeY / 2, this.sizeX, this.sizeY);
+        ctx.globalAlpha = 1;
     };
     starterHealth = 100;
     health = 100;
@@ -1012,6 +1017,7 @@ class ghostGoblin extends goblin {
         this.halfHealth = gameTextures.ghostGoblinHalfHealth;
         this.nearDeath = gameTextures.ghostGoblinNearDeath;
         this.hits = 0;
+        this.opacity = 0.5;
     };
     tpAway() {
         const ran = Math.floor(Math.floor(Math.random()*30)/10);
@@ -1058,6 +1064,30 @@ class poisonGoblin extends goblin {
         currentFloorgrounds.push(tile);
         super.die();
     }
+};
+
+class ninjaGoblin extends goblin {
+    constructor() {
+        super();
+        this.sizeX = 50;
+        this.sizeY = 50;
+        this.fullHealth = gameTextures.ninjaGoblinFullHealth;
+        this.halfHealth = gameTextures.ninjaGoblinHalfHealth;
+        this.nearDeath = gameTextures.ninjaGoblinNearDeath;
+    };
+
+    getUseTexture() {
+        if (this.health > 66) {
+            this.useTexture = this.fullHealth;
+            this.opacity = 0.125;
+        } else if (this.health <= 66 && this.health > 33) {
+            this.useTexture = this.halfHealth;
+            this.opacity = 0.45;
+        } else {
+            this.useTexture = this.nearDeath;
+            this.opacity = 1;
+        };
+    };
 };
 
 class bigGoblin extends goblin {
@@ -1116,13 +1146,31 @@ const levelData = [
         ],
         waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
             [
-                [200, poisonGoblin, [null, null], [300, 200]],
-                [200, ghostGoblin, [null, null], [300, 200]],
-                [200, biterGoblin, [null, null], [300, 200]],
-                [200, mirrorGoblin, [null, null], [300, 200]],
+                [200, ghostGoblin, [weaponDefaultSword, null], [250, 0]],
+                [200, ghostGoblin, [null, weaponBow], [250, 500]],
             ],
             [
-                [200, goblin, [weaponDefaultSword, weaponBow], [450, 500]],
+                [200, archerGoblin, [null, weaponBow], [50, 50]],
+                [500, archerGoblin, [null, weaponBow], [450, 50]],
+                [650, mirrorGoblin, [null, null], [250, 500]],
+                [800, archerGoblin, [null, weaponBow], [50, 450]],
+                [1100, archerGoblin, [null, weaponBow], [450, 450]], 
+            ],
+            [
+                [200, bombGoblin, [null, null], [250, 0]],
+                [300, biterGoblin, [null, null], [250, 500]],
+                [400, bombGoblin, [null, null], [250, 500]],
+                [500, biterGoblin, [null, null], [250, 500]],
+                [600, bombGoblin, [null, null], [0, 250]],
+                [700, biterGoblin, [null, null], [250, 500]],
+                [800, bombGoblin, [null, null], [500, 250]],
+            ],
+            [
+                [200, ghostGoblin, [weaponDefaultSword, null], [250, 0]],
+                [200, ghostGoblin, [null, weaponBow], [250, 500]],
+                [600, bigGoblin, [weaponDefaultSword, null], [0, 250]],
+                [800, bigGoblin, [weaponDefaultSword, null], [500, 250]],
+                [1000, poisonGoblin, [null, weaponBow], [0, 250]],
             ],
         ],
         shopItems: {
@@ -1395,6 +1443,7 @@ function handleSetKeyMovment(event, setTo) {
                 usePlayerProps.currentWeapon = 'sword';
                 break;
             case ('2'):
+                usePlayerProps.blocking = false;
                 usePlayerProps.currentWeapon = 'bow';
                 break;
             default:
