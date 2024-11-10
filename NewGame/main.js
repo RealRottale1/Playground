@@ -117,6 +117,12 @@ const gameTextures = {
     skeletonGoblinHalfHealth: makeImage('textures/enemies/skeletonGoblin/skeletonGoblin2.png'),
     skeletonGoblinNearDeath: makeImage('textures/enemies/skeletonGoblin/skeletonGoblin1.png'),
     skeletonGoblinDead: makeImage('textures/enemies/skeletonGoblin/skeletonGoblinDead.png'),
+    shamanGoblinFullHealth: makeImage('textures/enemies/shamanGoblin/shamanGoblin3.png'),
+    shamanGoblinHalfHealth: makeImage('textures/enemies/shamanGoblin/shamanGoblin2.png'),
+    shamanGoblinNearDeath: makeImage('textures/enemies/shamanGoblin/shamanGoblin1.png'),
+    shamanGoblinFullHealthMagic: makeImage('textures/enemies/shamanGoblin/shamanGoblin3Magic.png'),
+    shamanGoblinHalfHealthMagic: makeImage('textures/enemies/shamanGoblin/shamanGoblin2Magic.png'),
+    shamanGoblinNearDeathMagic: makeImage('textures/enemies/shamanGoblin/shamanGoblin1Magic.png'),
     weaponDefaultSword: makeImage('textures/weapons/defaultSword.png'),
     weaponLongSword: makeImage('textures/weapons/longSword.png'),
     weaponBow: makeImage('textures/weapons/bow.png'),
@@ -170,6 +176,20 @@ const currentEnemies = [];
 const currentHords = [];
 const currentForegrounds = [];
 const currentFloorgrounds = [];
+
+// handles spawning in enemies
+function summonEnemy(enemyData) {
+    const summonedEnemy = new enemyData[1];
+    if (enemyData[2][0]) {
+        summonedEnemy.weaponData = new enemyData[2][0];
+    };
+    if (enemyData[2][1]) {
+        summonedEnemy.bowData = new enemyData[2][1];
+    };
+    summonedEnemy.x = enemyData[3][0];
+    summonedEnemy.y = enemyData[3][1];
+    currentEnemies.push(summonedEnemy);
+};
 
 function getMouseAngle() {
     const dX = usePlayerProps.mouseX - usePlayerProps.x;
@@ -309,8 +329,8 @@ class weaponDefaultSword extends weaponHands {
         super();
         this.swingable = true;
         this.attackRange = 80;
-        this.damage = 35;
-        this.swingDamge = 4.6;
+        this.damage = 15;
+        this.swingDamge = 2.5;
         this.attackDuration = 750;
         this.attackCoolDown = 250;
         this.canBlock = true;
@@ -402,7 +422,7 @@ class playerProps {
     canShoot = true;
     shooting = false;
     currentWeapon = 'sword';
-    weaponData = new weaponLongSword;
+    weaponData = new weaponDefaultSword;
     bowData = new weaponBow;
 };
 
@@ -748,7 +768,6 @@ class goblin {
                 const difference = Math.abs(playerAngle - attackAngle);
 
                 if (difference < (29 * Math.PI / 36) || difference > (43 * Math.PI / 36)) {
-                    console.log('FREE HIT!');
                     usePlayerProps.health -= this.weaponData.damage * this.attackDamageMultiplier;
                 };
             } else {
@@ -1163,7 +1182,7 @@ class skeletonGoblin extends goblin {
             this.useTexture = this.nearDeath;
         } else {
             this.useTexture = this.dead;
-        }
+        };
     };
 
     die() {
@@ -1187,6 +1206,82 @@ class skeletonGoblin extends goblin {
 
         if (!this.reviving) {
             super.tickAction();
+        };
+    };
+};
+
+class shamanGoblin extends goblin {
+    constructor() {
+        super();
+        this.sizeX = 50;
+        this.sizeY = 50;
+        this.fullHealth = gameTextures.shamanGoblinFullHealth;
+        this.halfHealth = gameTextures.shamanGoblinHalfHealth;
+        this.nearDeath = gameTextures.shamanGoblinNearDeath;
+        this.fullHealthMagic = gameTextures.shamanGoblinFullHealthMagic;
+        this.halfHealthMagic = gameTextures.shamanGoblinHalfHealthMagic;
+        this.nearDeathMagic = gameTextures.shamanGoblinNearDeathMagic;
+        this.summoning = false;
+        this.summonRange = 150;
+        this.summoningDuration = 2500;
+        this.summonCD = false;
+        this.summonCDTime = 5000;
+    };
+
+    getUseTexture() {
+        if (this.health > 66) {
+            if (!this.summoning) {
+                this.useTexture = this.fullHealth;
+            } else {
+                this.useTexture = this.fullHealthMagic;
+            };
+        } else if (this.health <= 66 && this.health > 33) {
+            if (!this.summoning) {
+                this.useTexture = this.halfHealth;
+            } else {
+                this.useTexture = this.halfHealthMagic;
+            };
+        } else {
+            if (!this.summoning) {
+                this.useTexture = this.nearDeath;
+            } else {
+                this.useTexture = this.nearDeathMagic;
+            };
+        };
+    };
+
+    tickAction() { // for shaman goblin
+        const trueDistance = this.criticalTickAction();
+        if (this.summoning) {
+            return;
+        };
+
+        // action stuff
+        if (trueDistance <= this.summonRange) {
+            if (this.summonCD) {
+                return;
+            };
+            this.summoning = true;
+            setTimeout(() => {
+                if (!this || this.health <= 0) {
+                    return;
+                };
+                this.summoning = false;
+                const onX = Math.round(Math.random());
+                const summonX = (onX ? 0 : Math.floor(Math.random()*mainCanvas.width));
+                const summonY = (onX ? Math.floor(Math.random()*mainCanvas.width) : 0);
+                if (Math.round(Math.random()) == 1) {
+                    summonEnemy([null, ghostGoblin, [weaponDefaultSword, null], [summonX, summonY]]);
+                } else {
+                    summonEnemy([null, skeletonGoblin, [weaponDefaultSword, null], [summonX, summonY]]);
+                };
+                this.summonCD = true;
+                setTimeout(() => {
+                    this.summonCD = false;
+                }, this.summonCDTime);
+            }, this.summoningDuration);
+        } else {
+            this.handleMovment();
         };
     };
 };
@@ -1247,36 +1342,33 @@ const levelData = [
         ],
         waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
             [
-                [200, skeletonGoblin, [weaponDefaultSword, null], [50, 50]],
-                [200, skeletonGoblin, [weaponDefaultSword, null], [50, 50]],
-                [200, skeletonGoblin, [weaponDefaultSword, null], [50, 50]],
-                [200, skeletonGoblin, [weaponDefaultSword, null], [50, 50]],
-                [200, skeletonGoblin, [weaponDefaultSword, null], [50, 50]],
-                [200, skeletonGoblin, [weaponDefaultSword, null], [50, 50]],
-                [200, skeletonGoblin, [weaponDefaultSword, null], [50, 50]],
+                [200, shamanGoblin, [null, null], [50, 50]],
+                [200, shamanGoblin, [null, null], [450, 450]],
+                [1500, poisonGoblin, [null, weaponBow], [0, 250]],
             ],
             [
                 [200, archerGoblin, [null, weaponBow], [50, 50]],
                 [500, archerGoblin, [null, weaponBow], [450, 50]],
                 [650, mirrorGoblin, [null, null], [250, 500]],
+                [650, mirrorGoblin, [null, null], [500, 250]],
                 [800, archerGoblin, [null, weaponBow], [50, 450]],
                 [1100, archerGoblin, [null, weaponBow], [450, 450]], 
             ],
             [
                 [200, bombGoblin, [null, null], [250, 0]],
-                [300, biterGoblin, [null, null], [250, 500]],
+                [300, biterGoblin, [null, null], [0, 250]],
                 [400, bombGoblin, [null, null], [250, 500]],
-                [500, biterGoblin, [null, null], [250, 500]],
+                [500, biterGoblin, [null, null], [500, 250]],
                 [600, bombGoblin, [null, null], [0, 250]],
-                [700, biterGoblin, [null, null], [250, 500]],
+                [700, biterGoblin, [null, null], [250, 0]],
                 [800, bombGoblin, [null, null], [500, 250]],
+                [900, biterGoblin, [null, null], [250, 500]],
             ],
             [
                 [200, ghostGoblin, [weaponDefaultSword, null], [250, 0]],
                 [200, ghostGoblin, [null, weaponBow], [250, 500]],
                 [600, bigGoblin, [weaponDefaultSword, null], [0, 250]],
                 [800, bigGoblin, [weaponDefaultSword, null], [500, 250]],
-                [1000, poisonGoblin, [null, weaponBow], [0, 250]],
             ],
         ],
         shopItems: {
@@ -1723,20 +1815,6 @@ function moveBullets() {
         ctx.closePath();
         */
     };
-};
-
-// handles spawning in enemies
-function summonEnemy(enemyData) {
-    const summonedEnemy = new enemyData[1];
-    if (enemyData[2][0]) {
-        summonedEnemy.weaponData = new enemyData[2][0];
-    };
-    if (enemyData[2][1]) {
-        summonedEnemy.bowData = new enemyData[2][1];
-    };
-    summonedEnemy.x = enemyData[3][0];
-    summonedEnemy.y = enemyData[3][1];
-    currentEnemies.push(summonedEnemy);
 };
 
 // plays transition
