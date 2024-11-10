@@ -104,6 +104,8 @@ const gameTextures = {
     mirrorGoblinHalfHealth: makeImage('textures/enemies/mirrorGoblin/mirrorGoblin2.png'),
     mirrorGoblinNearDeath: makeImage('textures/enemies/mirrorGoblin/mirrorGoblin1.png'),
     ghostGoblinFullHealth: makeImage('textures/enemies/ghostGoblin/ghostGoblin3.png'),
+    ghostGoblinHalfHealth: makeImage('textures/enemies/ghostGoblin/ghostGoblin2.png'),
+    ghostGoblinNearDeath: makeImage('textures/enemies/ghostGoblin/ghostGoblin1.png'),
     poisonGoblinFullHealth: makeImage('textures/enemies/poisonGoblin/poisonGoblin3.png'),
     poisonGoblinHalfHealth: makeImage('textures/enemies/poisonGoblin/poisonGoblin2.png'),
     poisonGoblinNearDeath: makeImage('textures/enemies/poisonGoblin/poisonGoblin1.png'),
@@ -142,6 +144,12 @@ const currentDropItems = [];
 const currentEnemies = [];
 const currentHords = [];
 const currentForegrounds = [];
+
+function getMouseAngle() {
+    const dX = usePlayerProps.mouseX - usePlayerProps.x;
+    const dY = usePlayerProps.mouseY - usePlayerProps.y;
+    return (Math.atan2(dY, dX));
+};
 
 // function for calculating weapon position
 function getWeaponPosition(x, y, mouseX, mouseY, sizeX, sizeY, offset, attacking) {
@@ -979,8 +987,35 @@ class ghostGoblin extends goblin {
         super();
         this.sizeX = 50;
         this.sizeY = 50;
-        this.useTexture = gameTextures.ghostGoblinFullHealth;
-        this.singleTexture = true;
+        this.fullHealth = gameTextures.ghostGoblinFullHealth;
+        this.halfHealth = gameTextures.ghostGoblinHalfHealth;
+        this.nearDeath = gameTextures.ghostGoblinNearDeath;
+        this.hits = 0;
+    };
+    tpAway() {
+        const ran = Math.floor(Math.floor(Math.random()*30)/10);
+        const newAngle = (ran == 0 ? Math.PI : (ran == 1 ? 3*Math.PI/2 : Math.PI/2));
+        const weaponAngle = getMouseAngle() + newAngle;
+        const [newX, newY] = inBounds((this.x - (-250 * Math.cos(weaponAngle))), (this.y - (-250 * Math.sin(weaponAngle))));
+        this.x = newX;
+        this.y = newY;
+    };
+    getUseTexture() {
+        if (this.health > 66) {
+            this.useTexture = this.fullHealth;
+        } else if (this.health <= 66 && this.health > 33) {
+            this.useTexture = this.halfHealth;
+            if (this.hits == 0) {
+                this.hits = 1;
+                this.tpAway();
+            };
+        } else {
+            this.useTexture = this.nearDeath;
+            if (this.hits == 1) {
+                this.hits = 2;
+                this.tpAway();
+            };
+        };
     };
 };
 
@@ -1051,7 +1086,7 @@ const levelData = [
         ],
         waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
             [
-                [200, poisonGoblin, [null, null], [300, 200]],
+                [200, ghostGoblin, [null, null], [300, 200]],
             ],
             [
                 [200, goblin, [weaponDefaultSword, weaponBow], [450, 500]],
@@ -1341,12 +1376,6 @@ function establishUserInputDown(event) {
 // gets key up
 function establishUserInputUp(event) {
     handleSetKeyMovment(event, 0);
-};
-
-function getMouseAngle() {
-    const dX = usePlayerProps.mouseX - usePlayerProps.x;
-    const dY = usePlayerProps.mouseY - usePlayerProps.y;
-    return (Math.atan2(dY, dX));
 };
 
 // gets mouse position
@@ -1759,7 +1788,7 @@ async function playLevel() {
             usePlayerProps.bowData.draw(usePlayerProps.x, usePlayerProps.y, angle, offsetX, usePlayerProps.bowData.yOffset, usePlayerProps.blocking);
         };
 
-        const hordLength = currentHords.length; // Debug for hords
+        /*onst hordLength = currentHords.length; // Debug for hords
         for (let i = 0; i < hordLength; i++) {
             const hord = currentHords[i];
             const color = `rgb(${i * 25}, ${255 - (i * 25)}, ${i * 25})`;
@@ -1768,11 +1797,11 @@ async function playLevel() {
                 const member = hord.members[j];
                 ctx.fillStyle = color;
                 ctx.beginPath();
-                ctx.rect(member.x - member.sizeY / 2, member.y - member.sizeY / 2, member.sizeX, member.sizeY);
+                ctx.rect(member.x - member.hitBoxX / 2, member.y - member.hitBoxY / 2, member.hitBoxX, member.hitBoxY);
                 ctx.fill();
                 ctx.closePath();
             };
-        };
+        };*/
 
         if (!stillEnemiesToSummon && currentEnemies.length <= 0) {
             stillEnemiesToSummon = true;
