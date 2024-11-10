@@ -113,6 +113,10 @@ const gameTextures = {
     ninjaGoblinFullHealth: makeImage('textures/enemies/ninjaGoblin/ninjaGoblin3.png'),
     ninjaGoblinHalfHealth: makeImage('textures/enemies/ninjaGoblin/ninjaGoblin2.png'),
     ninjaGoblinNearDeath: makeImage('textures/enemies/ninjaGoblin/ninjaGoblin1.png'),
+    skeletonGoblinFullHealth: makeImage('textures/enemies/skeletonGoblin/skeletonGoblin3.png'),
+    skeletonGoblinHalfHealth: makeImage('textures/enemies/skeletonGoblin/skeletonGoblin2.png'),
+    skeletonGoblinNearDeath: makeImage('textures/enemies/skeletonGoblin/skeletonGoblin1.png'),
+    skeletonGoblinDead: makeImage('textures/enemies/skeletonGoblin/skeletonGoblinDead.png'),
     weaponDefaultSword: makeImage('textures/weapons/defaultSword.png'),
     weaponLongSword: makeImage('textures/weapons/longSword.png'),
     weaponBow: makeImage('textures/weapons/bow.png'),
@@ -398,7 +402,7 @@ class playerProps {
     canShoot = true;
     shooting = false;
     currentWeapon = 'sword';
-    weaponData = new weaponDefaultSword;
+    weaponData = new weaponLongSword;
     bowData = new weaponBow;
 };
 
@@ -1136,6 +1140,57 @@ class ninjaGoblin extends goblin {
     };
 };
 
+class skeletonGoblin extends goblin {
+    constructor() {
+        super();
+        this.sizeX = 50;
+        this.sizeY = 50;
+        this.fullHealth = gameTextures.skeletonGoblinFullHealth;
+        this.halfHealth = gameTextures.skeletonGoblinHalfHealth;
+        this.nearDeath = gameTextures.skeletonGoblinNearDeath;
+        this.dead = gameTextures.skeletonGoblinDead;
+        this.reviving = false;
+        this.reviveTime = 7500;
+        this.killCD = false;
+    };
+
+    getUseTexture() {
+        if (this.health > 66) {
+            this.useTexture = this.fullHealth;
+        } else if (this.health <= 66 && this.health > 33) {
+            this.useTexture = this.halfHealth;
+        } else if (!this.reviving) {
+            this.useTexture = this.nearDeath;
+        } else {
+            this.useTexture = this.dead;
+        }
+    };
+
+    die() {
+        if (!this.reviving) {
+            this.killCD = true
+            this.reviving = true;
+            setTimeout(() => {
+                this.killCD = false
+                setTimeout(() => {
+                    this.health = 100;
+                    this.reviving = false;
+                }, this.reviveTime);
+            }, 500);
+        } else if (!this.killCD) {
+            super.die();
+        };
+    };
+
+    tickAction() {
+        this.criticalTickAction();
+
+        if (!this.reviving) {
+            super.tickAction();
+        };
+    };
+};
+
 class bigGoblin extends goblin {
     constructor() {
         super();
@@ -1191,6 +1246,15 @@ const levelData = [
             [gameTextures.missingTexture, 10],
         ],
         waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
+            [
+                [200, skeletonGoblin, [weaponDefaultSword, null], [50, 50]],
+                [200, skeletonGoblin, [weaponDefaultSword, null], [50, 50]],
+                [200, skeletonGoblin, [weaponDefaultSword, null], [50, 50]],
+                [200, skeletonGoblin, [weaponDefaultSword, null], [50, 50]],
+                [200, skeletonGoblin, [weaponDefaultSword, null], [50, 50]],
+                [200, skeletonGoblin, [weaponDefaultSword, null], [50, 50]],
+                [200, skeletonGoblin, [weaponDefaultSword, null], [50, 50]],
+            ],
             [
                 [200, archerGoblin, [null, weaponBow], [50, 50]],
                 [500, archerGoblin, [null, weaponBow], [450, 50]],
@@ -1920,12 +1984,14 @@ async function playLevel() {
                 
             };
 
-            if (selectedEnemy.currentWeapon == 'sword') {
-                const [enemyAngle, enemyOffsetX, enemyOffsetY] = getWeaponPosition(selectedEnemy.x, selectedEnemy.y, usePlayerProps.x, usePlayerProps.y, selectedEnemy.weaponData.sizeX, selectedEnemy.weaponData.sizeY + averageHitBox, selectedEnemy.weaponData.offset, selectedEnemy.attacking);
-                selectedEnemy.weaponData.draw(selectedEnemy.x, selectedEnemy.y, enemyAngle, enemyOffsetX, enemyOffsetY);
-            } else {
-                const [enemyAngle, enemyOffsetX, enemyOffsetY] = getWeaponPosition(selectedEnemy.x, selectedEnemy.y, usePlayerProps.x, usePlayerProps.y, selectedEnemy.bowData.sizeX, selectedEnemy.bowData.sizeY + averageHitBox, selectedEnemy.bowData.offset, null);
-                selectedEnemy.bowData.draw(selectedEnemy.x, selectedEnemy.y, enemyAngle, enemyOffsetX, selectedEnemy.bowData.yOffset);
+            if (selectedEnemy.health > 0) {
+                if (selectedEnemy.currentWeapon == 'sword') {
+                    const [enemyAngle, enemyOffsetX, enemyOffsetY] = getWeaponPosition(selectedEnemy.x, selectedEnemy.y, usePlayerProps.x, usePlayerProps.y, selectedEnemy.weaponData.sizeX, selectedEnemy.weaponData.sizeY + averageHitBox, selectedEnemy.weaponData.offset, selectedEnemy.attacking);
+                    selectedEnemy.weaponData.draw(selectedEnemy.x, selectedEnemy.y, enemyAngle, enemyOffsetX, enemyOffsetY);
+                } else {
+                    const [enemyAngle, enemyOffsetX, enemyOffsetY] = getWeaponPosition(selectedEnemy.x, selectedEnemy.y, usePlayerProps.x, usePlayerProps.y, selectedEnemy.bowData.sizeX, selectedEnemy.bowData.sizeY + averageHitBox, selectedEnemy.bowData.offset, null);
+                    selectedEnemy.bowData.draw(selectedEnemy.x, selectedEnemy.y, enemyAngle, enemyOffsetX, selectedEnemy.bowData.yOffset);
+                };
             };
         };
         if (holdingSword) {
