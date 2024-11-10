@@ -1044,6 +1044,52 @@ class ghostGoblin extends goblin {
             };
         };
     };
+
+    move(dX, dY, distance) {
+        const nX = dX / distance;
+        const nY = dY / distance;
+        this.x += nX * this.movementSpeed;
+        this.y += nY * this.movementSpeed;
+        const averageHitBox = (this.hitBoxX + this.hitBoxY) / 2;
+
+        const enemyLength = currentEnemies.length;
+        for (let i = 0; i < enemyLength; i++) {
+            const enemy = currentEnemies[i];
+            if (enemy != this && enemy.constructor.name != this.constructor.name) {
+                const enemyDifX = enemy.x - this.x;
+                const enemyDifY = enemy.y - this.y;
+                const enemyDist = Math.sqrt(enemyDifX ** 2 + enemyDifY ** 2);
+                const averageEnemyHitBox = (enemy.hitBoxX + enemy.hitBoxY) / 2;
+                if (enemyDist <= averageHitBox + averageEnemyHitBox) {
+                    const strength = (enemyDist > averageHitBox ? 0 : -1 * (averageHitBox - enemyDist) / averageHitBox);
+                    if (averageHitBox > averageEnemyHitBox) { // If you are bigger you push them
+                        enemy.x += -1 * strength * enemyDifX;
+                        enemy.y += -1 * strength * enemyDifY;
+                    } else {
+                        this.x += strength * enemyDifX;
+                        this.y += strength * enemyDifY;
+                    };
+                };
+            };
+        };
+        const [pDX, pDY, playerDistance] = getDistance(usePlayerProps, this);
+        const averagePlayerHitBox = (usePlayerProps.sizeX + usePlayerProps.sizeY) / 2;
+        if (playerDistance <= averageHitBox + averagePlayerHitBox) {
+            const strength = (playerDistance > averageHitBox ? 0 : -1 * (averageHitBox - playerDistance) / averageHitBox);
+            this.x += strength * pDX;
+            this.y += strength * pDY;
+        };
+    };
+
+    handleMovment() {
+        const endPos = [0, 0];
+        endPos[0] = usePlayerProps.x;
+        endPos[1] = usePlayerProps.y;
+        const dX = endPos[0] - this.x;
+        const dY = endPos[1] - this.y;
+        const distance = Math.sqrt(dX ** 2 + dY ** 2);
+        this.move(dX, dY, distance);
+    };
 };
 
 class poisonGoblin extends goblin {
@@ -1145,10 +1191,6 @@ const levelData = [
             [gameTextures.missingTexture, 10],
         ],
         waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
-            [
-                [200, ghostGoblin, [weaponDefaultSword, null], [250, 0]],
-                [200, ghostGoblin, [null, weaponBow], [250, 500]],
-            ],
             [
                 [200, archerGoblin, [null, weaponBow], [50, 50]],
                 [500, archerGoblin, [null, weaponBow], [450, 50]],
