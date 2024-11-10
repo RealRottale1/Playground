@@ -7,6 +7,7 @@ const ctx = mainCanvas.getContext('2d');
 // variables and settings
 // settings
 const settings = {
+    poisonLinger: 10000,
     explosionLinger: 1500,
     minHordRange: 5,
     gridRes: 5,
@@ -119,6 +120,7 @@ const gameTextures = {
     bulletCrossArrow: makeImage('textures/weapons/crossArrow.png'),
     heart: makeImage('textures/drops/heart.png'),
     explosion: makeImage('textures/explosion.png'),
+    poisonTile: makeImage('textures/poisonTile.png'),
     plainsBackground: makeImage('textures/areas/plainBackground.png'),
     plainsForeground: makeImage('textures/areas/plainForeground.png'),
     shopBackground1: makeImage('textures/shopBackground/background1.png'),
@@ -138,12 +140,29 @@ class effectExplosion {
     };
 };
 
+class tilePoison {
+    x = 0;
+    y = 0;
+    sizeX = 150;
+    sizeY = 150;
+    texture = gameTextures.poisonTile;
+    range = 50;
+    damage = .1;
+    dead = false;
+    activate = function () {
+        setTimeout(() => {
+            this.dead = true;
+        }, settings.poisonLinger);
+    };
+};
+
 let usePlayerProps = null;
 const currentBullets = [];
 const currentDropItems = [];
 const currentEnemies = [];
 const currentHords = [];
 const currentForegrounds = [];
+const currentFloorgrounds = [];
 
 function getMouseAngle() {
     const dX = usePlayerProps.mouseX - usePlayerProps.x;
@@ -974,11 +993,13 @@ class biterGoblin extends goblin {
 class mirrorGoblin extends goblin {
     constructor() {
         super();
+        this.movementSpeed = 1;
         this.sizeX = 50;
         this.sizeY = 50;
         this.fullHealth = gameTextures.mirrorGoblinFullHealth;
         this.halfHealth = gameTextures.mirrorGoblinHalfHealth;
         this.nearDeath = gameTextures.mirrorGoblinNearDeath;
+        this.reflectsBullets = true;
     };
 };
 
@@ -1028,6 +1049,15 @@ class poisonGoblin extends goblin {
         this.halfHealth = gameTextures.poisonGoblinHalfHealth;
         this.nearDeath = gameTextures.poisonGoblinNearDeath;
     };
+
+    die() {
+        const tile = new tilePoison;
+        tile.x = this.x;
+        tile.y = this.y;
+        tile.activate();
+        currentFloorgrounds.push(tile);
+        super.die();
+    }
 };
 
 class bigGoblin extends goblin {
@@ -1086,7 +1116,10 @@ const levelData = [
         ],
         waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
             [
+                [200, poisonGoblin, [null, null], [300, 200]],
                 [200, ghostGoblin, [null, null], [300, 200]],
+                [200, biterGoblin, [null, null], [300, 200]],
+                [200, mirrorGoblin, [null, null], [300, 200]],
             ],
             [
                 [200, goblin, [weaponDefaultSword, weaponBow], [450, 500]],
@@ -1298,6 +1331,7 @@ function bootGame() {
     currentBullets.splice(0, currentBullets.length);
     currentDropItems.splice(0, currentDropItems.length);
     currentForegrounds.splice(0, currentForegrounds.length);
+    currentFloorgrounds.splice(0, currentFloorgrounds.length);
 
     return new Promise((success) => {
         success();
@@ -1338,6 +1372,7 @@ function reloadGame() {
     currentBullets.splice(0, currentBullets.length);
     currentDropItems.splice(0, currentDropItems.length);
     currentForegrounds.splice(0, currentForegrounds.length);
+    currentFloorgrounds.splice(0, currentFloorgrounds.length);
 };
 
 // handles setting key movment
@@ -1500,10 +1535,15 @@ function moveBullets() {
                 const useEnemy = currentEnemies[j];
                 const distance = Math.sqrt((useEnemy.x - useBullet.x) ** 2 + (useEnemy.y - useBullet.y) ** 2);
                 if (distance <= (useEnemy.hitBoxX + useEnemy.hitBoxY) / 2) {
-                    hitEnemy = true;
-                    useEnemy.health -= useBullet.damage;
-                    if (useEnemy.health <= 0) {
-                        useEnemy.die();
+                    if (!useEnemy.reflectsBullets) {
+                        hitEnemy = true;
+                        useEnemy.health -= useBullet.damage;
+                        if (useEnemy.health <= 0) {
+                            useEnemy.die();
+                        };
+                    } else {
+                        useBullet.source = 'enemy'
+                        useBullet.angle += Math.PI; 
                     };
                 };
             };
@@ -1713,6 +1753,21 @@ async function playLevel() {
         ctx.drawImage(levelData[settings.currentLevel].background, 0, 0, mainCanvas.width, mainCanvas.height);
         usePlayerProps.updateXY();
         usePlayerProps.getUseTexture();
+
+        //Draw floor objects
+        const floorgroundLength = currentFloorgrounds.length;
+        for (let i = floorgroundLength - 1; i >= 0; i--) {
+            const item = currentFloorgrounds[i];
+            if (item.dead) {
+                currentFloorgrounds.splice(i, 1);
+            } else {
+                const [dX, dY, distance] = getDistance(usePlayerProps, item);
+                if (distance < item.range + (usePlayerProps.sizeX + usePlayerProps.sizeY)/2) {
+                    usePlayerProps.health -= item.damage; 
+                };
+                ctx.drawImage(item.texture, item.x - item.sizeX / 2, item.y - item.sizeY / 2, item.sizeX, item.sizeY);
+            };
+        };
 
         // Draw non-characters
         moveBullets();
