@@ -210,7 +210,7 @@ function getWeaponPosition(x, y, mouseX, mouseY, sizeX, sizeY, offset, attacking
 class weaponHands {
     swingable = false;
     attackRange = 5;
-    damage = 15;
+    damage = 25;
     swingDamge = 0;
     attackDuration = 500;
     attackCoolDown = 150;
@@ -396,6 +396,7 @@ class playerProps {
         d: 0,
     };
     bites = 0;
+    movementHistory = [];
     updateXY() {
         if (this.bites > 0) {
             return;
@@ -407,6 +408,10 @@ class playerProps {
         };
         if (newY >= 0 && newY <= mainCanvas.height) {
             this.y = newY
+        };
+        this.movementHistory.push([this.x, this.y]);
+        if (this.movementHistory.length >= 100) {
+            this.movementHistory.splice(0, 1);
         };
     };
     // sword stuff
@@ -684,6 +689,7 @@ class goblin {
     currentWeapon = 'sword';
     weaponData = new weaponHands;
     bowData = null;
+    adjustmentSpeed = 15;
 
     // movment/tick stuff
     movementSpeed = 1.5;
@@ -758,12 +764,23 @@ class goblin {
 
     attack() {
         if (this.canAttack) {
+            const usePos = usePlayerProps.movementHistory[((usePlayerProps.movementHistory.length - this.adjustmentSpeed < 0) ? 0 : (usePlayerProps.movementHistory.length - this.adjustmentSpeed))];
+            const dX = (usePlayerProps.x - this.x);
+            const dY = (usePlayerProps.y - this.y);
+            const attackAngle = Math.atan2(dY, dX);
+    
+            const pDX = (usePos[0] - this.x);
+            const pDY = (usePos[1] - this.y);
+            const pastAttackAngle = Math.atan2(pDY, pDX);
+
+            const truePastDiff = Math.abs(attackAngle - pastAttackAngle);
+            if (truePastDiff > 0.2) {
+                return;
+            };
+
             this.canAttack = false;
             this.attacking = true;
             if (usePlayerProps.blocking) {
-                const dX = (usePlayerProps.x - this.x);
-                const dY = (usePlayerProps.y - this.y);
-                const attackAngle = Math.atan2(dY, dX);
                 const playerAngle = getMouseAngle();
                 const difference = Math.abs(playerAngle - attackAngle);
 
@@ -1300,6 +1317,7 @@ class bigGoblin extends goblin {
         this.sizeY = 50;
         this.attackDamageMultiplier = 1.5;
         this.movementSpeed = .5;
+        this.adjustmentSpeed = 25;
     };
 };
 
@@ -1342,9 +1360,7 @@ const levelData = [
         ],
         waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
             [
-                [200, shamanGoblin, [null, null], [50, 50]],
-                [200, shamanGoblin, [null, null], [450, 450]],
-                [1500, poisonGoblin, [null, weaponBow], [0, 250]],
+                [200, bigGoblin, [weaponDefaultSword, null], [50, 50]],
             ],
             [
                 [200, archerGoblin, [null, weaponBow], [50, 50]],
@@ -1613,6 +1629,7 @@ function reloadGame() {
     usePlayerProps.currentWeapon = 'sword';
     usePlayerProps.bites = 0;
     usePlayerProps.initialAttackAngle = 0;
+    usePlayerProps.movementHistory = [];
 
     currentEnemies.splice(0, currentEnemies.length);
     currentBullets.splice(0, currentBullets.length);
@@ -2063,12 +2080,15 @@ async function playLevel() {
             };
 
             if (selectedEnemy.health > 0) {
-                if (selectedEnemy.currentWeapon == 'sword') {
-                    const [enemyAngle, enemyOffsetX, enemyOffsetY] = getWeaponPosition(selectedEnemy.x, selectedEnemy.y, usePlayerProps.x, usePlayerProps.y, selectedEnemy.weaponData.sizeX, selectedEnemy.weaponData.sizeY + averageHitBox, selectedEnemy.weaponData.offset, selectedEnemy.attacking);
-                    selectedEnemy.weaponData.draw(selectedEnemy.x, selectedEnemy.y, enemyAngle, enemyOffsetX, enemyOffsetY);
-                } else {
-                    const [enemyAngle, enemyOffsetX, enemyOffsetY] = getWeaponPosition(selectedEnemy.x, selectedEnemy.y, usePlayerProps.x, usePlayerProps.y, selectedEnemy.bowData.sizeX, selectedEnemy.bowData.sizeY + averageHitBox, selectedEnemy.bowData.offset, null);
-                    selectedEnemy.bowData.draw(selectedEnemy.x, selectedEnemy.y, enemyAngle, enemyOffsetX, selectedEnemy.bowData.yOffset);
+                const usePos = usePlayerProps.movementHistory[((usePlayerProps.movementHistory.length - selectedEnemy.adjustmentSpeed < 0) ? 0 : (usePlayerProps.movementHistory.length - selectedEnemy.adjustmentSpeed))];
+                if (usePos) {
+                    if (selectedEnemy.currentWeapon == 'sword') {
+                        const [enemyAngle, enemyOffsetX, enemyOffsetY] = getWeaponPosition(selectedEnemy.x, selectedEnemy.y, usePos[0], usePos[1], selectedEnemy.weaponData.sizeX, selectedEnemy.weaponData.sizeY + averageHitBox, selectedEnemy.weaponData.offset, selectedEnemy.attacking);
+                        selectedEnemy.weaponData.draw(selectedEnemy.x, selectedEnemy.y, enemyAngle, enemyOffsetX, enemyOffsetY);
+                    } else {
+                        const [enemyAngle, enemyOffsetX, enemyOffsetY] = getWeaponPosition(selectedEnemy.x, selectedEnemy.y, usePlayerProps.x, usePlayerProps.y, selectedEnemy.bowData.sizeX, selectedEnemy.bowData.sizeY + averageHitBox, selectedEnemy.bowData.offset, null);
+                        selectedEnemy.bowData.draw(selectedEnemy.x, selectedEnemy.y, enemyAngle, enemyOffsetX, selectedEnemy.bowData.yOffset);
+                    };
                 };
             };
         };
@@ -2113,6 +2133,17 @@ async function playLevel() {
             } else {
                 ctx.drawImage(item.texture, item.x - item.sizeX / 2, item.y - item.sizeY / 2, item.sizeX, item.sizeY);
             };
+        };
+
+        // debug for player movment history
+        const movementHistoryLength = usePlayerProps.movementHistory.length;
+        for (let i = 0; i < movementHistoryLength; i++) {
+            const history = usePlayerProps.movementHistory[i];
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.rect(history[0], history[1], 5, 5);
+            ctx.fill();
+            ctx.closePath();
         };
 
         ctx.drawImage(levelData[settings.currentLevel].foreground, 0, 0, mainCanvas.width, mainCanvas.height);
