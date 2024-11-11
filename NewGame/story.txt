@@ -1,7 +1,0 @@
-
-
-Default | X
-Fast but weak |
-Strong but slow | X
-Default but better | X
-Best Version | 

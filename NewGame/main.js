@@ -7,12 +7,13 @@ const ctx = mainCanvas.getContext('2d');
 // variables and settings
 // settings
 const settings = {
+    minMouseMove: 50,
     poisonLinger: 10000,
     explosionLinger: 1500,
     minHordRange: 5,
     gridRes: 5,
     refreshRate: 10,
-    mouseSwingRate: 50,
+    mouseSwingRate: 25,
     dropHearSize: [50, 50],
     bulletSpeed: -5,
     currentLevel: 0,
@@ -124,6 +125,10 @@ const gameTextures = {
     shamanGoblinHalfHealthMagic: makeImage('textures/enemies/shamanGoblin/shamanGoblin2Magic.png'),
     shamanGoblinNearDeathMagic: makeImage('textures/enemies/shamanGoblin/shamanGoblin1Magic.png'),
     weaponDefaultSword: makeImage('textures/weapons/defaultSword.png'),
+    weaponMace: makeImage('textures/weapons/mace.png'),
+    weaponKatana: makeImage('textures/weapons/katana.png'),
+    weaponBattleAxe: makeImage('textures/weapons/battleAxe.png'),
+    weaponWarHammer: makeImage('textures/weapons/warHammer.png'),
     weaponLongSword: makeImage('textures/weapons/longSword.png'),
     weaponBow: makeImage('textures/weapons/bow.png'),
     weaponGoldBow: makeImage('textures/weapons/goldBow.png'),
@@ -344,6 +349,75 @@ class weaponDefaultSword extends weaponHands {
     };
 };
 
+class weaponMace extends weaponHands {
+    constructor() {
+        super();
+        this.swingable = true;
+        this.attackRange = 80;
+        this.damage = 100;
+        this.swingDamge = 8.3;
+        this.attackDuration = 500;
+        this.attackCoolDown = 1500;
+        this.texture = gameTextures.weaponMace;
+        this.displayName = 'Mace';
+        this.sizeX = 50;
+        this.sizeY = 100;
+        this.offset = -50;
+    };
+};
+
+class weaponKatana extends weaponHands {
+    constructor() {
+        super();
+        this.swingable = true;
+        this.attackRange = 100;
+        this.damage = 25;
+        this.swingDamge = 20;
+        this.attackDuration = 500;
+        this.attackCoolDown = 600;
+        this.canBlock = true;
+        this.texture = gameTextures.weaponKatana;
+        this.displayName = 'Katana';
+        this.sizeX = 50;
+        this.sizeY = 100;
+        this.offset = -50;
+    };
+};
+
+class weaponBattleAxe extends weaponHands {
+    constructor() {
+        super();
+        this.swingable = true;
+        this.attackRange = 100;
+        this.damage = 10;
+        this.swingDamge = 25;
+        this.attackDuration = 1000;
+        this.attackCoolDown = 1500;
+        this.texture = gameTextures.weaponBattleAxe;
+        this.displayName = 'Battle Axe';
+        this.sizeX = 75;
+        this.sizeY = 100;
+        this.offset = -50;
+    };
+};
+
+class weaponWarHammer extends weaponHands {
+    constructor() {
+        super();
+        this.swingable = true;
+        this.attackRange = 100;
+        this.damage = 2.5;
+        this.swingDamge = 45;
+        this.attackDuration = 1000;
+        this.attackCoolDown = 1500;
+        this.texture = gameTextures.weaponWarHammer;
+        this.displayName = 'War Hammer';
+        this.sizeX = 75;
+        this.sizeY = 100;
+        this.offset = -50;
+    };
+};
+
 class weaponLongSword extends weaponHands {
     constructor() {
         super();
@@ -415,6 +489,7 @@ class playerProps {
         };
     };
     // sword stuff
+    amountMouseMoved = 0;
     mouseX = 0;
     mouseY = 0;
     isSwinging = false;
@@ -427,7 +502,7 @@ class playerProps {
     canShoot = true;
     shooting = false;
     currentWeapon = 'sword';
-    weaponData = new weaponDefaultSword;
+    weaponData = new weaponWarHammer;
     bowData = new weaponBow;
 };
 
@@ -614,7 +689,6 @@ function handlePathing(source) {
 
     fillMap([source], source.hitBoxX, source.hitBoxY, pathMap);
 
-    //console.log(eX+' , '+eY);
     const start = pathMap.get(eX)[eY];
     const end = pathMap.get(pX)[pY];
     const path = makePath(start, end, maxIterations, pathMap);
@@ -739,7 +813,6 @@ class goblin {
         const hord = getMyHord(this);
         if (hord) {
             if (hord.path[0]) {
-                //console.log(hord.path);
                 endPos[0] = this.x + (hord.path[0].x - hord.x);
                 endPos[1] = this.y + (hord.path[0].y - hord.y);
             } else {
@@ -780,7 +853,7 @@ class goblin {
         const pastAttackAngle = Math.atan2(pDY, pDX);
 
         const truePastDiff = (Math.abs(attackAngle) + Math.abs(pastAttackAngle));
-        if (truePastDiff < 3.075 || truePastDiff > Math.PI) {
+        if (truePastDiff < 3.075 || truePastDiff > (Math.PI + .1)) {
             return([false, pastAttackAngle]);
         } else {
             return([true, pastAttackAngle]);
@@ -1022,8 +1095,8 @@ class biterGoblin extends goblin {
         this.hitBoxY = 20;
         this.useTexture = gameTextures.biterGoblinFullHealth;
         this.singleTexture = true;
-        this.starterHealth = 25;
-        this.health = 25;
+        this.starterHealth = 1;
+        this.health = 1;
         this.movementSpeed = 3.5;
         this.bit = false;
         this.biteDamage = 10;
@@ -1379,7 +1452,7 @@ const levelData = [
         ],
         waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
             [
-                [200, goblin, [weaponDefaultSword, null], [0, 0]],
+                [100, biterGoblin, [null, null], [0, 250]],
             ],
             [
                 [200, archerGoblin, [null, weaponBow], [50, 50]],
@@ -1494,7 +1567,6 @@ function handleShop() {
     for (let i = 0; i < 4; i++) {
         const useGear = new useShopGear[i];
         useShopGear[i] = useGear;
-        console.log(useGear);
         let useArrow = null;
         if (i > 1) {
             useArrow = new useGear.useBullet;
@@ -1637,6 +1709,7 @@ function reloadGame() {
     usePlayerProps.keyMovment.a = 0;
     usePlayerProps.keyMovment.s = 0;
     usePlayerProps.keyMovment.d = 0;
+    usePlayerProps.amountMouseMoved = 0;
     usePlayerProps.mouseX = 0;
     usePlayerProps.mouseY = 0;
     usePlayerProps.isSwinging = false;
@@ -1700,10 +1773,16 @@ function establishUserInputUp(event) {
 let savedMouseDirections = [];
 function establishMouseInput(event) {
     const rect = mainCanvas.getBoundingClientRect();
+    const distance = Math.sqrt((usePlayerProps.mouseX - (event.clientX - rect.left)) ** 2 + (usePlayerProps.mouseY - (event.clientY - rect.top)) ** 2);
+    
+    usePlayerProps.amountMouseMoved += distance;
     usePlayerProps.mouseX = event.clientX - rect.left;
     usePlayerProps.mouseY = event.clientY - rect.top;
-    const angle = getMouseAngle();
-    savedMouseDirections.push(angle);
+    if (usePlayerProps.amountMouseMoved >= settings.minMouseMove) {
+        usePlayerProps.amountMouseMoved = 0;
+        const angle = getMouseAngle();
+        savedMouseDirections.push(angle);
+    };
 };
 
 // checks if player is swinging the sword and sets isSwinging to the value
@@ -1718,7 +1797,6 @@ function handelSwingingCheck() {
             break
         };
     };
-    //console.log('results='+usePlayerProps.isSwinging);
     savedMouseDirections = [];
 };
 
@@ -2053,10 +2131,10 @@ async function playLevel() {
 
         // Draw player and enemies
         usePlayerProps.draw(usePlayerProps.x, usePlayerProps.y);
-        const [angle, offsetX, offsetY] = getWeaponPosition(usePlayerProps.x, usePlayerProps.y, usePlayerProps.mouseX, usePlayerProps.mouseY, usePlayerProps.weaponData.sizeX, usePlayerProps.weaponData.sizeY, usePlayerProps.weaponData.offset, usePlayerProps.attacking);
+        const weaponUsing = (usePlayerProps.currentWeapon == 'sword' ? usePlayerProps.weaponData : usePlayerProps.bowData);
+        const [angle, offsetX, offsetY] = getWeaponPosition(usePlayerProps.x, usePlayerProps.y, usePlayerProps.mouseX, usePlayerProps.mouseY, weaponUsing.sizeX, weaponUsing.sizeY, weaponUsing.offset, usePlayerProps.attacking);
         const currentEnemyLength = currentEnemies.length;
         makeHords();
-        const holdingSword = (usePlayerProps.currentWeapon == 'sword');
         for (let i = currentEnemyLength - 1; i >= 0; i--) {
             const selectedEnemy = currentEnemies[i];
             if (!selectedEnemy.singleTexture) {
@@ -2068,7 +2146,7 @@ async function playLevel() {
             const canStab = (!selectedEnemy.wasAttacked && usePlayerProps.attacking);
             const canSwing = (!selectedEnemy.wasSwingAttacked && usePlayerProps.isSwinging && !usePlayerProps.blocking && ((usePlayerProps.currentWeapon == 'sword' && usePlayerProps.weaponData.swingable) || (usePlayerProps.currentWeapon == 'bow' && usePlayerProps.bowData.swingable)));
             if (canStab || canSwing) {
-                const initialOffset = ((canStab && !stabSwinging) ? 0 : usePlayerProps.weaponData.offset);
+                const initialOffset = (((canStab && !stabSwinging> 0) || (usePlayerProps.bites > 0 && selectedEnemy.constructor.name)) ? 0 : usePlayerProps.weaponData.offset);
                 const x1 = usePlayerProps.x + (initialOffset * Math.cos(angle + Math.PI / 2));
                 const y1 = usePlayerProps.y + (initialOffset * Math.sin(angle + Math.PI / 2));
                 const x2 = usePlayerProps.x + (offsetY * Math.cos(angle + Math.PI / 2));
@@ -2081,15 +2159,13 @@ async function playLevel() {
 
                 if (lineIntersects(x1, y1, x2, y2, xMin, yMin, xMax, yMax)) {
                     if ((canStab && !stabSwinging)) {
+                        console.log('stabbed!');
                         selectedEnemy.wasAttacked = true;
                         selectedEnemy.health -= usePlayerProps.weaponData.damage;
                     } else {
+                        console.log('slashed!');
                         selectedEnemy.wasSwingAttacked = true;
-                        if (holdingSword) {
-                            selectedEnemy.health -= usePlayerProps.weaponData.swingDamge;
-                        } else {
-                            selectedEnemy.health -= usePlayerProps.bowData.swingDamge;
-                        };
+                        selectedEnemy.health -= weaponUsing.swingDamge;
                     };
                     if (selectedEnemy.health <= 0) {
                         selectedEnemy.die();
@@ -2121,25 +2197,8 @@ async function playLevel() {
                 };
             };
         };
-        /*
-                const trueDistance = distance - (selectedEnemy.hitBoxX + selectedEnemy.hitBoxY)/2;
-                const toolUseDistance = (selectedEnemy.currentWeapon == 'sword' ? selectedEnemy.weaponData.attackRange : selectedEnemy.bowData.attackRange)  * selectedEnemy.attackRangeMultiplier * 2;
-                const proximity = (((trueDistance/toolUseDistance) < 0) ? 0 : trueDistance/toolUseDistance);
-                const speed = ((proximity >= 1) ? (usePlayerProps.movementHistory.length-1) - selectedEnemy.adjustmentSpeed : Math.floor((((usePlayerProps.movementHistory.length-1) - selectedEnemy.adjustmentSpeed) * (1-proximity)) + selectedEnemy.adjustmentSpeed));
-                const useSpeed = (speed > (usePlayerProps.movementHistory.length-1) ? (usePlayerProps.movementHistory.length-1) : speed);
-                console.log(useSpeed);
-                const usePos = usePlayerProps.movementHistory[useSpeed];
-        ///////
-                const trueDistance = (distance-(selectedEnemy.hitBoxX+selectedEnemy.hitBoxY)/2);
-                const gearDistance = (selectedEnemy.currentWeapon == 'sword' ? selectedEnemy.weaponData.attackRange*selectedEnemy.attackRangeMultiplier : selectedEnemy.bowData.attackRange*selectedEnemy.attackRangeMultiplier);
-                const accessHistoryAt = (usePlayerProps.movementHistory.length -1 - selectedEnemy.adjustmentSpeed < 0) ? 0 : (usePlayerProps.movementHistory.length -1 - selectedEnemy.adjustmentSpeed);
-                const distanceSpeedRatio = (Math.round((trueDistance/gearDistance)*100)/100);
-                const smartAccess = (trueDistance <= gearDistance ? (usePlayerProps.movementHistory.length -1)-Math.floor(distanceSpeedRatio*accessHistoryAt) : accessHistoryAt);
-                console.log(Math.floor(distanceSpeedRatio*accessHistoryAt));
-                const useSmartAccess = ((smartAccess <= 0) ? (usePlayerProps.movementHistory.length -1) : smartAccess);
-                const usePos = usePlayerProps.movementHistory[useSmartAccess];
-        */
-        if (holdingSword) {
+        
+        if (usePlayerProps.currentWeapon == 'sword') {
             usePlayerProps.weaponData.draw(usePlayerProps.x, usePlayerProps.y, angle, offsetX, offsetY, usePlayerProps.blocking);
         } else {
             usePlayerProps.bowData.draw(usePlayerProps.x, usePlayerProps.y, angle, offsetX, usePlayerProps.bowData.yOffset, usePlayerProps.blocking);
