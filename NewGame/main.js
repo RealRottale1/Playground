@@ -410,7 +410,7 @@ class playerProps {
             this.y = newY
         };
         this.movementHistory.push([this.x, this.y]);
-        if (this.movementHistory.length >= 100) {
+        if (this.movementHistory.length >= 50) {
             this.movementHistory.splice(0, 1);
         };
     };
@@ -689,7 +689,7 @@ class goblin {
     currentWeapon = 'sword';
     weaponData = new weaponHands;
     bowData = null;
-    adjustmentSpeed = 15;
+    adjustmentSpeed = 25;
 
     // movment/tick stuff
     movementSpeed = 1.5;
@@ -762,27 +762,42 @@ class goblin {
         this.move(dX, dY, distance);
     };
 
+    checkIfCanAttack() {
+        const [dX, dY, distance] = getDistance(usePlayerProps, this);
+        const trueDistance = distance - (this.hitBoxX + this.hitBoxY)/2;
+        const ratio = (trueDistance/((mainCanvas.width + mainCanvas.height)/8));
+        const proximity = ((ratio < 0) ? 0 : ((ratio >= 1) ? 1 : ratio));
+        
+        const useAdjustmentSpeed = ((this.currentWeapon == 'sword') ? (this.adjustmentSpeed) : Math.floor(this.adjustmentSpeed/2));
+        const moveLength = (usePlayerProps.movementHistory.length - 1);
+        const adjustDiff = (moveLength - useAdjustmentSpeed);
+        const speed = ((proximity >= 1) ? adjustDiff : ((proximity < 0) ? moveLength : Math.floor(adjustDiff + ((1-proximity) * useAdjustmentSpeed))));
+        
+        const attackAngle = Math.atan2(dY, dX);
+
+        const pDX = (usePlayerProps.movementHistory[speed][0] - this.x);
+        const pDY = (usePlayerProps.movementHistory[speed][1] - this.y);
+        const pastAttackAngle = Math.atan2(pDY, pDX);
+
+        const truePastDiff = (Math.abs(attackAngle) + Math.abs(pastAttackAngle));
+        if (truePastDiff < 3.075 || truePastDiff > Math.PI) {
+            return([false, pastAttackAngle]);
+        } else {
+            return([true, pastAttackAngle]);
+        };
+    };
+
     attack() {
         if (this.canAttack) {
-            const usePos = usePlayerProps.movementHistory[((usePlayerProps.movementHistory.length - this.adjustmentSpeed < 0) ? 0 : (usePlayerProps.movementHistory.length - this.adjustmentSpeed))];
-            const dX = (usePlayerProps.x - this.x);
-            const dY = (usePlayerProps.y - this.y);
-            const attackAngle = Math.atan2(dY, dX);
-    
-            const pDX = (usePos[0] - this.x);
-            const pDY = (usePos[1] - this.y);
-            const pastAttackAngle = Math.atan2(pDY, pDX);
-
-            const truePastDiff = Math.abs(attackAngle - pastAttackAngle);
-            if (truePastDiff > 0.2) {
+            const [couldAttack, pastAttackAngle] = this.checkIfCanAttack();
+            if (!couldAttack) {
                 return;
             };
-
             this.canAttack = false;
             this.attacking = true;
             if (usePlayerProps.blocking) {
                 const playerAngle = getMouseAngle();
-                const difference = Math.abs(playerAngle - attackAngle);
+                const difference = Math.abs(playerAngle - pastAttackAngle);
 
                 if (difference < (29 * Math.PI / 36) || difference > (43 * Math.PI / 36)) {
                     usePlayerProps.health -= this.weaponData.damage * this.attackDamageMultiplier;
@@ -801,6 +816,10 @@ class goblin {
 
     shoot() {
         if (this.canShoot) {
+            const [couldAttack, pastAttackAngle] = this.checkIfCanAttack();
+            if (!couldAttack) {
+                return;
+            };
             this.canShoot = false;
             this.shooting = true;
             this.bowData.shoot(this.x, usePlayerProps.x, this.y, usePlayerProps.y, 'enemy');
@@ -1317,7 +1336,7 @@ class bigGoblin extends goblin {
         this.sizeY = 50;
         this.attackDamageMultiplier = 1.5;
         this.movementSpeed = .5;
-        this.adjustmentSpeed = 25;
+        this.adjustmentSpeed = 35;
     };
 };
 
@@ -1360,7 +1379,7 @@ const levelData = [
         ],
         waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
             [
-                [200, bigGoblin, [weaponDefaultSword, null], [50, 50]],
+                [200, goblin, [weaponDefaultSword, null], [0, 0]],
             ],
             [
                 [200, archerGoblin, [null, weaponBow], [50, 50]],
@@ -2080,18 +2099,46 @@ async function playLevel() {
             };
 
             if (selectedEnemy.health > 0) {
-                const usePos = usePlayerProps.movementHistory[((usePlayerProps.movementHistory.length - selectedEnemy.adjustmentSpeed < 0) ? 0 : (usePlayerProps.movementHistory.length - selectedEnemy.adjustmentSpeed))];
+                const [dX, dY, distance] = getDistance(usePlayerProps, selectedEnemy);
+                const trueDistance = distance - (selectedEnemy.hitBoxX + selectedEnemy.hitBoxY)/2;
+                const ratio = (trueDistance/((mainCanvas.width + mainCanvas.height)/8));
+                const proximity = ((ratio < 0) ? 0 : ((ratio >= 1) ? 1 : ratio));
+                
+                const useAdjustmentSpeed = ((selectedEnemy.currentWeapon == 'sword') ? (selectedEnemy.adjustmentSpeed) : Math.floor(selectedEnemy.adjustmentSpeed/2));
+                const moveLength = (usePlayerProps.movementHistory.length - 1);
+                const adjustDiff = (moveLength - useAdjustmentSpeed);
+                const speed = ((proximity >= 1) ? adjustDiff : ((proximity < 0) ? moveLength : Math.floor(adjustDiff + ((1-proximity) * useAdjustmentSpeed))));
+
+                const usePos = usePlayerProps.movementHistory[speed];
                 if (usePos) {
                     if (selectedEnemy.currentWeapon == 'sword') {
                         const [enemyAngle, enemyOffsetX, enemyOffsetY] = getWeaponPosition(selectedEnemy.x, selectedEnemy.y, usePos[0], usePos[1], selectedEnemy.weaponData.sizeX, selectedEnemy.weaponData.sizeY + averageHitBox, selectedEnemy.weaponData.offset, selectedEnemy.attacking);
                         selectedEnemy.weaponData.draw(selectedEnemy.x, selectedEnemy.y, enemyAngle, enemyOffsetX, enemyOffsetY);
                     } else {
-                        const [enemyAngle, enemyOffsetX, enemyOffsetY] = getWeaponPosition(selectedEnemy.x, selectedEnemy.y, usePlayerProps.x, usePlayerProps.y, selectedEnemy.bowData.sizeX, selectedEnemy.bowData.sizeY + averageHitBox, selectedEnemy.bowData.offset, null);
+                        const [enemyAngle, enemyOffsetX, enemyOffsetY] = getWeaponPosition(selectedEnemy.x, selectedEnemy.y, usePos[0], usePos[1], selectedEnemy.bowData.sizeX, selectedEnemy.bowData.sizeY + averageHitBox, selectedEnemy.bowData.offset, null);
                         selectedEnemy.bowData.draw(selectedEnemy.x, selectedEnemy.y, enemyAngle, enemyOffsetX, selectedEnemy.bowData.yOffset);
                     };
                 };
             };
         };
+        /*
+                const trueDistance = distance - (selectedEnemy.hitBoxX + selectedEnemy.hitBoxY)/2;
+                const toolUseDistance = (selectedEnemy.currentWeapon == 'sword' ? selectedEnemy.weaponData.attackRange : selectedEnemy.bowData.attackRange)  * selectedEnemy.attackRangeMultiplier * 2;
+                const proximity = (((trueDistance/toolUseDistance) < 0) ? 0 : trueDistance/toolUseDistance);
+                const speed = ((proximity >= 1) ? (usePlayerProps.movementHistory.length-1) - selectedEnemy.adjustmentSpeed : Math.floor((((usePlayerProps.movementHistory.length-1) - selectedEnemy.adjustmentSpeed) * (1-proximity)) + selectedEnemy.adjustmentSpeed));
+                const useSpeed = (speed > (usePlayerProps.movementHistory.length-1) ? (usePlayerProps.movementHistory.length-1) : speed);
+                console.log(useSpeed);
+                const usePos = usePlayerProps.movementHistory[useSpeed];
+        ///////
+                const trueDistance = (distance-(selectedEnemy.hitBoxX+selectedEnemy.hitBoxY)/2);
+                const gearDistance = (selectedEnemy.currentWeapon == 'sword' ? selectedEnemy.weaponData.attackRange*selectedEnemy.attackRangeMultiplier : selectedEnemy.bowData.attackRange*selectedEnemy.attackRangeMultiplier);
+                const accessHistoryAt = (usePlayerProps.movementHistory.length -1 - selectedEnemy.adjustmentSpeed < 0) ? 0 : (usePlayerProps.movementHistory.length -1 - selectedEnemy.adjustmentSpeed);
+                const distanceSpeedRatio = (Math.round((trueDistance/gearDistance)*100)/100);
+                const smartAccess = (trueDistance <= gearDistance ? (usePlayerProps.movementHistory.length -1)-Math.floor(distanceSpeedRatio*accessHistoryAt) : accessHistoryAt);
+                console.log(Math.floor(distanceSpeedRatio*accessHistoryAt));
+                const useSmartAccess = ((smartAccess <= 0) ? (usePlayerProps.movementHistory.length -1) : smartAccess);
+                const usePos = usePlayerProps.movementHistory[useSmartAccess];
+        */
         if (holdingSword) {
             usePlayerProps.weaponData.draw(usePlayerProps.x, usePlayerProps.y, angle, offsetX, offsetY, usePlayerProps.blocking);
         } else {
