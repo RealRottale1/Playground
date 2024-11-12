@@ -13,7 +13,6 @@ const settings = {
     minHordRange: 5,
     gridRes: 5,
     refreshRate: 10,
-    mouseSwingRate: 25,
     dropHearSize: [50, 50],
     bulletSpeed: -5,
     currentLevel: 0,
@@ -414,7 +413,7 @@ class weaponWarHammer extends weaponHands {
         this.attackRange = 100;
         this.damage = 2.5;
         this.swingDamge = 45;
-        this.swingWeight = 50;
+        this.swingWeight = 0;
         this.attackDuration = 1000;
         this.attackCoolDown = 1500;
         this.texture = gameTextures.weaponWarHammer;
@@ -537,15 +536,15 @@ class playerProps {
     };
     getWeaponAngle() {
         const useTool = this.getCurrentWeapon();
-        if (!useTool.swingable || !useTool.swingWeight) {
+        if (!useTool.swingWeight) {
             return(getMouseAngle() + Math.PI/2);
         };
 
         const mouseHistoryLength = this.mouseHistory.length;
-        if ((mouseHistoryLength) < 49 && ((mouseHistoryLength+1) - useTool.swingWeight) < 0) {
+        if ((mouseHistoryLength) < 49 && ((mouseHistoryLength-1) - useTool.swingWeight) < 0) {
             return(this.mouseHistory[0]);
         } else {
-            return(this.mouseHistory[Math.floor((mouseHistoryLength+1) - useTool.swingWeight)]);
+            return(this.mouseHistory[Math.floor((mouseHistoryLength-1) - useTool.swingWeight)]);
         };
 
     };
@@ -580,7 +579,7 @@ class playerProps {
     canShoot = true;
     shooting = false;
     currentWeapon = 'sword';
-    weaponData = new weaponWarHammer;
+    weaponData = new weaponTrident;
     bowData = new weaponBow;
 };
 
@@ -1853,7 +1852,6 @@ function establishUserInputUp(event) {
 };
 
 // gets mouse position
-let savedMouseDirections = [];
 function establishMouseInput(event) {
     const rect = mainCanvas.getBoundingClientRect();
     const distance = Math.sqrt((usePlayerProps.mouseX - (event.clientX - rect.left)) ** 2 + (usePlayerProps.mouseY - (event.clientY - rect.top)) ** 2);
@@ -1861,28 +1859,21 @@ function establishMouseInput(event) {
     usePlayerProps.amountMouseMoved += distance;
     usePlayerProps.mouseX = event.clientX - rect.left;
     usePlayerProps.mouseY = event.clientY - rect.top;
-
-    if (usePlayerProps.amountMouseMoved >= settings.minMouseMove) {
-        const angle = getMouseAngle();
-        usePlayerProps.amountMouseMoved = 0;
-        savedMouseDirections.push(angle);
-    };
 };
 
 // checks if player is swinging the sword and sets isSwinging to the value
-function handelSwingingCheck() {
-    const currentAngle = usePlayerProps.getWeaponAngle();
-    const directionHistoryLength = savedMouseDirections.length;
-    usePlayerProps.isSwinging = false;
-    for (let i = 0; i < directionHistoryLength; i++) {
-        const useDirection = savedMouseDirections[i];
-        if ((Math.abs(useDirection) > Math.abs(currentAngle) + .5) || Math.abs(useDirection) + .5 < Math.abs(currentAngle)) {
-            usePlayerProps.isSwinging = true;
-            break
-        };
+function handleSwingingCheck() {
+    const useTool = usePlayerProps.getCurrentWeapon();
+    if (!useTool.swingable) {
+        return;
     };
-    console.log('swinging='+usePlayerProps.isSwinging);
-    savedMouseDirections = [];
+    const mouseHistoryLength = usePlayerProps.mouseHistory.length;
+    const currentAngle = (useTool.swingWeight ? Math.floor((mouseHistoryLength-1) - useTool.swingWeight) : 0);
+    const nextAngle = (currentAngle == 49 ? currentAngle-1 : currentAngle+1);
+    const total = Math.abs(Math.abs(usePlayerProps.mouseHistory[currentAngle]) - Math.abs(usePlayerProps.mouseHistory[nextAngle]));
+
+    console.log((total > 0.2616));
+    usePlayerProps.isSwinging = (total > 0.2616);
 };
 
 // gets mouse click
@@ -2148,9 +2139,6 @@ async function playLevel() {
     while (true) {
         // Clock stuff
         gameClock += 1;
-        if ((gameClock % settings.mouseSwingRate) == 0) {
-            handelSwingingCheck();
-        };
         if (stillEnemiesToSummon) {
             const currentWaveData = levelData[settings.currentLevel].waves[settings.currentWave];
             if (currentWaveData) {
@@ -2309,9 +2297,10 @@ async function playLevel() {
 
         usePlayerProps.mouseHistory.push(angle);
         const mouseHistoryLength = usePlayerProps.mouseHistory.length;
-        if (mouseHistoryLength >= 50) {
+        if (mouseHistoryLength > 50) {
             usePlayerProps.mouseHistory.splice(0, 1);
         };
+        handleSwingingCheck();
 
         if (!stillEnemiesToSummon && currentEnemies.length <= 0) {
             stillEnemiesToSummon = true;
