@@ -924,7 +924,6 @@ class goblin {
         const adjustDiff = (moveLength - useAdjustmentSpeed);
         const speed = ((proximity >= 1) ? adjustDiff : ((proximity < 0) ? moveLength : Math.floor(adjustDiff + ((1-proximity) * useAdjustmentSpeed))) - this.minAdjustSpeed);
         const useSpeed = ((speed > (moveLength - this.minAdjustSpeed)) ? (moveLength - this.minAdjustSpeed) : speed);
-        console.log(useSpeed);
 
         const attackAngle = Math.atan2(dY, dX);
 
@@ -1752,6 +1751,13 @@ function makeLoadingScreen() {
     });
 };
 
+// fills mouse movment history with blanks
+function fillMouseHistoryWithBlanks() {
+    for (let i = 0; i < 50; i++) {
+        usePlayerProps.mouseHistory.push[0];
+    };
+};
+
 // boots up game
 function bootGame() {
     settings.hasShownTransition = false;
@@ -1766,6 +1772,7 @@ function bootGame() {
     currentDropItems.splice(0, currentDropItems.length);
     currentForegrounds.splice(0, currentForegrounds.length);
     currentFloorgrounds.splice(0, currentFloorgrounds.length);
+    fillMouseHistoryWithBlanks();
 
     return new Promise((success) => {
         success();
@@ -1804,6 +1811,7 @@ function reloadGame() {
     usePlayerProps.initialAttackAngle = 0;
     usePlayerProps.movementHistory = [];
     usePlayerProps.mouseHistory = [];
+    fillMouseHistoryWithBlanks();
 
     currentEnemies.splice(0, currentEnemies.length);
     currentBullets.splice(0, currentBullets.length);
@@ -1872,7 +1880,6 @@ function handleSwingingCheck() {
     const nextAngle = (currentAngle == 49 ? currentAngle-1 : currentAngle+1);
     const total = Math.abs(Math.abs(usePlayerProps.mouseHistory[currentAngle]) - Math.abs(usePlayerProps.mouseHistory[nextAngle]));
 
-    console.log((total > 0.2616));
     usePlayerProps.isSwinging = (total > 0.2616);
 };
 
