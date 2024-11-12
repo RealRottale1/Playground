@@ -129,6 +129,9 @@ const gameTextures = {
     weaponKatana: makeImage('textures/weapons/katana.png'),
     weaponBattleAxe: makeImage('textures/weapons/battleAxe.png'),
     weaponWarHammer: makeImage('textures/weapons/warHammer.png'),
+    weaponTriblade: makeImage('textures/weapons/triblade.png'),
+    weaponSickle: makeImage('textures/weapons/sickle.png'),
+    weaponTrident: makeImage('textures/weapons/trident.png'),
     weaponLongSword: makeImage('textures/weapons/longSword.png'),
     weaponBow: makeImage('textures/weapons/bow.png'),
     weaponGoldBow: makeImage('textures/weapons/goldBow.png'),
@@ -215,7 +218,7 @@ function getWeaponPosition(x, y, mouseX, mouseY, sizeX, sizeY, offset, attacking
 class weaponHands {
     swingable = false;
     attackRange = 5;
-    damage = 25;
+    damage = 10;
     swingDamge = 0;
     attackDuration = 500;
     attackCoolDown = 150;
@@ -418,6 +421,58 @@ class weaponWarHammer extends weaponHands {
     };
 };
 
+class weaponTriblade extends weaponHands {
+    constructor() {
+        super();
+        this.swingable = true;
+        this.attackRange = 75;
+        this.damage = 20;
+        this.swingDamge = 2.5;
+        this.attackDuration = 100;
+        this.attackCoolDown = 50;
+        this.texture = gameTextures.weaponTriblade;
+        this.displayName = 'Tri-Blade';
+        this.sizeX = 75;
+        this.sizeY = 75;
+        this.offset = -25;
+    };
+};
+
+class weaponSickle extends weaponHands {
+    constructor() {
+        super();
+        this.swingable = true;
+        this.attackRange = 75;
+        this.damage = 20;
+        this.swingDamge = 15;
+        this.attackDuration = 300;
+        this.attackCoolDown = 200;
+        this.canBlock = true;
+        this.texture = gameTextures.weaponSickle;
+        this.displayName = 'Sickle';
+        this.sizeX = 100;
+        this.sizeY = 95;
+        this.offset = -35;
+    };
+};
+
+class weaponTrident extends weaponHands {
+    constructor() {
+        super();
+        this.swingable = true;
+        this.attackRange = 125;
+        this.damage = 75;
+        this.swingDamge = 10;
+        this.attackDuration = 700;
+        this.attackCoolDown = 850;
+        this.texture = gameTextures.weaponTrident;
+        this.displayName = 'Trident';
+        this.sizeX = 50;
+        this.sizeY = 100;
+        this.offset = -65;
+    };
+};
+
 class weaponLongSword extends weaponHands {
     constructor() {
         super();
@@ -502,7 +557,7 @@ class playerProps {
     canShoot = true;
     shooting = false;
     currentWeapon = 'sword';
-    weaponData = new weaponWarHammer;
+    weaponData = new weaponTrident;
     bowData = new weaponBow;
 };
 
@@ -764,6 +819,7 @@ class goblin {
     weaponData = new weaponHands;
     bowData = null;
     adjustmentSpeed = 25;
+    minAdjustSpeed = 10;
 
     // movment/tick stuff
     movementSpeed = 1.5;
@@ -844,12 +900,14 @@ class goblin {
         const useAdjustmentSpeed = ((this.currentWeapon == 'sword') ? (this.adjustmentSpeed) : Math.floor(this.adjustmentSpeed/2));
         const moveLength = (usePlayerProps.movementHistory.length - 1);
         const adjustDiff = (moveLength - useAdjustmentSpeed);
-        const speed = ((proximity >= 1) ? adjustDiff : ((proximity < 0) ? moveLength : Math.floor(adjustDiff + ((1-proximity) * useAdjustmentSpeed))));
-        
+        const speed = ((proximity >= 1) ? adjustDiff : ((proximity < 0) ? moveLength : Math.floor(adjustDiff + ((1-proximity) * useAdjustmentSpeed))) - this.minAdjustSpeed);
+        const useSpeed = ((speed > (moveLength - this.minAdjustSpeed)) ? (moveLength - this.minAdjustSpeed) : speed);
+
+
         const attackAngle = Math.atan2(dY, dX);
 
-        const pDX = (usePlayerProps.movementHistory[speed][0] - this.x);
-        const pDY = (usePlayerProps.movementHistory[speed][1] - this.y);
+        const pDX = (usePlayerProps.movementHistory[useSpeed][0] - this.x);
+        const pDY = (usePlayerProps.movementHistory[useSpeed][1] - this.y);
         const pastAttackAngle = Math.atan2(pDY, pDX);
 
         const truePastDiff = (Math.abs(attackAngle) + Math.abs(pastAttackAngle));
@@ -1401,8 +1459,8 @@ class bigGoblin extends goblin {
         this.fullHealth = gameTextures.bigGoblinFullHealth;
         this.halfHealth = gameTextures.bigGoblinHalfHealth;
         this.nearDeath = gameTextures.bigGoblinNearDeath;
-        this.starterHealth = 125;
-        this.health = 125;
+        this.starterHealth = 200;
+        this.health = 200;
         this.hitBoxX = 50;
         this.hitBoxY = 50;
         this.sizeX = 50;
@@ -1410,6 +1468,7 @@ class bigGoblin extends goblin {
         this.attackDamageMultiplier = 1.5;
         this.movementSpeed = .5;
         this.adjustmentSpeed = 35;
+        this.minAdjustSpeed = 25;
     };
 };
 
@@ -1452,7 +1511,7 @@ const levelData = [
         ],
         waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
             [
-                [100, biterGoblin, [null, null], [0, 250]],
+                [100, bigGoblin, [null, weaponBow], [50, 50]],
             ],
             [
                 [200, archerGoblin, [null, weaponBow], [50, 50]],
@@ -2184,8 +2243,10 @@ async function playLevel() {
                 const moveLength = (usePlayerProps.movementHistory.length - 1);
                 const adjustDiff = (moveLength - useAdjustmentSpeed);
                 const speed = ((proximity >= 1) ? adjustDiff : ((proximity < 0) ? moveLength : Math.floor(adjustDiff + ((1-proximity) * useAdjustmentSpeed))));
+                
+                const useSpeed = ((speed > (moveLength - selectedEnemy.minAdjustSpeed)) ? (moveLength - selectedEnemy.minAdjustSpeed) : speed);
 
-                const usePos = usePlayerProps.movementHistory[speed];
+                const usePos = usePlayerProps.movementHistory[useSpeed];
                 if (usePos) {
                     if (selectedEnemy.currentWeapon == 'sword') {
                         const [enemyAngle, enemyOffsetX, enemyOffsetY] = getWeaponPosition(selectedEnemy.x, selectedEnemy.y, usePos[0], usePos[1], selectedEnemy.weaponData.sizeX, selectedEnemy.weaponData.sizeY + averageHitBox, selectedEnemy.weaponData.offset, selectedEnemy.attacking);
