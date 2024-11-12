@@ -220,6 +220,7 @@ class weaponHands {
     attackRange = 5;
     damage = 10;
     swingDamge = 0;
+    swingWeight = 0;
     attackDuration = 500;
     attackCoolDown = 150;
     canBlock = false;
@@ -359,6 +360,7 @@ class weaponMace extends weaponHands {
         this.attackRange = 80;
         this.damage = 100;
         this.swingDamge = 8.3;
+        this.swingWeight = 3;
         this.attackDuration = 500;
         this.attackCoolDown = 1500;
         this.texture = gameTextures.weaponMace;
@@ -394,6 +396,7 @@ class weaponBattleAxe extends weaponHands {
         this.attackRange = 100;
         this.damage = 10;
         this.swingDamge = 25;
+        this.swingWeight = 15;
         this.attackDuration = 1000;
         this.attackCoolDown = 1500;
         this.texture = gameTextures.weaponBattleAxe;
@@ -411,6 +414,7 @@ class weaponWarHammer extends weaponHands {
         this.attackRange = 100;
         this.damage = 2.5;
         this.swingDamge = 45;
+        this.swingWeight = 50;
         this.attackDuration = 1000;
         this.attackCoolDown = 1500;
         this.texture = gameTextures.weaponWarHammer;
@@ -463,6 +467,7 @@ class weaponTrident extends weaponHands {
         this.attackRange = 125;
         this.damage = 75;
         this.swingDamge = 10;
+        this.swingWeight = 5;
         this.attackDuration = 700;
         this.attackCoolDown = 850;
         this.texture = gameTextures.weaponTrident;
@@ -526,6 +531,24 @@ class playerProps {
     };
     bites = 0;
     movementHistory = [];
+    mouseHistory = [];
+    getCurrentWeapon() {
+        return((this.currentWeapon == 'sword') ? this.weaponData : this.bowData);
+    };
+    getWeaponAngle() {
+        const useTool = this.getCurrentWeapon();
+        if (!useTool.swingable || !useTool.swingWeight) {
+            return(getMouseAngle() + Math.PI/2);
+        };
+
+        const mouseHistoryLength = this.mouseHistory.length;
+        if ((mouseHistoryLength) < 49 && ((mouseHistoryLength+1) - useTool.swingWeight) < 0) {
+            return(this.mouseHistory[0]);
+        } else {
+            return(this.mouseHistory[Math.floor((mouseHistoryLength+1) - useTool.swingWeight)]);
+        };
+
+    };
     updateXY() {
         if (this.bites > 0) {
             return;
@@ -557,7 +580,7 @@ class playerProps {
     canShoot = true;
     shooting = false;
     currentWeapon = 'sword';
-    weaponData = new weaponTrident;
+    weaponData = new weaponWarHammer;
     bowData = new weaponBow;
 };
 
@@ -898,11 +921,11 @@ class goblin {
         const proximity = ((ratio < 0) ? 0 : ((ratio >= 1) ? 1 : ratio));
         
         const useAdjustmentSpeed = ((this.currentWeapon == 'sword') ? (this.adjustmentSpeed) : Math.floor(this.adjustmentSpeed/2));
-        const moveLength = (usePlayerProps.movementHistory.length - 1);
+        const moveLength = (usePlayerProps.movementHistory.length + 1);
         const adjustDiff = (moveLength - useAdjustmentSpeed);
         const speed = ((proximity >= 1) ? adjustDiff : ((proximity < 0) ? moveLength : Math.floor(adjustDiff + ((1-proximity) * useAdjustmentSpeed))) - this.minAdjustSpeed);
         const useSpeed = ((speed > (moveLength - this.minAdjustSpeed)) ? (moveLength - this.minAdjustSpeed) : speed);
-
+        console.log(useSpeed);
 
         const attackAngle = Math.atan2(dY, dX);
 
@@ -927,7 +950,7 @@ class goblin {
             this.canAttack = false;
             this.attacking = true;
             if (usePlayerProps.blocking) {
-                const playerAngle = getMouseAngle();
+                const playerAngle = usePlayerProps.getWeaponAngle();
                 const difference = Math.abs(playerAngle - pastAttackAngle);
 
                 if (difference < (29 * Math.PI / 36) || difference > (43 * Math.PI / 36)) {
@@ -1212,7 +1235,7 @@ class ghostGoblin extends goblin {
     tpAway() {
         const ran = Math.floor(Math.floor(Math.random()*30)/10);
         const newAngle = (ran == 0 ? Math.PI : (ran == 1 ? 3*Math.PI/2 : Math.PI/2));
-        const weaponAngle = getMouseAngle() + newAngle;
+        const weaponAngle = usePlayerProps.getWeaponAngle() + newAngle;
         const [newX, newY] = inBounds((this.x - (-250 * Math.cos(weaponAngle))), (this.y - (-250 * Math.sin(weaponAngle))));
         this.x = newX;
         this.y = newY;
@@ -1511,7 +1534,7 @@ const levelData = [
         ],
         waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
             [
-                [100, bigGoblin, [null, weaponBow], [50, 50]],
+                [100, bigGoblin, [null, null], [50, 50]],
             ],
             [
                 [200, archerGoblin, [null, weaponBow], [50, 50]],
@@ -1781,6 +1804,7 @@ function reloadGame() {
     usePlayerProps.bites = 0;
     usePlayerProps.initialAttackAngle = 0;
     usePlayerProps.movementHistory = [];
+    usePlayerProps.mouseHistory = [];
 
     currentEnemies.splice(0, currentEnemies.length);
     currentBullets.splice(0, currentBullets.length);
@@ -1837,16 +1861,17 @@ function establishMouseInput(event) {
     usePlayerProps.amountMouseMoved += distance;
     usePlayerProps.mouseX = event.clientX - rect.left;
     usePlayerProps.mouseY = event.clientY - rect.top;
+
     if (usePlayerProps.amountMouseMoved >= settings.minMouseMove) {
-        usePlayerProps.amountMouseMoved = 0;
         const angle = getMouseAngle();
+        usePlayerProps.amountMouseMoved = 0;
         savedMouseDirections.push(angle);
     };
 };
 
 // checks if player is swinging the sword and sets isSwinging to the value
 function handelSwingingCheck() {
-    const currentAngle = getMouseAngle();
+    const currentAngle = usePlayerProps.getWeaponAngle();
     const directionHistoryLength = savedMouseDirections.length;
     usePlayerProps.isSwinging = false;
     for (let i = 0; i < directionHistoryLength; i++) {
@@ -1856,6 +1881,7 @@ function handelSwingingCheck() {
             break
         };
     };
+    console.log('swinging='+usePlayerProps.isSwinging);
     savedMouseDirections = [];
 };
 
@@ -1866,7 +1892,7 @@ function establishMouseClick(event) {
             usePlayerProps.canAttack = false;
             usePlayerProps.attacking = true;
             usePlayerProps.blocking = false;
-            usePlayerProps.initialAttackAngle = getMouseAngle();
+            usePlayerProps.initialAttackAngle = usePlayerProps.getWeaponAngle();
             setTimeout(() => {
                 usePlayerProps.attacking = false;
                 usePlayerProps.initialAttackAngle = 0;
@@ -1896,7 +1922,7 @@ function establishMouseClick(event) {
 // gets right mouse click
 function establishRightMouseClick(event) {
     event.preventDefault();
-    const useWeapon = (usePlayerProps.currentWeapon == 'sword' ? usePlayerProps.weaponData : usePlayerProps.bowData);
+    const useWeapon = usePlayerProps.getCurrentWeapon();
     if (useWeapon.canBlock) {
         usePlayerProps.blocking = !usePlayerProps.blocking;
     };
@@ -2182,7 +2208,7 @@ async function playLevel() {
         // Sword stab and slash debuff
         let stabSwinging = false;
         if (usePlayerProps.attacking) {
-            const currentMouseAngle = getMouseAngle();
+            const currentMouseAngle = usePlayerProps.getWeaponAngle();
             if (Math.abs(usePlayerProps.initialAttackAngle - currentMouseAngle) > .5) {
                 stabSwinging = true;
             };
@@ -2190,7 +2216,7 @@ async function playLevel() {
 
         // Draw player and enemies
         usePlayerProps.draw(usePlayerProps.x, usePlayerProps.y);
-        const weaponUsing = (usePlayerProps.currentWeapon == 'sword' ? usePlayerProps.weaponData : usePlayerProps.bowData);
+        const weaponUsing = usePlayerProps.getCurrentWeapon();
         const [angle, offsetX, offsetY] = getWeaponPosition(usePlayerProps.x, usePlayerProps.y, usePlayerProps.mouseX, usePlayerProps.mouseY, weaponUsing.sizeX, weaponUsing.sizeY, weaponUsing.offset, usePlayerProps.attacking);
         const currentEnemyLength = currentEnemies.length;
         makeHords();
@@ -2205,11 +2231,12 @@ async function playLevel() {
             const canStab = (!selectedEnemy.wasAttacked && usePlayerProps.attacking);
             const canSwing = (!selectedEnemy.wasSwingAttacked && usePlayerProps.isSwinging && !usePlayerProps.blocking && ((usePlayerProps.currentWeapon == 'sword' && usePlayerProps.weaponData.swingable) || (usePlayerProps.currentWeapon == 'bow' && usePlayerProps.bowData.swingable)));
             if (canStab || canSwing) {
+                const useAngle = usePlayerProps.getWeaponAngle();
                 const initialOffset = (((canStab && !stabSwinging> 0) || (usePlayerProps.bites > 0 && selectedEnemy.constructor.name)) ? 0 : usePlayerProps.weaponData.offset);
-                const x1 = usePlayerProps.x + (initialOffset * Math.cos(angle + Math.PI / 2));
-                const y1 = usePlayerProps.y + (initialOffset * Math.sin(angle + Math.PI / 2));
-                const x2 = usePlayerProps.x + (offsetY * Math.cos(angle + Math.PI / 2));
-                const y2 = usePlayerProps.y + (offsetY * Math.sin(angle + Math.PI / 2));
+                const x1 = usePlayerProps.x + (initialOffset * Math.cos(useAngle + Math.PI / 2));
+                const y1 = usePlayerProps.y + (initialOffset * Math.sin(useAngle + Math.PI / 2));
+                const x2 = usePlayerProps.x + (offsetY * Math.cos(useAngle + Math.PI / 2));
+                const y2 = usePlayerProps.y + (offsetY * Math.sin(useAngle + Math.PI / 2));
 
                 const xMin = selectedEnemy.x - selectedEnemy.hitBoxX/2;
                 const xMax = selectedEnemy.x + selectedEnemy.hitBoxX/2;
@@ -2260,9 +2287,9 @@ async function playLevel() {
         };
         
         if (usePlayerProps.currentWeapon == 'sword') {
-            usePlayerProps.weaponData.draw(usePlayerProps.x, usePlayerProps.y, angle, offsetX, offsetY, usePlayerProps.blocking);
+            usePlayerProps.weaponData.draw(usePlayerProps.x, usePlayerProps.y, (usePlayerProps.getWeaponAngle()), offsetX, offsetY, usePlayerProps.blocking);
         } else {
-            usePlayerProps.bowData.draw(usePlayerProps.x, usePlayerProps.y, angle, offsetX, usePlayerProps.bowData.yOffset, usePlayerProps.blocking);
+            usePlayerProps.bowData.draw(usePlayerProps.x, usePlayerProps.y, (usePlayerProps.getWeaponAngle()), offsetX, usePlayerProps.bowData.yOffset, usePlayerProps.blocking);
         };
 
         /*onst hordLength = currentHords.length; // Debug for hords
@@ -2279,6 +2306,12 @@ async function playLevel() {
                 ctx.closePath();
             };
         };*/
+
+        usePlayerProps.mouseHistory.push(angle);
+        const mouseHistoryLength = usePlayerProps.mouseHistory.length;
+        if (mouseHistoryLength >= 50) {
+            usePlayerProps.mouseHistory.splice(0, 1);
+        };
 
         if (!stillEnemiesToSummon && currentEnemies.length <= 0) {
             stillEnemiesToSummon = true;
@@ -2302,7 +2335,7 @@ async function playLevel() {
             };
         };
 
-        // debug for player movment history
+        /*// debug for player movment history
         const movementHistoryLength = usePlayerProps.movementHistory.length;
         for (let i = 0; i < movementHistoryLength; i++) {
             const history = usePlayerProps.movementHistory[i];
@@ -2312,6 +2345,7 @@ async function playLevel() {
             ctx.fill();
             ctx.closePath();
         };
+        */
 
         ctx.drawImage(levelData[settings.currentLevel].foreground, 0, 0, mainCanvas.width, mainCanvas.height);
         drawHUD();
