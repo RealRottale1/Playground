@@ -395,7 +395,7 @@ class weaponBattleAxe extends weaponHands {
         this.attackRange = 100;
         this.damage = 10;
         this.swingDamge = 25;
-        this.swingWeight = 15;
+        this.swingWeight = 10;
         this.attackDuration = 1000;
         this.attackCoolDown = 1500;
         this.texture = gameTextures.weaponBattleAxe;
@@ -413,7 +413,7 @@ class weaponWarHammer extends weaponHands {
         this.attackRange = 100;
         this.damage = 2.5;
         this.swingDamge = 45;
-        this.swingWeight = 0;
+        this.swingWeight = 10;
         this.attackDuration = 1000;
         this.attackCoolDown = 1500;
         this.texture = gameTextures.weaponWarHammer;
@@ -925,18 +925,15 @@ class goblin {
         const speed = ((proximity >= 1) ? adjustDiff : ((proximity < 0) ? moveLength : Math.floor(adjustDiff + ((1-proximity) * useAdjustmentSpeed))) - this.minAdjustSpeed);
         const useSpeed = ((speed > (moveLength - this.minAdjustSpeed)) ? (moveLength - this.minAdjustSpeed) : speed);
 
-        const attackAngle = Math.atan2(dY, dX);
-
         const pDX = (usePlayerProps.movementHistory[useSpeed][0] - this.x);
         const pDY = (usePlayerProps.movementHistory[useSpeed][1] - this.y);
         const pastAttackAngle = Math.atan2(pDY, pDX);
 
-        const truePastDiff = (Math.abs(attackAngle) + Math.abs(pastAttackAngle));
-        if (truePastDiff < 3.075 || truePastDiff > (Math.PI + .1)) {
-            return([false, pastAttackAngle]);
-        } else {
-            return([true, pastAttackAngle]);
-        };
+        const aDX = (usePlayerProps.x - usePlayerProps.movementHistory[useSpeed][0]); // a stands for another because I can't be bothered to give it a unique name
+        const aDY = (usePlayerProps.y - usePlayerProps.movementHistory[useSpeed][1]);
+        const aDistance = Math.sqrt(aDX ** 2 + aDY ** 2);
+
+        return([(aDistance <= 50), pastAttackAngle]);
     };
 
     attack() {
@@ -1532,7 +1529,7 @@ const levelData = [
         ],
         waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
             [
-                [100, bigGoblin, [null, null], [50, 50]],
+                [100, bigGoblin, [weaponDefaultSword, null], [250, 250]],
             ],
             [
                 [200, archerGoblin, [null, weaponBow], [50, 50]],
@@ -2262,7 +2259,7 @@ async function playLevel() {
                 const proximity = ((ratio < 0) ? 0 : ((ratio >= 1) ? 1 : ratio));
                 
                 const useAdjustmentSpeed = ((selectedEnemy.currentWeapon == 'sword') ? (selectedEnemy.adjustmentSpeed) : Math.floor(selectedEnemy.adjustmentSpeed/2));
-                const moveLength = (usePlayerProps.movementHistory.length - 1);
+                const moveLength = (usePlayerProps.movementHistory.length + 1);
                 const adjustDiff = (moveLength - useAdjustmentSpeed);
                 const speed = ((proximity >= 1) ? adjustDiff : ((proximity < 0) ? moveLength : Math.floor(adjustDiff + ((1-proximity) * useAdjustmentSpeed))));
                 
@@ -2340,8 +2337,8 @@ async function playLevel() {
             ctx.rect(history[0], history[1], 5, 5);
             ctx.fill();
             ctx.closePath();
-        };
-        */
+        };*/
+        
 
         ctx.drawImage(levelData[settings.currentLevel].foreground, 0, 0, mainCanvas.width, mainCanvas.height);
         drawHUD();
