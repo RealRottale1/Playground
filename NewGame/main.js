@@ -337,7 +337,7 @@ class weaponDefaultSword extends weaponHands {
         super();
         this.swingable = true;
         this.attackRange = 80;
-        this.damage = 15;
+        this.damage = 20;
         this.swingDamge = 2.5;
         this.attackDuration = 750;
         this.attackCoolDown = 250;
@@ -579,7 +579,7 @@ class playerProps {
     canShoot = true;
     shooting = false;
     currentWeapon = 'sword';
-    weaponData = new weaponTrident;
+    weaponData = new weaponDefaultSword;
     bowData = new weaponBow;
 };
 
@@ -1524,46 +1524,34 @@ const levelData = [
     {
         background: gameTextures.plainsBackground,
         foreground: gameTextures.plainsForeground,
-        transition: [
-            [gameTextures.missingTexture, 10],
-        ],
+        transition: [[gameTextures.missingTexture, 10], ],
         waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
             [
-                [100, bigGoblin, [weaponDefaultSword, null], [250, 250]],
+                [500, goblin, [null, null], [250, 0]],
+                [700, goblin, [null, null], [0, 250]],
+                [1100, goblin, [null, null], [500, 250]],
             ],
             [
-                [200, archerGoblin, [null, weaponBow], [50, 50]],
-                [500, archerGoblin, [null, weaponBow], [450, 50]],
-                [650, mirrorGoblin, [null, null], [250, 500]],
-                [650, mirrorGoblin, [null, null], [500, 250]],
-                [800, archerGoblin, [null, weaponBow], [50, 450]],
-                [1100, archerGoblin, [null, weaponBow], [450, 450]], 
+                [200, goblin, [null, null], [250, 500]],
+                [600, goblin, [null, null], [0, 250]],
+                [1000, goblin, [null, null], [250, 0]],
+                [1400, archerGoblin, [null, weaponBow], [500, 250]],
             ],
             [
-                [200, bombGoblin, [null, null], [250, 0]],
-                [300, biterGoblin, [null, null], [0, 250]],
-                [400, bombGoblin, [null, null], [250, 500]],
-                [500, biterGoblin, [null, null], [500, 250]],
-                [600, bombGoblin, [null, null], [0, 250]],
-                [700, biterGoblin, [null, null], [250, 0]],
-                [800, bombGoblin, [null, null], [500, 250]],
-                [900, biterGoblin, [null, null], [250, 500]],
+                [200, archerGoblin, [null, weaponBow], [0, 125]],
+                [300, archerGoblin, [null, weaponBow], [0, 875]],
+                [1300, archerGoblin, [null, weaponBow], [500, 125]],
+                [1400, archerGoblin, [null, weaponBow], [500, 875]],
             ],
             [
-                [200, ghostGoblin, [weaponDefaultSword, null], [250, 0]],
-                [200, ghostGoblin, [null, weaponBow], [250, 500]],
-                [600, bigGoblin, [weaponDefaultSword, null], [0, 250]],
-                [800, bigGoblin, [weaponDefaultSword, null], [500, 250]],
+                [200, goblin, [null, null], [0, 0]],
+                [800, archerGoblin, [null, weaponBow], [500, 500]],
+                [1600, goblin, [null, null], [250, 500]],
+                [1800, goblin, [null, null], [250, 0]],
+                [2000, bigGoblin, [null, null], [500, 250]],
             ],
-        ],
-        shopItems: {
-            weapons: [
-                weaponDefaultSword, weaponLongSword,
-            ],
-            bows: [
-                weaponGoldBow, weaponBow,
-            ],
-        },
+        ], // add spear weapon
+        shopItems: {weapons: [weaponKatana, weaponDefaultSword], bows: [weaponGoldBow, weaponBow,]},
     },
 ];
 
