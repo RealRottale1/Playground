@@ -131,6 +131,8 @@ const gameTextures = {
     weaponTriblade: makeImage('textures/weapons/triblade.png'),
     weaponSickle: makeImage('textures/weapons/sickle.png'),
     weaponTrident: makeImage('textures/weapons/trident.png'),
+    weaponSpear: makeImage('textures/weapons/spear.png'),
+    weaponEarlyGoblinSword: makeImage('textures/weapons/earlyGoblinSword.png'),
     weaponLongSword: makeImage('textures/weapons/longSword.png'),
     weaponBow: makeImage('textures/weapons/bow.png'),
     weaponGoldBow: makeImage('textures/weapons/goldBow.png'),
@@ -357,7 +359,7 @@ class weaponMace extends weaponHands {
         super();
         this.swingable = true;
         this.attackRange = 80;
-        this.damage = 100;
+        this.damage = 35;
         this.swingDamge = 8.3;
         this.swingWeight = 3;
         this.attackDuration = 500;
@@ -446,7 +448,7 @@ class weaponSickle extends weaponHands {
         super();
         this.swingable = true;
         this.attackRange = 75;
-        this.damage = 20;
+        this.damage = 5;
         this.swingDamge = 15;
         this.attackDuration = 300;
         this.attackCoolDown = 200;
@@ -474,6 +476,44 @@ class weaponTrident extends weaponHands {
         this.sizeX = 50;
         this.sizeY = 100;
         this.offset = -65;
+    };
+};
+
+class weaponSpear extends weaponHands {
+    constructor() {
+        super();
+        this.swingable = false;
+        this.attackRange = 125;
+        this.damage = 35;
+        this.swingDamge = 0;
+        this.swingWeight = 0;
+        this.attackDuration = 700;
+        this.attackCoolDown = 850;
+        this.texture = gameTextures.weaponSpear;
+        this.displayName = 'Spear';
+        this.sizeX = 75;
+        this.sizeY = 125;
+        this.offset = -65;
+    };
+};
+
+class weaponEarlyGoblinSword extends weaponHands {
+    constructor() {
+        super();
+        this.swingable = true;
+        this.attackRange = 70;
+        this.damage = 15;
+        this.swingDamge = 2.5;
+        this.attackDuration = 750;
+        this.attackCoolDown = 250;
+        this.canBlock = true;
+        this.blockDuration = 1000;
+        this.blockCoolDown = 500;
+        this.texture = gameTextures.weaponEarlyGoblinSword;
+        this.displayName = 'Goblin Sword';
+        this.sizeX = 75;
+        this.sizeY = 75;
+        this.offset = -35;
     };
 };
 
@@ -579,7 +619,7 @@ class playerProps {
     canShoot = true;
     shooting = false;
     currentWeapon = 'sword';
-    weaponData = new weaponDefaultSword;
+    weaponData = new weaponSpear;
     bowData = new weaponBow;
 };
 
@@ -1529,7 +1569,6 @@ const levelData = [
             [
                 [500, goblin, [null, null], [250, 0]],
                 [700, goblin, [null, null], [0, 250]],
-                [1100, goblin, [null, null], [500, 250]],
             ],
             [
                 [200, goblin, [null, null], [250, 500]],
@@ -1550,8 +1589,37 @@ const levelData = [
                 [1800, goblin, [null, null], [250, 0]],
                 [2000, bigGoblin, [null, null], [500, 250]],
             ],
-        ], // add spear weapon
-        shopItems: {weapons: [weaponKatana, weaponDefaultSword], bows: [weaponGoldBow, weaponBow,]},
+        ],
+        shopItems: {weapons: [weaponKatana, weaponSpear], bows: [weaponGoldBow, weaponBow,]},
+    },
+    {
+        background: gameTextures.plainsBackground,
+        foreground: gameTextures.plainsForeground,
+        transition: [[gameTextures.missingTexture, 10], ],
+        waves: [
+            [
+                [200, bigGoblin, [null, null], [250, 500]],
+                [1000, goblin, [null, null], [0, 0]],
+                [1000, archerGoblin, [null, weaponBow], [0, 250]],
+                [1000, goblin, [null, null], [0, 500]],
+                [2000, goblin, [weaponEarlyGoblinSword, null], [0, 0]],
+            ],
+            [
+                [200, goblin, [null, null], [0, 250]],
+                [800, archerGoblin, [null, weaponBow], [500, 250]],
+                [800, bigGoblin, [weaponEarlyGoblinSword, null], [500, 150]],
+                [800, goblin, [weaponEarlyGoblinSword, null], [500, 350]],
+            ],
+            [
+                [200, goblin, [weaponEarlyGoblinSword, null], [0, 250]],
+                [200, archerGoblin, [null, weaponBow], [500, 250]],
+                [1400, goblin, [weaponEarlyGoblinSword, null], [500, 250]],
+                [1400, archerGoblin, [null, weaponBow], [0, 250]],
+                [2600, berserkerGoblin, [weaponEarlyGoblinSword], [250, 500]],
+            ],
+
+        ],
+        shopItems: {weapons: [weaponSickle, weaponMace], bows: [weaponGoldBow, weaponBow,]},
     },
 ];
 
@@ -1746,7 +1814,7 @@ function fillMouseHistoryWithBlanks() {
 // boots up game
 function bootGame() {
     settings.hasShownTransition = false;
-    settings.currentLevel = 0;
+    settings.currentLevel = 1;
     settings.currentWave = 0;
     amountSummoned = 0;
     stillEnemiesToSummon = true;
@@ -1766,7 +1834,6 @@ function bootGame() {
 
 // reloads game
 function reloadGame() {
-    settings.currentLevel = 0;
     settings.currentWave = 0;
     amountSummoned = 0;
     stillEnemiesToSummon = true;
@@ -2368,6 +2435,7 @@ async function runGame() {
             currentHords.splice(0, currentHords.length);
             if (usePlayerProps.health > 0) {
                 await handleShop();
+                settings.currentLevel += 1;
                 reloadGame();
             } else {
                 const retry = await optionsOnDeath();
