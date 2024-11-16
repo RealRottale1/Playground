@@ -145,6 +145,8 @@ const gameTextures = {
     poisonTile: makeImage('textures/poisonTile.png'),
     plainsBackground: makeImage('textures/areas/plainBackground.png'),
     plainsForeground: makeImage('textures/areas/plainForeground.png'),
+    forestBackground: makeImage('textures/areas/forestBackground.png'),
+    forestForeground: makeImage('textures/areas/forestForeground.png'),
     shopBackground1: makeImage('textures/shopBackground/background1.png'),
 };
 
@@ -358,7 +360,7 @@ class weaponMace extends weaponHands {
     constructor() {
         super();
         this.swingable = true;
-        this.attackRange = 80;
+        this.attackRange = 65;
         this.damage = 35;
         this.swingDamge = 8.3;
         this.swingWeight = 3;
@@ -619,7 +621,7 @@ class playerProps {
     canShoot = true;
     shooting = false;
     currentWeapon = 'sword';
-    weaponData = new weaponSpear;
+    weaponData = new weaponMace;
     bowData = new weaponBow;
 };
 
@@ -1617,7 +1619,17 @@ const levelData = [
                 [1400, archerGoblin, [null, weaponBow], [0, 250]],
                 [2600, berserkerGoblin, [weaponEarlyGoblinSword], [250, 500]],
             ],
-
+        ],
+        shopItems: {weapons: [weaponSickle, weaponMace], bows: [weaponGoldBow, weaponBow,]},
+    },
+    {
+        background: gameTextures.forestBackground,
+        foreground: gameTextures.forestForeground,
+        transition: [[gameTextures.missingTexture, 10], ],
+        waves: [
+            [
+                [200, bigGoblin, [null, null], [250, 500]],
+            ],
         ],
         shopItems: {weapons: [weaponSickle, weaponMace], bows: [weaponGoldBow, weaponBow,]},
     },
@@ -1814,7 +1826,7 @@ function fillMouseHistoryWithBlanks() {
 // boots up game
 function bootGame() {
     settings.hasShownTransition = false;
-    settings.currentLevel = 1;
+    settings.currentLevel = 2;
     settings.currentWave = 0;
     amountSummoned = 0;
     stillEnemiesToSummon = true;
