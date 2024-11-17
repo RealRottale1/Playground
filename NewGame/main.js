@@ -133,13 +133,28 @@ const gameTextures = {
     weaponTrident: makeImage('textures/weapons/trident.png'),
     weaponSpear: makeImage('textures/weapons/spear.png'),
     weaponEarlyGoblinSword: makeImage('textures/weapons/earlyGoblinSword.png'),
+    weaponCopperSword: makeImage('textures/weapons/copperSword.png'),
+    weaponGoldSword: makeImage('textures/weapons/goldSword.png'),
+    weaponCobaltSword: makeImage('textures/weapons/cobaltSword.png'),
+    weaponGiantSword: makeImage('textures/weapons/giantSword.png'),
+    weaponRhodoniteSword: makeImage('textures/weapons/rhodoniteSword.png'),
     weaponLongSword: makeImage('textures/weapons/longSword.png'),
     weaponBow: makeImage('textures/weapons/bow.png'),
+    weaponBowFull: makeImage('textures/weapons/bowFull.png'),
     weaponGoldBow: makeImage('textures/weapons/goldBow.png'),
     weaponCrossbow: makeImage('textures/weapons/crossbow.png'),
+    weaponCrossbowFull: makeImage('textures/weapons/crossbowFull.png'),
+    weaponMultiShotBow: makeImage('textures/weapons/multiShotBow.png'),
+    weaponMultiShotBowFull: makeImage('textures/weapons/multiShotBowFull.png'),
+    weaponSlingShot: makeImage('textures/weapons/slingShot.png'),
+    weaponBlowDart: makeImage('textures/weapons/blowDart.png'),
+    weaponThrowingKnives: makeImage('textures/weapons/throwingKnives.png'),
     bulletArrow: makeImage('textures/weapons/arrow.png'),
     bulletGoldArrow: makeImage('textures/weapons/goldArrow.png'),
     bulletCrossArrow: makeImage('textures/weapons/crossArrow.png'),
+    bulletMultiArrow: makeImage('textures/weapons/multiArrow.png'),
+    bulletSlingBullet: makeImage('textures/weapons/slingBullet.png'),
+    bulletPoisonDart: makeImage('textures/weapons/poisonDart.png'),
     heart: makeImage('textures/drops/heart.png'),
     explosion: makeImage('textures/explosion.png'),
     poisonTile: makeImage('textures/poisonTile.png'),
@@ -234,14 +249,14 @@ class weaponHands {
     sizeX = 0;
     sizeY = 0;
     offset = 0;
-    draw(x, y, angle, offsetX, offsetY, blocking) {
-        if (!this.texture || !this.sizeX || !this.sizeY) {
+    draw(x, y, angle, offsetX, offsetY, blocking, using) {
+        if (!this.texture || !this.sizeX || !this.sizeY || (using && this.disappearOnUse)) {
             return (false);
         };
         ctx.save();
         ctx.translate(x, y);
         ctx.rotate(angle + (blocking ? (Math.PI / 2) : 0));
-        ctx.drawImage(this.texture, (blocking ? offsetY * 2 / 3 : offsetX), (blocking ? offsetX : offsetY), this.sizeX, this.sizeY);
+        ctx.drawImage(((!using && this.fullTexture) ? this.fullTexture : this.texture), (blocking ? offsetY * 2 / 3 : offsetX), (blocking ? offsetY/2  : offsetY), this.sizeX, this.sizeY);
         ctx.restore();
     };
 };
@@ -277,11 +292,84 @@ class goldArrow extends arrow {
     };
 }
 
-class crossbow extends arrow {
+class crossbowArrow extends arrow {
     constructor() {
         super();
         this.useTexture = gameTextures.bulletCrossArrow;
         this.damage = 150;
+    };
+}
+
+class multiArrow extends arrow {
+    constructor() {
+        super();
+        this.useTexture = gameTextures.bulletMultiArrow;
+        this.damage = 20;
+    };
+}
+
+class slingBullet extends arrow {
+    constructor() {
+        super();
+        this.sizeX = 15;
+        this.sizeY = 15;
+        this.boxSizeX = 15;
+        this.boxSizeY = 15;
+        this.useTexture = gameTextures.bulletSlingBullet;
+        this.damage = 5;
+    };
+}
+
+class poisonDart extends arrow {
+    constructor() {
+        super();
+        this.sizeX = 50;
+        this.sizeY = 50;
+        this.boxSizeX = 25;
+        this.boxSizeY = 25;
+        this.useTexture = gameTextures.bulletPoisonDart;
+        this.damage = 10;
+    };
+    async onImpact(hit) {
+        if (hit === usePlayerProps) {
+            for (let i = 0; i < 50; i++) {
+                await wait(100);
+                if (usePlayerProps.health <= 0) {
+                    break;
+                };
+                hit.health -= .5;
+            };
+        } else {
+            hit.movementSpeed = (hit.maxSpeed * 2 / 3);
+        };
+    }
+}
+
+class throwingKinve extends arrow {
+    constructor() {
+        super();
+        this.sizeX = 45;
+        this.sizeY = 45;
+        this.boxSizeX = 25;
+        this.boxSizeY = 25;
+        this.useTexture = gameTextures.weaponThrowingKnives;
+        this.damage = 25;
+        this.rotation = 0;
+    };
+    draw() {
+        if (!this.useTexture || !this.sizeX || !this.sizeY) {
+            return (false);
+        };
+        if ((this.rotation*Math.PI/180) >= (2*Math.PI)) {
+            this.rotation = 0;
+        } else {
+            this.rotation += 12.5;
+        };
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.angle+(this.rotation*Math.PI/180));
+        ctx.drawImage(this.useTexture, -1 * (this.sizeX / 2), -1 * (this.sizeY / 2), this.sizeX, this.sizeY);
+        ctx.restore();
     };
 }
 
@@ -297,6 +385,7 @@ class weaponBow extends weaponHands {
         this.attackDuration = 0;
         this.attackCoolDown = 0;
         this.texture = gameTextures.weaponBow;
+        this.fullTexture = gameTextures.weaponBowFull;
         this.displayName = 'Bow';
         this.sizeX = 50;
         this.sizeY = 50;
@@ -320,8 +409,9 @@ class weaponCrossbow extends weaponBow {
     constructor() {
         super();
         this.fireRate = 5000;
-        this.useBullet = crossbow;
+        this.useBullet = crossbowArrow;
         this.texture = gameTextures.weaponCrossbow;
+        this.fullTexture = gameTextures.weaponCrossbowFull;
         this.displayName = 'Crossbow';
     };
 };
@@ -333,6 +423,67 @@ class weaponGoldBow extends weaponBow {
         this.useBullet = goldArrow;
         this.texture = gameTextures.weaponGoldBow;
         this.displayName = 'Gold Bow';
+    };
+};
+
+class weaponMultiShotBow extends weaponBow {
+    constructor() {
+        super();
+        this.sizeX = 100;
+        this.sizeY = 50;
+        this.fireRate = 1000;
+        this.useBullet = multiArrow;
+        this.texture = gameTextures.weaponMultiShotBow;
+        this.fullTexture = gameTextures.weaponMultiShotBowFull;
+        this.displayName = 'Multi Shot Bow';
+    };
+    shoot(x1, x2, y1, y2, source) {
+        const dX = x2 - x1;
+        const dY = y2 - y1;
+        const changeBy = (Math.PI/36)
+        let angle = Math.atan2(dY, dX) + (Math.PI / 2) - changeBy;
+        for (let i = 0; i < 3; i++) {
+            const shotArrow = new this.useBullet;
+            shotArrow.source = source;
+            const averageSize = (shotArrow.boxSizeX + shotArrow.boxSizeY) / 2;
+            shotArrow.x = x1 + (-1 * (this.yOffset) - averageSize) * Math.cos(angle - Math.PI / 2);
+            shotArrow.y = y1 + (-1 * (this.yOffset) - averageSize) * Math.sin(angle - Math.PI / 2);
+            shotArrow.angle = angle;
+            angle += changeBy;
+            currentBullets.push(shotArrow);
+        };
+    };
+};
+
+class weaponSlingShot extends weaponBow {
+    constructor() {
+        super();
+        this.fireRate = 100;
+        this.useBullet = slingBullet;
+        this.texture = gameTextures.weaponSlingShot;
+        this.displayName = 'Sling Shot';
+    };
+};
+
+class weaponBlowDart extends weaponBow {
+    constructor() {
+        super();
+        this.fireRate = 1250;
+        this.yOffset = -50;
+        this.useBullet = poisonDart;
+        this.texture = gameTextures.weaponBlowDart;
+        this.displayName = 'Poison Dart';
+    };
+};
+
+class weaponThrowingKnives extends weaponBow {
+    constructor() {
+        super();
+        this.fireRate = 1250;
+        this.useBullet = throwingKinve;
+        this.texture = gameTextures.weaponThrowingKnives;
+        this.displayName = 'Throwing Knives';
+        this.disappearOnUse = true;
     };
 };
 
@@ -366,6 +517,9 @@ class weaponMace extends weaponHands {
         this.swingWeight = 3;
         this.attackDuration = 500;
         this.attackCoolDown = 1500;
+        this.canBlock = true;
+        this.blockDuration = 1000;
+        this.blockCoolDown = 500;
         this.texture = gameTextures.weaponMace;
         this.displayName = 'Mace';
         this.sizeX = 50;
@@ -417,7 +571,7 @@ class weaponWarHammer extends weaponHands {
         this.attackRange = 100;
         this.damage = 2.5;
         this.swingDamge = 45;
-        this.swingWeight = 10;
+        this.swingWeight = 15;
         this.attackDuration = 1000;
         this.attackCoolDown = 1500;
         this.texture = gameTextures.weaponWarHammer;
@@ -518,6 +672,83 @@ class weaponEarlyGoblinSword extends weaponHands {
         this.offset = -35;
     };
 };
+
+class weaponCopperSword extends weaponHands {
+    constructor() {
+        super();
+        this.swingable = true;
+        this.attackRange = 70;
+        this.damage = 25;
+        this.swingDamge = 4.5;
+        this.attackDuration = 750;
+        this.attackCoolDown = 350;
+        this.canBlock = true;
+        this.blockDuration = 1000;
+        this.blockCoolDown = 500;
+        this.texture = gameTextures.weaponCopperSword;
+        this.displayName = 'Copper Sword';
+        this.sizeX = 75;
+        this.sizeY = 75;
+        this.offset = -35;
+    };
+};
+
+class weaponGoldSword extends weaponHands {
+    constructor() {
+        super();
+        this.swingable = true;
+        this.attackRange = 70;
+        this.damage = 35;
+        this.swingDamge = 5.5;
+        this.attackDuration = 750;
+        this.attackCoolDown = 500;
+        this.canBlock = true;
+        this.blockDuration = 1000;
+        this.blockCoolDown = 500;
+        this.texture = gameTextures.weaponGoldSword;
+        this.displayName = 'Gold Sword';
+        this.sizeX = 75;
+        this.sizeY = 75;
+        this.offset = -35;
+    };
+};
+
+class weaponCobaltSword extends weaponCopperSword {
+    constructor() {
+        super();
+        this.texture = gameTextures.weaponCobaltSword;
+        this.displayName = 'Cobalt Sword';
+    };
+};
+
+class weaponGiantSword extends weaponHands {
+    constructor() {
+        super();
+        this.swingable = true;
+        this.attackRange = 70;
+        this.damage = 50;
+        this.swingDamge = 45;
+        this.attackDuration = 550;
+        this.attackCoolDown = 1000;
+        this.canBlock = false;
+        this.blockDuration = 1000;
+        this.blockCoolDown = 500;
+        this.texture = gameTextures.weaponGiantSword;
+        this.displayName = 'Giant Sword';
+        this.sizeX = 100;
+        this.sizeY = 200;
+        this.offset = -50;
+    };
+};
+
+class weaponRhodoniteSword extends weaponCopperSword {
+    constructor() {
+        super();
+        this.texture = gameTextures.weaponRhodoniteSword;
+        this.displayName = 'Rhodonite Sword';
+    };
+};
+
 
 class weaponLongSword extends weaponHands {
     constructor() {
@@ -886,6 +1117,7 @@ class goblin {
     minAdjustSpeed = 10;
 
     // movment/tick stuff
+    maxSpeed = 1.5;
     movementSpeed = 1.5;
     checkTick = [0, 10000];
     swingAttackClock = [0, 10];
@@ -988,8 +1220,7 @@ class goblin {
             this.attacking = true;
             if (usePlayerProps.blocking) {
                 const playerAngle = usePlayerProps.getWeaponAngle();
-                const difference = Math.abs(playerAngle - pastAttackAngle);
-
+                const difference = Math.abs(playerAngle - (pastAttackAngle+(Math.PI/2)));
                 if (difference < (29 * Math.PI / 36) || difference > (43 * Math.PI / 36)) {
                     usePlayerProps.health -= this.weaponData.damage * this.attackDamageMultiplier;
                 };
@@ -1086,6 +1317,7 @@ class berserkerGoblin extends goblin {
         super();
         this.sizeX = 50;
         this.sizeY = 50;
+        this.maxSpeed = 2.5;
         this.movementSpeed = 2.5;
         this.attackDamageMultiplier = 2;
         this.fullHealth = gameTextures.berserkerGoblinFullHealth;
@@ -1101,6 +1333,7 @@ class bombGoblin extends goblin {
         super();
         this.sizeX = 50;
         this.sizeY = 50;
+        this.maxSpeed = 1;
         this.movementSpeed = 1;
         this.fullHealth = gameTextures.bombGoblinFullHealth;
         this.halfHealth = gameTextures.bombGoblinHalfHealth;
@@ -1215,6 +1448,7 @@ class biterGoblin extends goblin {
         this.singleTexture = true;
         this.starterHealth = 1;
         this.health = 1;
+        this.maxSpeed = 3.5;
         this.movementSpeed = 3.5;
         this.bit = false;
         this.biteDamage = 10;
@@ -1248,6 +1482,7 @@ class biterGoblin extends goblin {
 class mirrorGoblin extends goblin {
     constructor() {
         super();
+        this.maxSpeed = 1;
         this.movementSpeed = 1;
         this.sizeX = 50;
         this.sizeY = 50;
@@ -1526,6 +1761,7 @@ class bigGoblin extends goblin {
         this.sizeX = 50;
         this.sizeY = 50;
         this.attackDamageMultiplier = 1.5;
+        this.maxSpeed = .5;
         this.movementSpeed = .5;
         this.adjustmentSpeed = 35;
         this.minAdjustSpeed = 25;
@@ -1592,7 +1828,7 @@ const levelData = [
                 [2000, bigGoblin, [null, null], [500, 250]],
             ],
         ],
-        shopItems: {weapons: [weaponKatana, weaponSpear], bows: [weaponGoldBow, weaponBow,]},
+        shopItems: {weapons: [weaponKatana, weaponSpear], bows: [null, weaponSlingShot]},
     },
     {
         background: gameTextures.plainsBackground,
@@ -1620,7 +1856,7 @@ const levelData = [
                 [2600, berserkerGoblin, [weaponEarlyGoblinSword], [250, 500]],
             ],
         ],
-        shopItems: {weapons: [weaponSickle, weaponMace], bows: [weaponGoldBow, weaponBow,]},
+        shopItems: {weapons: [weaponSickle, weaponMace], bows: [weaponMultiShotBow, weaponBlowDart]},
     },
     {
         background: gameTextures.forestBackground,
@@ -1628,10 +1864,34 @@ const levelData = [
         transition: [[gameTextures.missingTexture, 10], ],
         waves: [
             [
-                [200, bigGoblin, [null, null], [250, 500]],
+                [200, goblin, [weaponCopperSword, null], [0, 0]],
+                [1200, goblin, [weaponGoldSword, null], [0, 0]],
+                [1200, goblin, [weaponRhodoniteSword, null], [500, 500]],
+                [2200, goblin, [weaponGoldSword, null], [0, 0]],
+                [2200, goblin, [weaponCobaltSword, null], [500, 500]],
+                [2200, poisonGoblin, [null, weaponBlowDart], [500, 0]],
+            ],
+            [
+                [200, poisonGoblin, [null, null], [0, 0]],
+                [400, poisonGoblin, [null, null], [500, 500]],
+                [600, poisonGoblin, [null, null], [500, 0]],
+                [800, poisonGoblin, [null, null], [0, 500]],
+
+                [1600, poisonGoblin, [null, null], [0, 0]],
+                [1800, poisonGoblin, [null, null], [500, 500]],
+                [2000, poisonGoblin, [null, null], [500, 0]],
+                [2200, poisonGoblin, [null, null], [0, 500]],
+            ],
+            [
+                [200, poisonGoblin, [weaponCobaltSword, null], [0, 500]],
+                [200, goblin, [weaponGoldSword, null], [500, 500]],
+                [800, bigGoblin, [weaponGoldSword, null], [250, 500]],
+                [1800, goblin, [weaponCopperSword, null], [0, 500]],
+                [1800, poisonGoblin, [weaponRhodoniteSword, null], [500, 500]],
+                [2400, bigGoblin, [weaponCobaltSword, null], [250, 0]],
             ],
         ],
-        shopItems: {weapons: [weaponSickle, weaponMace], bows: [weaponGoldBow, weaponBow,]},
+        shopItems: {weapons: [weaponBattleAxe, weaponTriblade], bows: [weaponGoldBow, weaponCrossbow]},
     },
 ];
 
@@ -2046,6 +2306,9 @@ function moveBullets() {
                     if (!useEnemy.reflectsBullets) {
                         hitEnemy = true;
                         useEnemy.health -= useBullet.damage;
+                        if (useBullet.onImpact) {
+                            useBullet.onImpact(useEnemy);
+                        };
                         if (useEnemy.health <= 0) {
                             useEnemy.die();
                         };
@@ -2063,6 +2326,9 @@ function moveBullets() {
             const distance = Math.sqrt((usePlayerProps.x - useBullet.x) ** 2 + (usePlayerProps.y - useBullet.y) ** 2);
             if (distance <= (usePlayerProps.sizeX + usePlayerProps.sizeY) / 2) {
                 usePlayerProps.health -= useBullet.damage;
+                if (useBullet.onImpact) {
+                    useBullet.onImpact(usePlayerProps);
+                };
                 currentBullets.splice(i, 1);
                 continue;
             };
@@ -2336,19 +2602,19 @@ async function playLevel() {
                 if (usePos) {
                     if (selectedEnemy.currentWeapon == 'sword') {
                         const [enemyAngle, enemyOffsetX, enemyOffsetY] = getWeaponPosition(selectedEnemy.x, selectedEnemy.y, usePos[0], usePos[1], selectedEnemy.weaponData.sizeX, selectedEnemy.weaponData.sizeY + averageHitBox, selectedEnemy.weaponData.offset, selectedEnemy.attacking);
-                        selectedEnemy.weaponData.draw(selectedEnemy.x, selectedEnemy.y, enemyAngle, enemyOffsetX, enemyOffsetY);
+                        selectedEnemy.weaponData.draw(selectedEnemy.x, selectedEnemy.y, enemyAngle, enemyOffsetX, enemyOffsetY, false, !selectedEnemy.canAttack);
                     } else {
                         const [enemyAngle, enemyOffsetX, enemyOffsetY] = getWeaponPosition(selectedEnemy.x, selectedEnemy.y, usePos[0], usePos[1], selectedEnemy.bowData.sizeX, selectedEnemy.bowData.sizeY + averageHitBox, selectedEnemy.bowData.offset, null);
-                        selectedEnemy.bowData.draw(selectedEnemy.x, selectedEnemy.y, enemyAngle, enemyOffsetX, selectedEnemy.bowData.yOffset);
+                        selectedEnemy.bowData.draw(selectedEnemy.x, selectedEnemy.y, enemyAngle, enemyOffsetX, selectedEnemy.bowData.yOffset, false, !selectedEnemy.canShoot);
                     };
                 };
             };
         };
         
         if (usePlayerProps.currentWeapon == 'sword') {
-            usePlayerProps.weaponData.draw(usePlayerProps.x, usePlayerProps.y, (usePlayerProps.getWeaponAngle()), offsetX, offsetY, usePlayerProps.blocking);
+            usePlayerProps.weaponData.draw(usePlayerProps.x, usePlayerProps.y, (usePlayerProps.getWeaponAngle()), offsetX, offsetY, usePlayerProps.blocking, !usePlayerProps.canAttack);
         } else {
-            usePlayerProps.bowData.draw(usePlayerProps.x, usePlayerProps.y, (usePlayerProps.getWeaponAngle()), offsetX, usePlayerProps.bowData.yOffset, usePlayerProps.blocking);
+            usePlayerProps.bowData.draw(usePlayerProps.x, usePlayerProps.y, (usePlayerProps.getWeaponAngle()), offsetX, usePlayerProps.bowData.yOffset, usePlayerProps.blocking, !usePlayerProps.canShoot);
         };
 
         /*onst hordLength = currentHords.length; // Debug for hords
