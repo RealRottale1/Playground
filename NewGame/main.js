@@ -142,11 +142,13 @@ const gameTextures = {
     weaponBow: makeImage('textures/weapons/bow.png'),
     weaponBowFull: makeImage('textures/weapons/bowFull.png'),
     weaponGoldBow: makeImage('textures/weapons/goldBow.png'),
+    weaponGoldBowFull: makeImage('textures/weapons/goldBowFull.png'),
     weaponCrossbow: makeImage('textures/weapons/crossbow.png'),
     weaponCrossbowFull: makeImage('textures/weapons/crossbowFull.png'),
     weaponMultiShotBow: makeImage('textures/weapons/multiShotBow.png'),
     weaponMultiShotBowFull: makeImage('textures/weapons/multiShotBowFull.png'),
     weaponSlingShot: makeImage('textures/weapons/slingShot.png'),
+    weaponSlingShotFull: makeImage('textures/weapons/slingShotFull.png'),
     weaponBlowDart: makeImage('textures/weapons/blowDart.png'),
     weaponThrowingKnives: makeImage('textures/weapons/throwingKnives.png'),
     bulletArrow: makeImage('textures/weapons/arrow.png'),
@@ -422,6 +424,7 @@ class weaponGoldBow extends weaponBow {
         this.fireRate = 750;
         this.useBullet = goldArrow;
         this.texture = gameTextures.weaponGoldBow;
+        this.fullTexture = gameTextures.weaponGoldBowFull;
         this.displayName = 'Gold Bow';
     };
 };
@@ -461,6 +464,7 @@ class weaponSlingShot extends weaponBow {
         this.fireRate = 100;
         this.useBullet = slingBullet;
         this.texture = gameTextures.weaponSlingShot;
+        this.fullTexture = gameTextures.weaponSlingShotFull;
         this.displayName = 'Sling Shot';
     };
 };
@@ -853,7 +857,7 @@ class playerProps {
     shooting = false;
     currentWeapon = 'sword';
     weaponData = new weaponMace;
-    bowData = new weaponBow;
+    bowData = new weaponBlowDart;
 };
 
 function fillMap(sources, sSX, sSY, pathMap) {
@@ -1875,12 +1879,12 @@ const levelData = [
                 [200, poisonGoblin, [null, null], [0, 0]],
                 [400, poisonGoblin, [null, null], [500, 500]],
                 [600, poisonGoblin, [null, null], [500, 0]],
-                [800, poisonGoblin, [null, null], [0, 500]],
+                [800, poisonGoblin, [null, weaponBlowDart], [0, 500]],
 
                 [1600, poisonGoblin, [null, null], [0, 0]],
                 [1800, poisonGoblin, [null, null], [500, 500]],
                 [2000, poisonGoblin, [null, null], [500, 0]],
-                [2200, poisonGoblin, [null, null], [0, 500]],
+                [2200, poisonGoblin, [null, weaponBlowDart], [0, 500]],
             ],
             [
                 [200, poisonGoblin, [weaponCobaltSword, null], [0, 500]],
@@ -1892,6 +1896,41 @@ const levelData = [
             ],
         ],
         shopItems: {weapons: [weaponBattleAxe, weaponTriblade], bows: [weaponGoldBow, weaponCrossbow]},
+    },
+    {
+        background: gameTextures.forestBackground,
+        foreground: gameTextures.forestForeground,
+        transition: [[gameTextures.missingTexture, 10], ],
+        waves: [
+            [
+                [200, goblin, [weaponCopperSword, null], [0, 0]],
+                [1200, goblin, [weaponGoldSword, null], [0, 0]],
+                [1200, goblin, [weaponRhodoniteSword, null], [500, 500]],
+                [2200, goblin, [weaponGoldSword, null], [0, 0]],
+                [2200, goblin, [weaponCobaltSword, null], [500, 500]],
+                [2200, poisonGoblin, [null, weaponBlowDart], [500, 0]],
+            ],
+            [
+                [200, poisonGoblin, [null, null], [0, 0]],
+                [400, poisonGoblin, [null, null], [500, 500]],
+                [600, poisonGoblin, [null, null], [500, 0]],
+                [800, poisonGoblin, [null, weaponBlowDart], [0, 500]],
+
+                [1600, poisonGoblin, [null, null], [0, 0]],
+                [1800, poisonGoblin, [null, null], [500, 500]],
+                [2000, poisonGoblin, [null, null], [500, 0]],
+                [2200, poisonGoblin, [null, weaponBlowDart], [0, 500]],
+            ],
+            [
+                [200, poisonGoblin, [weaponCobaltSword, null], [0, 500]],
+                [200, goblin, [weaponGoldSword, null], [500, 500]],
+                [800, bigGoblin, [weaponGoldSword, null], [250, 500]],
+                [1800, goblin, [weaponCopperSword, null], [0, 500]],
+                [1800, poisonGoblin, [weaponRhodoniteSword, null], [500, 500]],
+                [2400, bigGoblin, [weaponCobaltSword, null], [250, 0]],
+            ],
+        ],
+        shopItems: {weapons: [weaponWarHammer, weaponTrident], bows: [null, null]},
     },
 ];
 
