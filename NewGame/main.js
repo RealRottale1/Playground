@@ -476,6 +476,7 @@ class weaponBlowDart extends weaponBow {
         this.yOffset = -50;
         this.useBullet = poisonDart;
         this.texture = gameTextures.weaponBlowDart;
+        this.fullTexture = null;
         this.displayName = 'Poison Dart';
     };
 };
