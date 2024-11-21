@@ -138,6 +138,7 @@ const gameTextures = {
     weaponCobaltSword: makeImage('textures/weapons/cobaltSword.png'),
     weaponGiantSword: makeImage('textures/weapons/giantSword.png'),
     weaponRhodoniteSword: makeImage('textures/weapons/rhodoniteSword.png'),
+    weaponAmethystSword: makeImage('textures/weapons/amethystSword.png'),
     weaponLongSword: makeImage('textures/weapons/longSword.png'),
     weaponBow: makeImage('textures/weapons/bow.png'),
     weaponBowFull: makeImage('textures/weapons/bowFull.png'),
@@ -151,12 +152,15 @@ const gameTextures = {
     weaponSlingShotFull: makeImage('textures/weapons/slingShotFull.png'),
     weaponBlowDart: makeImage('textures/weapons/blowDart.png'),
     weaponThrowingKnives: makeImage('textures/weapons/throwingKnives.png'),
+    weaponBombBow: makeImage('textures/weapons/bombBow.png'),
+    weaponBombBowFull: makeImage('textures/weapons/bombBowFull.png'),
     bulletArrow: makeImage('textures/weapons/arrow.png'),
     bulletGoldArrow: makeImage('textures/weapons/goldArrow.png'),
     bulletCrossArrow: makeImage('textures/weapons/crossArrow.png'),
     bulletMultiArrow: makeImage('textures/weapons/multiArrow.png'),
     bulletSlingBullet: makeImage('textures/weapons/slingBullet.png'),
     bulletPoisonDart: makeImage('textures/weapons/poisonDart.png'),
+    bulletBombArrow: makeImage('textures/weapons/bombArrow.png'),
     heart: makeImage('textures/drops/heart.png'),
     explosion: makeImage('textures/explosion.png'),
     poisonTile: makeImage('textures/poisonTile.png'),
@@ -172,9 +176,44 @@ class effectExplosion {
     y = 0;
     sizeX = 200;
     sizeY = 200;
+    range = 200;
+    damage = 100;
     texture = gameTextures.explosion;
     dead = false;
     activate = function () {
+
+        const enemyLength = currentEnemies.length;
+        for (let i = enemyLength - 1; i > -1; i--) {
+            const enemy = currentEnemies[i];
+            if (enemy && enemy.health > 0) {
+                const [dX, dY, distance] = getDistance(this, enemy);
+                const trueDistance = distance - (enemy.hitBoxX + enemy.hitBoxY) / 2;
+                if (trueDistance <= this.range) {
+                    enemy.explode(this.damage);
+                };
+            };
+        };
+
+        // hurts player
+        const [dX, dY, distance] = getDistance(this, usePlayerProps);
+        const trueDistance = distance - (usePlayerProps.sizeX + usePlayerProps.sizeY) / 2;
+        if (trueDistance <= this.range) {
+            usePlayerProps.health -= this.damage;
+        };
+
+        // destroys arrows
+        const bulletLength = currentBullets.length;
+        for (let i = bulletLength - 1; i >= 0; i--) {
+            const bullet = currentBullets[i];
+            if (bullet) {
+                const [dX, dY, distance] = getDistance(this, bullet);
+                const trueDistance = distance - (bullet.boxSizeX + bullet.boxSizeY) / 2;
+                if (trueDistance <= this.range) {
+                    currentBullets.splice(i, 1);
+                };
+            };
+        };
+
         setTimeout(() => {
             this.dead = true;
         }, settings.explosionLinger);
@@ -375,6 +414,29 @@ class throwingKinve extends arrow {
     };
 }
 
+class bombArrow extends arrow {
+    constructor() {
+        super();
+        this.sizeX = 100;
+        this.sizeY = 100;
+        this.boxSizeX = 50;
+        this.boxSizeY = 50;
+        this.useTexture = gameTextures.bulletBombArrow;
+        this.damage = 5;
+    };
+    async onImpact(hit) {
+        const effect = new effectExplosion;
+        effect.x = this.x;
+        effect.y = this.y;
+        effect.sizeX = 100;
+        effect.sizeY = 100;
+        effect.range = 50;
+        effect.damage = 50;
+        effect.activate();
+        currentForegrounds.push(effect);
+    }   
+}
+
 class weaponBow extends weaponHands {
     constructor() {
         super();
@@ -489,6 +551,17 @@ class weaponThrowingKnives extends weaponBow {
         this.texture = gameTextures.weaponThrowingKnives;
         this.displayName = 'Throwing Knives';
         this.disappearOnUse = true;
+    };
+};
+
+class weaponBombBow extends weaponBow {
+    constructor() {
+        super();
+        this.fireRate = 2000;
+        this.useBullet = bombArrow;
+        this.texture = gameTextures.weaponBombBow;
+        this.fullTexture = gameTextures.weaponBombBowFull;
+        this.displayName = 'Bomb Bow';
     };
 };
 
@@ -858,7 +931,7 @@ class playerProps {
     shooting = false;
     currentWeapon = 'sword';
     weaponData = new weaponMace;
-    bowData = new weaponBlowDart;
+    bowData = new weaponBombBow;
 };
 
 function fillMap(sources, sSX, sSY, pathMap) {
@@ -1075,8 +1148,12 @@ class goblin {
     hitBoxY = 25;
     sizeX = 25;
     sizeY = 25;
+    exploded = false;
+    exploding = false;
+    explosionRange = 0;
     die(noDrops) {
         if (!noDrops) {
+            console.log('dropped a heart!');
             const heart = new heartItem(this.x, this.y);
             currentDropItems.push(heart);
         };
@@ -1085,6 +1162,26 @@ class goblin {
             if (currentEnemies[i] === this) {
                 currentEnemies.splice(i, 1);
             };
+        };
+    };
+
+    explode(damage) {
+        if (this.health > 0) {
+
+            this.health -= damage;
+            console.log(damage);
+            if (this.constructor.name == 'bombGoblin' && !this.exploded) {
+                this.exploded = true;
+                this.exploding = true;
+                this.makeExplosion();
+            };
+
+
+            if (this.health <= 0) {
+                this.die(true);
+            };
+        } else {
+            this.die(true);
         };
     };
     draw(x, y) {
@@ -1348,58 +1445,17 @@ class bombGoblin extends goblin {
         this.nearDeathLit = gameTextures.bombGoblinNearDeathLit;
         this.starterHealth = 100;
         this.health = 100;
-        this.exploding = false;
         this.explodeIn = 500;
-        this.explosionDamage = 100;
         this.bombRange = 50;
         this.explosionRange = 150;
     };
 
-    explode() {
-        if (this.health > 0) {
-            const enemyLength = currentEnemies.length;
-            const myAverageHitBoxSize = (this.hitBoxX + this.hitBoxY) / 2;
-
-            // hurts enemies
-            for (let i = enemyLength - 1; i >= 0; i--) {
-                const enemy = currentEnemies[i];
-                if (this !== enemy && enemy) {
-                    const [dX, dY, distance] = getDistance(enemy, this);
-
-                    if (distance < this.explosionRange - (myAverageHitBoxSize + (enemy.hitBoxX + enemy.hitBoxY) / 2)) {
-                        if (enemy.explode && !enemy.exploding) {
-                            enemy.exploding = true;
-                            enemy.explode();
-                        } else {
-                            enemy.health -= this.explosionDamage;
-                        };
-                    };
-                };
-            };
-
-            // hurts player
-            const [dX, dY, distance] = getDistance(usePlayerProps, this);
-            if (distance < this.explosionRange - (myAverageHitBoxSize + (usePlayerProps.sizeX + usePlayerProps.sizeY) / 2)) {
-                usePlayerProps.health -= this.explosionDamage;
-            };
-
-            // destroys arrows
-            const bulletLength = currentBullets.length;
-            for (let i = bulletLength - 1; i >= 0; i--) {
-                const bullet = currentBullets[i];
-                const [dX, dY, distance] = getDistance(bullet, this);
-                if (distance < this.explosionRange - (myAverageHitBoxSize + (bullet.boxSizeX + bullet.boxSizeY) / 2)) {
-                    currentBullets.splice(i, 1);
-                };
-            };
-
-            const effect = new effectExplosion;
-            effect.x = this.x;
-            effect.y = this.y;
-            effect.activate();
-            currentForegrounds.push(effect);
-            this.die(true);
-        };
+    makeExplosion() {
+        const effect = new effectExplosion;
+        effect.x = this.x;
+        effect.y = this.y;
+        effect.activate();
+        currentForegrounds.push(effect);
     };
 
     tickAction() { // for bomb goblin
@@ -1412,7 +1468,8 @@ class bombGoblin extends goblin {
         if (trueDistance <= this.bombRange) {
             this.exploding = true;
             setTimeout(() => {
-                this.explode();
+                this.exploded = true;
+                this.makeExplosion();
             }, this.explodeIn);
         } else {
             this.handleMovment();
@@ -1476,11 +1533,11 @@ class biterGoblin extends goblin {
         };
     };
 
-    die() {
+    die(noDrops) {
         if (this.bit) {
             usePlayerProps.bites -= 1;
         };
-        super.die();
+        super.die(noDrops);
     }
 };
 
@@ -1592,13 +1649,13 @@ class poisonGoblin extends goblin {
         this.nearDeath = gameTextures.poisonGoblinNearDeath;
     };
 
-    die() {
+    die(noDrops) {
         const tile = new tilePoison;
         tile.x = this.x;
         tile.y = this.y;
         tile.activate();
         currentFloorgrounds.push(tile);
-        super.die();
+        super.die(noDrops);
     }
 };
 
@@ -1652,7 +1709,7 @@ class skeletonGoblin extends goblin {
         };
     };
 
-    die() {
+    die(noDrops) {
         if (!this.reviving) {
             this.killCD = true
             this.reviving = true;
@@ -1664,7 +1721,7 @@ class skeletonGoblin extends goblin {
                 }, this.reviveTime);
             }, 500);
         } else if (!this.killCD) {
-            super.die();
+            super.die(noDrops);
         };
     };
 
@@ -1868,6 +1925,12 @@ const levelData = [
         foreground: gameTextures.forestForeground,
         transition: [[gameTextures.missingTexture, 10], ],
         waves: [
+            [
+                //[200, archerGoblin, [null, weaponBow], [0, 0]],
+                //[200, archerGoblin, [null, weaponBow], [0, 0]],
+                //[200, archerGoblin, [null, weaponBow], [0, 0]],
+                [200, bombGoblin, [null, null], [0, 0]],
+            ],
             [
                 [200, goblin, [weaponCopperSword, null], [0, 0]],
                 [1200, goblin, [weaponGoldSword, null], [0, 0]],
@@ -2330,6 +2393,9 @@ function moveBullets() {
     const bulletLength = currentBullets.length;
     for (let i = bulletLength - 1; i > -1; i--) {
         const useBullet = currentBullets[i];
+        if (!useBullet) {
+            continue;
+        };
         useBullet.x += (settings.bulletSpeed * Math.cos(useBullet.angle + Math.PI / 2));
         useBullet.y += (settings.bulletSpeed * Math.sin(useBullet.angle + Math.PI / 2));
         if (useBullet.x < 0 || useBullet.x > mainCanvas.width || useBullet.y < 0 || useBullet.y > mainCanvas.height) {
@@ -2341,20 +2407,22 @@ function moveBullets() {
             const enemyLength = currentEnemies.length;
             for (let j = enemyLength - 1; j > -1; j--) {
                 const useEnemy = currentEnemies[j];
-                const distance = Math.sqrt((useEnemy.x - useBullet.x) ** 2 + (useEnemy.y - useBullet.y) ** 2);
-                if (distance <= (useEnemy.hitBoxX + useEnemy.hitBoxY) / 2) {
-                    if (!useEnemy.reflectsBullets) {
-                        hitEnemy = true;
-                        useEnemy.health -= useBullet.damage;
-                        if (useBullet.onImpact) {
-                            useBullet.onImpact(useEnemy);
+                if (useEnemy && useEnemy.health > 0) {
+                    const distance = Math.sqrt((useEnemy.x - useBullet.x) ** 2 + (useEnemy.y - useBullet.y) ** 2);
+                    if (distance <= (useEnemy.hitBoxX + useEnemy.hitBoxY) / 2) {
+                        if (!useEnemy.reflectsBullets) {
+                            hitEnemy = true;
+                            useEnemy.health -= useBullet.damage;
+                            if (useBullet.onImpact) {
+                                useBullet.onImpact(useEnemy);
+                            };
+                            if (useEnemy.health <= 0) {
+                                useEnemy.die();
+                            };
+                        } else {
+                            useBullet.source = 'enemy'
+                            useBullet.angle += Math.PI; 
                         };
-                        if (useEnemy.health <= 0) {
-                            useEnemy.die();
-                        };
-                    } else {
-                        useBullet.source = 'enemy'
-                        useBullet.angle += Math.PI; 
                     };
                 };
             };
