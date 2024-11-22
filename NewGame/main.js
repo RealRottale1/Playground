@@ -154,6 +154,8 @@ const gameTextures = {
     weaponThrowingKnives: makeImage('textures/weapons/throwingKnives.png'),
     weaponBombBow: makeImage('textures/weapons/bombBow.png'),
     weaponBombBowFull: makeImage('textures/weapons/bombBowFull.png'),
+    weaponCompactBow: makeImage('textures/weapons/compactBow.png'),
+    weaponCompactBowFull: makeImage('textures/weapons/compactBowFull.png'),
     bulletArrow: makeImage('textures/weapons/arrow.png'),
     bulletGoldArrow: makeImage('textures/weapons/goldArrow.png'),
     bulletCrossArrow: makeImage('textures/weapons/crossArrow.png'),
@@ -161,6 +163,7 @@ const gameTextures = {
     bulletSlingBullet: makeImage('textures/weapons/slingBullet.png'),
     bulletPoisonDart: makeImage('textures/weapons/poisonDart.png'),
     bulletBombArrow: makeImage('textures/weapons/bombArrow.png'),
+    bulletCompactArrow: makeImage('textures/weapons/compactArrow.png'),
     heart: makeImage('textures/drops/heart.png'),
     explosion: makeImage('textures/explosion.png'),
     poisonTile: makeImage('textures/poisonTile.png'),
@@ -345,7 +348,7 @@ class multiArrow extends arrow {
     constructor() {
         super();
         this.useTexture = gameTextures.bulletMultiArrow;
-        this.damage = 20;
+        this.damage = 15;
     };
 }
 
@@ -437,6 +440,19 @@ class bombArrow extends arrow {
     }   
 }
 
+class compactArrow extends arrow {
+    constructor() {
+        super();
+        this.sizeX = 50;
+        this.sizeY = 50;
+        this.boxSizeX = 25;
+        this.boxSizeY = 25;
+        this.useTexture = gameTextures.bulletCompactArrow;
+        this.damage = 125;
+        this.piercing = true;
+    };
+}
+
 class weaponBow extends weaponHands {
     constructor() {
         super();
@@ -496,7 +512,7 @@ class weaponMultiShotBow extends weaponBow {
         super();
         this.sizeX = 100;
         this.sizeY = 50;
-        this.fireRate = 1000;
+        this.fireRate = 1250;
         this.useBullet = multiArrow;
         this.texture = gameTextures.weaponMultiShotBow;
         this.fullTexture = gameTextures.weaponMultiShotBowFull;
@@ -562,6 +578,17 @@ class weaponBombBow extends weaponBow {
         this.texture = gameTextures.weaponBombBow;
         this.fullTexture = gameTextures.weaponBombBowFull;
         this.displayName = 'Bomb Bow';
+    };
+};
+
+class weaponCompactBow extends weaponBow {
+    constructor() {
+        super();
+        this.fireRate = 1500;
+        this.useBullet = compactArrow;
+        this.texture = gameTextures.weaponCompactBow;
+        this.fullTexture = gameTextures.weaponCompactBowFull;
+        this.displayName = 'Compact Bow';
     };
 };
 
@@ -931,7 +958,7 @@ class playerProps {
     shooting = false;
     currentWeapon = 'sword';
     weaponData = new weaponMace;
-    bowData = new weaponBombBow;
+    bowData = new weaponMultiShotBow;
 };
 
 function fillMap(sources, sSX, sSY, pathMap) {
@@ -1931,12 +1958,6 @@ const levelData = [
         transition: [[gameTextures.missingTexture, 10], ],
         waves: [
             [
-                //[200, archerGoblin, [null, weaponBow], [0, 0]],
-                //[200, archerGoblin, [null, weaponBow], [0, 0]],
-                //[200, archerGoblin, [null, weaponBow], [0, 0]],
-                [200, bombGoblin, [null, null], [0, 0]],
-            ],
-            [
                 [200, goblin, [weaponCopperSword, null], [0, 0]],
                 [1200, goblin, [weaponGoldSword, null], [0, 0]],
                 [1200, goblin, [weaponRhodoniteSword, null], [500, 500]],
@@ -1999,7 +2020,7 @@ const levelData = [
                 [2400, bigGoblin, [weaponCobaltSword, null], [250, 0]],
             ],
         ],
-        shopItems: {weapons: [weaponWarHammer, weaponTrident], bows: [null, null]},
+        shopItems: {weapons: [weaponWarHammer, weaponTrident], bows: [weaponBombBow, weaponCompactBow]},
     },
 ];
 
@@ -2194,7 +2215,7 @@ function fillMouseHistoryWithBlanks() {
 // boots up game
 function bootGame() {
     settings.hasShownTransition = false;
-    settings.currentLevel = 2;
+    settings.currentLevel = 3;
     settings.currentWave = 0;
     amountSummoned = 0;
     stillEnemiesToSummon = true;
@@ -2424,6 +2445,13 @@ function moveBullets() {
                             if (useEnemy.health <= 0) {
                                 useEnemy.die();
                             };
+                            if (useBullet.piercing) {
+                                useBullet.damage -= (useEnemy.health + useBullet.damage);
+                                hitEnemy = false;
+                                if (useBullet.damage <= 0) {
+                                    break;
+                                };
+                            };
                         } else {
                             useBullet.source = 'enemy'
                             useBullet.angle += Math.PI; 
@@ -2431,7 +2459,7 @@ function moveBullets() {
                     };
                 };
             };
-            if (hitEnemy) {
+            if (hitEnemy || useBullet.damage <= 0) {
                 currentBullets.splice(i, 1);
                 continue;
             };
