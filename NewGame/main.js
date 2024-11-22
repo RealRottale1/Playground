@@ -176,7 +176,7 @@ class effectExplosion {
     y = 0;
     sizeX = 200;
     sizeY = 200;
-    range = 200;
+    range = 100;
     damage = 100;
     texture = gameTextures.explosion;
     dead = false;
@@ -1151,7 +1151,12 @@ class goblin {
     exploded = false;
     exploding = false;
     explosionRange = 0;
+    died = false;
     die(noDrops) {
+        if (this.died) {
+            return;
+        };
+        this.died = true;
         if (!noDrops) {
             console.log('dropped a heart!');
             const heart = new heartItem(this.x, this.y);
