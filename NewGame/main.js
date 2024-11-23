@@ -2235,7 +2235,18 @@ const levelData = [
                 [3200, berserkerGoblin, [weaponAmethystSword, null], [500, 50]],
             ],
         ],
-        shopItems: {weapons: [weaponImprovedFatherSword, weaponElfSword], bows: [weaponBombBow, weaponCompactBow]},
+        shopItems: {weapons: [weaponImprovedFatherSword, weaponElfSword], bows: [weaponHandCannon, weaponMirror]},
+    },
+    {
+        background: gameTextures.villageBackground,
+        foreground: gameTextures.villageForeground,
+        transition: [[gameTextures.missingTexture, 10], ],
+        waves: [
+            [
+
+            ],
+        ],
+        shopItems: {weapons: [weaponImprovedFatherSword, weaponElfSword], bows: [weaponHandCannon, weaponMirror]},
     },
 ];
 
@@ -2430,7 +2441,7 @@ function fillMouseHistoryWithBlanks() {
 // boots up game
 function bootGame() {
     settings.hasShownTransition = false;
-    settings.currentLevel = 4;
+    settings.currentLevel = 5;
     settings.currentWave = 0;
     amountSummoned = 0;
     stillEnemiesToSummon = true;
