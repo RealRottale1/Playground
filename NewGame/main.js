@@ -139,9 +139,11 @@ const gameTextures = {
     weaponGiantSword: makeImage('textures/weapons/giantSword.png'),
     weaponRhodoniteSword: makeImage('textures/weapons/rhodoniteSword.png'),
     weaponAmethystSword: makeImage('textures/weapons/amethystSword.png'),
-    weaponSteelSword: makeImage('textures/weapons/steelweaponSteelSwordSword.png'),
+    weaponSteelSword: makeImage('textures/weapons/steelSword.png'),
     weaponTriSteelSword: makeImage('textures/weapons/triSteelSword.png'),
     weaponEmeraldSword: makeImage('textures/weapons/emeraldSword.png'),
+    weaponImprovedFatherSword: makeImage('textures/weapons/improvedFatherSword.png'),
+    weaponElfSword: makeImage('textures/weapons/elfSword.png'),
     weaponLongSword: makeImage('textures/weapons/longSword.png'),
     weaponBow: makeImage('textures/weapons/bow.png'),
     weaponBowFull: makeImage('textures/weapons/bowFull.png'),
@@ -159,6 +161,9 @@ const gameTextures = {
     weaponBombBowFull: makeImage('textures/weapons/bombBowFull.png'),
     weaponCompactBow: makeImage('textures/weapons/compactBow.png'),
     weaponCompactBowFull: makeImage('textures/weapons/compactBowFull.png'),
+    weaponHandCannon: makeImage('textures/weapons/handCannon.png'),
+    weaponHandCannonFull: makeImage('textures/weapons/handCannonFull.png'),
+    weaponMirror: makeImage('textures/weapons/mirror.png'),
     bulletArrow: makeImage('textures/weapons/arrow.png'),
     bulletGoldArrow: makeImage('textures/weapons/goldArrow.png'),
     bulletCrossArrow: makeImage('textures/weapons/crossArrow.png'),
@@ -167,6 +172,8 @@ const gameTextures = {
     bulletPoisonDart: makeImage('textures/weapons/poisonDart.png'),
     bulletBombArrow: makeImage('textures/weapons/bombArrow.png'),
     bulletCompactArrow: makeImage('textures/weapons/compactArrow.png'),
+    bulletCannonBall: makeImage('textures/weapons/cannonBall.png'),
+    bulletLight: makeImage('textures/weapons/lightBullet.png'),
     heart: makeImage('textures/drops/heart.png'),
     explosion: makeImage('textures/explosion.png'),
     poisonTile: makeImage('textures/poisonTile.png'),
@@ -298,14 +305,16 @@ class weaponHands {
     sizeX = 0;
     sizeY = 0;
     offset = 0;
-    draw(x, y, angle, offsetX, offsetY, blocking, using) {
+    draw(x, y, angle, offsetX, offsetY, blocking, using, opacity) {
         if (!this.texture || !this.sizeX || !this.sizeY || (using && this.disappearOnUse)) {
             return (false);
         };
         ctx.save();
         ctx.translate(x, y);
         ctx.rotate(angle + (blocking ? (Math.PI / 2) : 0));
+        ctx.globalAlpha = (opacity ? opacity : 1);
         ctx.drawImage(((!using && this.fullTexture) ? this.fullTexture : this.texture), (blocking ? offsetY * 2 / 3 : offsetX), (blocking ? offsetY/2  : offsetY), this.sizeX, this.sizeY);
+        ctx.globalAlpha = 1;
         ctx.restore();
     };
 };
@@ -453,8 +462,33 @@ class compactArrow extends arrow {
         this.boxSizeX = 25;
         this.boxSizeY = 25;
         this.useTexture = gameTextures.bulletCompactArrow;
-        this.damage = 125;
+        this.damage = 75;
         this.piercing = true;
+    };
+}
+
+class cannonBall extends arrow {
+    constructor() {
+        super();
+        this.sizeX = 50;
+        this.sizeY = 50;
+        this.boxSizeX = 50;
+        this.boxSizeY = 50;
+        this.useTexture = gameTextures.bulletCannonBall;
+        this.damage = 250;
+        this.piercing = true;
+    };
+}
+
+class bulletLight extends arrow {
+    constructor() {
+        super();
+        this.sizeX = 10;
+        this.sizeY = 10;
+        this.boxSizeX = 5;
+        this.boxSizeY = 5;
+        this.useTexture = gameTextures.bulletLight;
+        this.damage = 2.5;
     };
 }
 
@@ -596,6 +630,49 @@ class weaponCompactBow extends weaponBow {
         this.displayName = 'Compact Bow';
     };
 };
+
+class weaponHandCannon extends weaponBow {
+    constructor() {
+        super();
+        this.fireRate = 5000;
+        this.swingWeight = 10;
+        this.useBullet = cannonBall;
+        this.texture = gameTextures.weaponHandCannon;
+        this.fullTexture = gameTextures.weaponHandCannonFull;
+        this.displayName = 'Hand Cannon';
+        this.sizeX = 100;
+        this.sizeY = 100;
+        this.yOffset = -100;
+    };
+};
+
+class weaponMirror extends weaponBow {
+    constructor() {
+        super();
+        this.fireRate = 0;
+        this.useBullet = bulletLight;
+        this.texture = gameTextures.weaponMirror;
+        this.fullTexture = null;
+        this.displayName = 'Mirror';
+    };
+    shoot(x1, x2, y1, y2, source) {
+        const dX = x2 - x1;
+        const dY = y2 - y1;
+        let angle = Math.atan2(dY, dX) + (Math.PI / 2);
+        for (let i = 0; i < 3; i++) {
+            setTimeout(() => {
+                const shotArrow = new this.useBullet;
+                shotArrow.source = source;
+                const averageSize = (shotArrow.boxSizeX + shotArrow.boxSizeY) / 2;
+                shotArrow.x = x1 + (-1 * (this.yOffset) - averageSize) * Math.cos(angle - Math.PI / 2);
+                shotArrow.y = y1 + (-1 * (this.yOffset) - averageSize) * Math.sin(angle - Math.PI / 2);
+                shotArrow.angle = angle;
+                currentBullets.push(shotArrow);
+            }, i*25);
+        };
+    };
+};
+
 
 class weaponDefaultSword extends weaponHands {
     constructor() {
@@ -886,7 +963,7 @@ class weaponSteelSword extends weaponGoldSword {
 class weaponTriSteelSword extends weaponGoldSword {
     constructor() {
         super();
-        this.texture = gameTextures.weaponTri-SteelSword;
+        this.texture = gameTextures.weaponTriSteelSword;
         this.displayName = 'Steel Tri-Sword';
         this.attackRange = 75;
         this.attackDuration = 650;
@@ -904,6 +981,44 @@ class weaponEmeraldSword extends weaponGoldSword {
         this.swingDamge = 7.5;
         this.attackDuration = 850;
         this.attackCoolDown = 1000;
+    };
+};
+
+class weaponImprovedFatherSword extends weaponHands {
+    constructor() {
+        super();
+        this.swingable = true;
+        this.canBlock = false;
+        this.attackRange = 110;
+        this.damage = 75;
+        this.swingDamge = 15;
+        this.swingWeight = 8;
+        this.attackDuration = 700;
+        this.attackCoolDown = 650;
+        this.texture = gameTextures.weaponImprovedFatherSword;
+        this.displayName = "Improved Father's Sword";
+        this.sizeX = 50;
+        this.sizeY = 100;
+        this.offset = -65;
+    };
+};
+
+class weaponElfSword extends weaponHands {
+    constructor() {
+        super();
+        this.swingable = true;
+        this.canBlock = true;
+        this.attackRange = 50;
+        this.damage = 65;
+        this.swingDamge = 5;
+        this.swingWeight = 2;
+        this.attackDuration = 700;
+        this.attackCoolDown = 750;
+        this.texture = gameTextures.weaponElfSword;
+        this.displayName = 'Elf Sword';
+        this.sizeX = 50;
+        this.sizeY = 100;
+        this.offset = -35;
     };
 };
 
@@ -1009,8 +1124,8 @@ class playerProps {
     canShoot = true;
     shooting = false;
     currentWeapon = 'sword';
-    weaponData = new weaponMace;
-    bowData = new weaponMultiShotBow;
+    weaponData = new weaponElfSword;
+    bowData = new weaponHandCannon;
 };
 
 function fillMap(sources, sSX, sSY, pathMap) {
@@ -1237,7 +1352,6 @@ class goblin {
         };
         this.died = true;
         if (!noDrops) {
-            console.log('dropped a heart!');
             const heart = new heartItem(this.x, this.y);
             currentDropItems.push(heart);
         };
@@ -1296,6 +1410,7 @@ class goblin {
     shooting = false;
     attackRangeMultiplier = 1;
     attackDamageMultiplier = 1;
+    attackCDDivisor = 1;
     currentWeapon = 'sword';
     weaponData = new weaponHands;
     bowData = null;
@@ -1417,7 +1532,7 @@ class goblin {
                 this.attacking = false;
                 setTimeout(() => {
                     this.canAttack = true;
-                }, this.weaponData.attackCoolDown);
+                }, this.weaponData.attackCoolDown*this.attackCDDivisor);
             }, this.weaponData.attackDuration);
         };
     };
@@ -1506,6 +1621,7 @@ class berserkerGoblin extends goblin {
         this.maxSpeed = 2.5;
         this.movementSpeed = 2.5;
         this.attackDamageMultiplier = 2;
+        this.attackCDDivisor = 0.5;
         this.fullHealth = gameTextures.berserkerGoblinFullHealth;
         this.halfHealth = gameTextures.berserkerGoblinHalfHealth;
         this.nearDeath = gameTextures.berserkerGoblinNearDeath;
@@ -2080,10 +2196,46 @@ const levelData = [
         transition: [[gameTextures.missingTexture, 10], ],
         waves: [
             [
-                
+                [200, bigGoblin, [weaponGiantSword, null], [0, 50]],
+                [800, goblin, [weaponSteelSword, null], [500, 40]],
+                [800, mirrorGoblin, [weaponTriSteelSword, null], [500, 50]],
+                [800, goblin, [weaponSteelSword, null], [500, 60]],
+
+                [1400, mirrorGoblin, [weaponTriSteelSword, null], [0, 50]],
+                [1600, archerGoblin, [null, weaponGoldBow], [150, 500]],
+                [1800, archerGoblin, [null, weaponMultiShotBow], [500, 50]],
+                [2000, archerGoblin, [null, weaponGoldBow], [350, 500]],
+            ],
+            [
+                [200, bigGoblin, [weaponGiantSword, null], [250, 0]],
+                [400, mirrorGoblin, [weaponAmethystSword, null], [150, 500]],
+                [400, mirrorGoblin, [weaponEmeraldSword, null], [350, 500]],
+                [600, berserkerGoblin, [weaponSteelSword, null], [0, 50]],
+                [800, goblin, [weaponSteelSword, null], [500, 50]],
+                [1000, goblin, [weaponTriSteelSword, null], [500, 50]],
+                [1200, goblin, [weaponEmeraldSword, null], [500, 50]],
+                [1400, goblin, [weaponTriSteelSword, null], [500, 50]],
+                [1500, ninjaGoblin, [weaponSteelSword, null], [0, 50]],
+            ],
+            [
+                [200, ninjaGoblin, [weaponSteelSword, null], [0, 50]],
+                [400, mirrorGoblin, [weaponAmethystSword, null], [500, 50]],
+                [600, goblin, [weaponTriSteelSword, null], [0, 50]],
+                [800, berserkerGoblin, [weaponEmeraldSword, null], [500, 50]],
+                [1000, ninjaGoblin, [weaponSteelSword, null], [0, 50]],
+                [1200, goblin, [weaponTriSteelSword, null], [500, 50]],
+                [1400, goblin, [weaponSteelSword, null], [0, 50]],
+                [1600, mirrorGoblin, [weaponEmeraldSword, null], [500, 50]],
+                [1800, berserkerGoblin, [weaponSteelSword, null], [0, 50]],
+                [2000, goblin, [weaponAmethystSword, null], [500, 50]],
+
+                [2600, berserkerGoblin, [weaponEmeraldSword, null], [0, 50]],
+                [2800, berserkerGoblin, [weaponSteelSword, null], [500, 50]],
+                [3000, berserkerGoblin, [weaponTriSteelSword, null], [0, 50]],
+                [3200, berserkerGoblin, [weaponAmethystSword, null], [500, 50]],
             ],
         ],
-        shopItems: {weapons: [weaponWarHammer, weaponTrident], bows: [weaponBombBow, weaponCompactBow]},
+        shopItems: {weapons: [weaponImprovedFatherSword, weaponElfSword], bows: [weaponBombBow, weaponCompactBow]},
     },
 ];
 
@@ -2806,10 +2958,10 @@ async function playLevel() {
                 if (usePos) {
                     if (selectedEnemy.currentWeapon == 'sword') {
                         const [enemyAngle, enemyOffsetX, enemyOffsetY] = getWeaponPosition(selectedEnemy.x, selectedEnemy.y, usePos[0], usePos[1], selectedEnemy.weaponData.sizeX, selectedEnemy.weaponData.sizeY + averageHitBox, selectedEnemy.weaponData.offset, selectedEnemy.attacking);
-                        selectedEnemy.weaponData.draw(selectedEnemy.x, selectedEnemy.y, enemyAngle, enemyOffsetX, enemyOffsetY, false, !selectedEnemy.canAttack);
+                        selectedEnemy.weaponData.draw(selectedEnemy.x, selectedEnemy.y, enemyAngle, enemyOffsetX, enemyOffsetY, false, !selectedEnemy.canAttack, selectedEnemy.opacity);
                     } else {
                         const [enemyAngle, enemyOffsetX, enemyOffsetY] = getWeaponPosition(selectedEnemy.x, selectedEnemy.y, usePos[0], usePos[1], selectedEnemy.bowData.sizeX, selectedEnemy.bowData.sizeY + averageHitBox, selectedEnemy.bowData.offset, null);
-                        selectedEnemy.bowData.draw(selectedEnemy.x, selectedEnemy.y, enemyAngle, enemyOffsetX, selectedEnemy.bowData.yOffset, false, !selectedEnemy.canShoot);
+                        selectedEnemy.bowData.draw(selectedEnemy.x, selectedEnemy.y, enemyAngle, enemyOffsetX, selectedEnemy.bowData.yOffset, false, !selectedEnemy.canShoot, selectedEnemy.opacity);
                     };
                 };
             };
