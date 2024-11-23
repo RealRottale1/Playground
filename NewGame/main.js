@@ -139,6 +139,9 @@ const gameTextures = {
     weaponGiantSword: makeImage('textures/weapons/giantSword.png'),
     weaponRhodoniteSword: makeImage('textures/weapons/rhodoniteSword.png'),
     weaponAmethystSword: makeImage('textures/weapons/amethystSword.png'),
+    weaponSteelSword: makeImage('textures/weapons/steelweaponSteelSwordSword.png'),
+    weaponTriSteelSword: makeImage('textures/weapons/triSteelSword.png'),
+    weaponEmeraldSword: makeImage('textures/weapons/emeraldSword.png'),
     weaponLongSword: makeImage('textures/weapons/longSword.png'),
     weaponBow: makeImage('textures/weapons/bow.png'),
     weaponBowFull: makeImage('textures/weapons/bowFull.png'),
@@ -171,6 +174,8 @@ const gameTextures = {
     plainsForeground: makeImage('textures/areas/plainForeground.png'),
     forestBackground: makeImage('textures/areas/forestBackground.png'),
     forestForeground: makeImage('textures/areas/forestForeground.png'),
+    villageBackground: makeImage('textures/areas/villageBackground.png'),
+    villageForeground: makeImage('textures/areas/villageForeground.png'),
     shopBackground1: makeImage('textures/shopBackground/background1.png'),
 };
 
@@ -854,6 +859,53 @@ class weaponRhodoniteSword extends weaponCopperSword {
     };
 };
 
+class weaponAmethystSword extends weaponGoldSword {
+    constructor() {
+        super();
+        this.texture = gameTextures.weaponAmethystSword;
+        this.displayName = 'Amethyst Sword';
+        this.damage = 40;
+        this.swingDamge = 6.5;
+        this.attackCoolDown = 600;
+    };
+};
+
+class weaponSteelSword extends weaponGoldSword {
+    constructor() {
+        super();
+        this.texture = gameTextures.weaponSteelSword;
+        this.displayName = 'Steel Sword';
+        this.attackRange = 70;
+        this.damage = 30;
+        this.swingDamge = 4.5;
+        this.attackDuration = 600;
+        this.attackCoolDown = 400;
+    };
+};
+
+class weaponTriSteelSword extends weaponGoldSword {
+    constructor() {
+        super();
+        this.texture = gameTextures.weaponTri-SteelSword;
+        this.displayName = 'Steel Tri-Sword';
+        this.attackRange = 75;
+        this.attackDuration = 650;
+        this.attackCoolDown = 550;
+    };
+};
+
+class weaponEmeraldSword extends weaponGoldSword {
+    constructor() {
+        super();
+        this.texture = gameTextures.weaponEmeraldSword;
+        this.displayName = 'Emerald Sword';
+        this.attackRange = 70;
+        this.damage = 50;
+        this.swingDamge = 7.5;
+        this.attackDuration = 850;
+        this.attackCoolDown = 1000;
+    };
+};
 
 class weaponLongSword extends weaponHands {
     constructor() {
@@ -2022,6 +2074,17 @@ const levelData = [
         ],
         shopItems: {weapons: [weaponWarHammer, weaponTrident], bows: [weaponBombBow, weaponCompactBow]},
     },
+    {
+        background: gameTextures.villageBackground,
+        foreground: gameTextures.villageForeground,
+        transition: [[gameTextures.missingTexture, 10], ],
+        waves: [
+            [
+                
+            ],
+        ],
+        shopItems: {weapons: [weaponWarHammer, weaponTrident], bows: [weaponBombBow, weaponCompactBow]},
+    },
 ];
 
 
@@ -2215,7 +2278,7 @@ function fillMouseHistoryWithBlanks() {
 // boots up game
 function bootGame() {
     settings.hasShownTransition = false;
-    settings.currentLevel = 3;
+    settings.currentLevel = 4;
     settings.currentWave = 0;
     amountSummoned = 0;
     stillEnemiesToSummon = true;
