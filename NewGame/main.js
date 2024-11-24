@@ -144,14 +144,12 @@ const gameTextures = {
     weaponEmeraldSword: makeImage('textures/weapons/emeraldSword.png'),
     weaponImprovedFatherSword: makeImage('textures/weapons/improvedFatherSword.png'),
     weaponElfSword: makeImage('textures/weapons/elfSword.png'),
-
     weaponDiamondSword: makeImage('textures/weapons/diamondSword.png'),
     weaponScythe: makeImage('textures/weapons/scythe.png'),
     weaponCritineSword: makeImage('textures/weapons/critineSword.png'),
     weaponRubySword: makeImage('textures/weapons/rubySword.png'),
     weaponBlackOpalSword: makeImage('textures/weapons/blackOpalSword.png'),
     weaponSpinelSword: makeImage('textures/weapons/SpinelSword.png'),
-
     weaponLongSword: makeImage('textures/weapons/longSword.png'),
     weaponBow: makeImage('textures/weapons/bow.png'),
     weaponBowFull: makeImage('textures/weapons/bowFull.png'),
@@ -174,6 +172,10 @@ const gameTextures = {
     weaponMetalBow: makeImage('textures/weapons/metalBow.png'),
     weaponMetalBowFull: makeImage('textures/weapons/metalBowFull.png'),
     weaponMirror: makeImage('textures/weapons/mirror.png'),
+    weaponDiamondBow: makeImage('textures/weapons/diamondBow.png'),
+    weaponDiamondBowFull: makeImage('textures/weapons/diamondBowFull.png'),
+    weaponClusterBow: makeImage('textures/weapons/clusterBow.png'),
+    weaponClusterBowFull: makeImage('textures/weapons/clusterBowFull.png'),
     bulletArrow: makeImage('textures/weapons/arrow.png'),
     bulletGoldArrow: makeImage('textures/weapons/goldArrow.png'),
     bulletCrossArrow: makeImage('textures/weapons/crossArrow.png'),
@@ -185,6 +187,9 @@ const gameTextures = {
     bulletCannonBall: makeImage('textures/weapons/cannonBall.png'),
     bulletLight: makeImage('textures/weapons/lightBullet.png'),
     bulletMetalArrow: makeImage('textures/weapons/metalArrow.png'),
+    bulletDiamondArrow: makeImage('textures/weapons/diamondArrow.png'),
+    bulletClusterArrow: makeImage('textures/weapons/clusterArrow.png'),
+    bulletClusterShard: makeImage('textures/weapons/clusterShard.png'),
     heart: makeImage('textures/drops/heart.png'),
     explosion: makeImage('textures/explosion.png'),
     poisonTile: makeImage('textures/poisonTile.png'),
@@ -359,7 +364,7 @@ class goldArrow extends arrow {
         this.useTexture = gameTextures.bulletGoldArrow;
         this.damage = 50;
     };
-}
+};
 
 class crossbowArrow extends arrow {
     constructor() {
@@ -367,7 +372,7 @@ class crossbowArrow extends arrow {
         this.useTexture = gameTextures.bulletCrossArrow;
         this.damage = 150;
     };
-}
+};
 
 class multiArrow extends arrow {
     constructor() {
@@ -375,7 +380,7 @@ class multiArrow extends arrow {
         this.useTexture = gameTextures.bulletMultiArrow;
         this.damage = 15;
     };
-}
+};
 
 class slingBullet extends arrow {
     constructor() {
@@ -387,7 +392,7 @@ class slingBullet extends arrow {
         this.useTexture = gameTextures.bulletSlingBullet;
         this.damage = 5;
     };
-}
+};
 
 class poisonDart extends arrow {
     constructor() {
@@ -411,8 +416,8 @@ class poisonDart extends arrow {
         } else {
             hit.movementSpeed = (hit.maxSpeed * 2 / 3);
         };
-    }
-}
+    };
+};
 
 class throwingKinve extends arrow {
     constructor() {
@@ -440,7 +445,7 @@ class throwingKinve extends arrow {
         ctx.drawImage(this.useTexture, -1 * (this.sizeX / 2), -1 * (this.sizeY / 2), this.sizeX, this.sizeY);
         ctx.restore();
     };
-}
+};
 
 class bombArrow extends arrow {
     constructor() {
@@ -462,8 +467,8 @@ class bombArrow extends arrow {
         effect.damage = 50;
         effect.activate();
         currentForegrounds.push(effect);
-    }   
-}
+    }; 
+};
 
 class compactArrow extends arrow {
     constructor() {
@@ -476,7 +481,7 @@ class compactArrow extends arrow {
         this.damage = 75;
         this.piercing = true;
     };
-}
+};
 
 class cannonBall extends arrow {
     constructor() {
@@ -489,7 +494,7 @@ class cannonBall extends arrow {
         this.damage = 250;
         this.piercing = true;
     };
-}
+};
 
 class bulletLight extends arrow {
     constructor() {
@@ -501,7 +506,7 @@ class bulletLight extends arrow {
         this.useTexture = gameTextures.bulletLight;
         this.damage = 2.5;
     };
-}
+};
 
 class metalArrow extends arrow {
     constructor() {
@@ -509,7 +514,46 @@ class metalArrow extends arrow {
         this.useTexture = gameTextures.bulletMetalArrow;
         this.damage = 35;
     };
-}
+};
+
+class diamondArrow extends arrow {
+    constructor() {
+        super();
+        this.useTexture = gameTextures.bulletDiamondArrow;
+        this.damage = 65;
+        this.piercing = true;
+    };
+};
+
+class clusterShard extends arrow {
+    constructor() {
+        super();
+        this.sizeX = 10;
+        this.sizeY = 10;
+        this.boxSizeX = 10;
+        this.boxSizeY = 10;
+        this.useTexture = gameTextures.bulletClusterShard;
+        this.damage = 15;
+    };
+};
+
+class clusterArrow extends arrow {
+    constructor() {
+        super();
+        this.useTexture = gameTextures.bulletClusterArrow;
+        this.damage = 10;
+    };
+    async onImpact(hit) {
+        for (let i = 0; i < 8; i++) {
+            const shotArrow = new clusterShard;
+            shotArrow.source = this.source;
+            shotArrow.x = this.x;
+            shotArrow.y = this.y;
+            shotArrow.angle = this.angle + (i*(45*Math.PI/180));
+            currentBullets.push(shotArrow);
+        };
+    };
+};
 
 class weaponBow extends weaponHands {
     constructor() {
@@ -700,6 +744,28 @@ class weaponMetalBow extends weaponBow {
         this.texture = gameTextures.weaponMetalBow;
         this.fullTexture = gameTextures.weaponMetalBowFull;
         this.displayName = 'Metal Bow';
+    };
+};
+
+class weaponDiamondBow extends weaponBow {
+    constructor() {
+        super();
+        this.fireRate = 875;
+        this.useBullet = diamondArrow;
+        this.texture = gameTextures.weaponDiamondBow;
+        this.fullTexture = gameTextures.weaponDiamondBowFull;
+        this.displayName = 'Diamond Bow';
+    };
+};
+
+class weaponClusterBow extends weaponBow {
+    constructor() {
+        super();
+        this.fireRate = 1000;
+        this.useBullet = clusterArrow;
+        this.texture = gameTextures.weaponClusterBow;
+        this.fullTexture = gameTextures.weaponClusterBowFull;
+        this.displayName = 'Cluster Bow';
     };
 };
 
@@ -1243,7 +1309,7 @@ class playerProps {
     shooting = false;
     currentWeapon = 'sword';
     weaponData = new weaponDiamondSword;
-    bowData = new weaponHandCannon;
+    bowData = new weaponClusterBow;
 };
 
 function fillMap(sources, sSX, sSY, pathMap) {
@@ -2396,13 +2462,13 @@ const levelData = [
                 [600, archerGoblin, [null, weaponMultiShotBow], [250, 0]],
                 [1000, ninjaGoblin, [weaponEmeraldSword, null], [250, 500]],
 
-                [2400, mirrorGoblin, [weaponAmethystSword, null], [0, 50]],
-                [2600, mirrorGoblin, [weaponEmeraldSword, null], [250, 0]],
-                [2800, mirrorGoblin, [weaponSteelSword, null], [250, 500]],
-                [3000, ninjaGoblin, [weaponTriSteelSword, null], [500, 50]],
+                [1600, mirrorGoblin, [weaponAmethystSword, null], [0, 50]],
+                [1800, mirrorGoblin, [weaponEmeraldSword, null], [250, 0]],
+                [2000, mirrorGoblin, [weaponSteelSword, null], [250, 500]],
+                [2200, ninjaGoblin, [weaponTriSteelSword, null], [500, 50]],
             ],
         ],
-        shopItems: {weapons: [weaponImprovedFatherSword, weaponElfSword], bows: [weaponHandCannon, weaponMirror]},
+        shopItems: {weapons: [weaponDiamondSword, weaponScythe], bows: [weaponDiamondBow, weaponClusterBow]},
     },
 ];
 
