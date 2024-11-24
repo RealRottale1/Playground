@@ -144,6 +144,14 @@ const gameTextures = {
     weaponEmeraldSword: makeImage('textures/weapons/emeraldSword.png'),
     weaponImprovedFatherSword: makeImage('textures/weapons/improvedFatherSword.png'),
     weaponElfSword: makeImage('textures/weapons/elfSword.png'),
+
+    weaponDiamondSword: makeImage('textures/weapons/diamondSword.png'),
+    weaponScythe: makeImage('textures/weapons/scythe.png'),
+    weaponCritineSword: makeImage('textures/weapons/critineSword.png'),
+    weaponRubySword: makeImage('textures/weapons/rubySword.png'),
+    weaponBlackOpalSword: makeImage('textures/weapons/blackOpalSword.png'),
+    weaponSpinelSword: makeImage('textures/weapons/SpinelSword.png'),
+
     weaponLongSword: makeImage('textures/weapons/longSword.png'),
     weaponBow: makeImage('textures/weapons/bow.png'),
     weaponBowFull: makeImage('textures/weapons/bowFull.png'),
@@ -163,6 +171,8 @@ const gameTextures = {
     weaponCompactBowFull: makeImage('textures/weapons/compactBowFull.png'),
     weaponHandCannon: makeImage('textures/weapons/handCannon.png'),
     weaponHandCannonFull: makeImage('textures/weapons/handCannonFull.png'),
+    weaponMetalBow: makeImage('textures/weapons/metalBow.png'),
+    weaponMetalBowFull: makeImage('textures/weapons/metalBowFull.png'),
     weaponMirror: makeImage('textures/weapons/mirror.png'),
     bulletArrow: makeImage('textures/weapons/arrow.png'),
     bulletGoldArrow: makeImage('textures/weapons/goldArrow.png'),
@@ -174,6 +184,7 @@ const gameTextures = {
     bulletCompactArrow: makeImage('textures/weapons/compactArrow.png'),
     bulletCannonBall: makeImage('textures/weapons/cannonBall.png'),
     bulletLight: makeImage('textures/weapons/lightBullet.png'),
+    bulletMetalArrow: makeImage('textures/weapons/metalArrow.png'),
     heart: makeImage('textures/drops/heart.png'),
     explosion: makeImage('textures/explosion.png'),
     poisonTile: makeImage('textures/poisonTile.png'),
@@ -492,6 +503,14 @@ class bulletLight extends arrow {
     };
 }
 
+class metalArrow extends arrow {
+    constructor() {
+        super();
+        this.useTexture = gameTextures.bulletMetalArrow;
+        this.damage = 35;
+    };
+}
+
 class weaponBow extends weaponHands {
     constructor() {
         super();
@@ -634,7 +653,7 @@ class weaponCompactBow extends weaponBow {
 class weaponHandCannon extends weaponBow {
     constructor() {
         super();
-        this.fireRate = 5000;
+        this.fireRate = 7500;
         this.swingWeight = 10;
         this.useBullet = cannonBall;
         this.texture = gameTextures.weaponHandCannon;
@@ -673,6 +692,16 @@ class weaponMirror extends weaponBow {
     };
 };
 
+class weaponMetalBow extends weaponBow {
+    constructor() {
+        super();
+        this.fireRate = 875;
+        this.useBullet = metalArrow;
+        this.texture = gameTextures.weaponMetalBow;
+        this.fullTexture = gameTextures.weaponMetalBowFull;
+        this.displayName = 'Metal Bow';
+    };
+};
 
 class weaponDefaultSword extends weaponHands {
     constructor() {
@@ -1022,6 +1051,95 @@ class weaponElfSword extends weaponHands {
     };
 };
 
+class weaponDiamondSword extends weaponHands {
+    constructor() {
+        super();
+        this.swingable = true;
+        this.canBlock = true;
+        this.attackRange = 100;
+        this.damage = 95;
+        this.swingDamge = 15;
+        this.swingWeight = 8;
+        this.attackDuration = 700;
+        this.attackCoolDown = 850;
+        this.texture = gameTextures.weaponDiamondSword;
+        this.displayName = "Diamond Sword";
+        this.sizeX = 100;
+        this.sizeY = 100;
+        this.offset = -55;
+    };
+};
+
+class weaponScythe extends weaponHands {
+    constructor() {
+        super();
+        this.swingable = true;
+        this.attackRange = 200;
+        this.damage = 2.5;
+        this.swingDamge = 45;
+        this.swingWeight = 5;
+        this.attackDuration = 500;
+        this.attackCoolDown = 500;
+        this.texture = gameTextures.weaponScythe;
+        this.displayName = 'Scythe';
+        this.sizeX = 125;
+        this.sizeY = 125;
+        this.offset = -55;
+    };
+};
+
+class weaponCritineSword extends weaponGoldSword {
+    constructor() {
+        super();
+        this.texture = gameTextures.weaponCritineSword;
+        this.displayName = 'Critine Sword';
+        this.attackRange = 85;
+        this.damage = 65;
+        this.swingDamge = 7.5;
+        this.attackDuration = 850;
+        this.attackCoolDown = 1000;
+    };
+};
+
+class weaponRubySword extends weaponGoldSword {
+    constructor() {
+        super();
+        this.texture = gameTextures.weaponRubySword;
+        this.displayName = 'Ruby Sword';
+        this.attackRange = 100;
+        this.damage = 70;
+        this.swingDamge = 7.5;
+        this.attackDuration = 850;
+        this.attackCoolDown = 1250;
+    };
+};
+
+class weaponBlackOpalSword extends weaponGoldSword {
+    constructor() {
+        super();
+        this.texture = gameTextures.weaponBlackOpalSword;
+        this.displayName = 'Black Opal Sword';
+        this.attackRange = 70;
+        this.damage = 65;
+        this.swingDamge = 7.5;
+        this.attackDuration = 850;
+        this.attackCoolDown = 1000;
+    };
+};
+
+class weaponSpinelSword extends weaponGoldSword {
+    constructor() {
+        super();
+        this.texture = gameTextures.weaponSpinelSword;
+        this.displayName = 'Spinel Sword';
+        this.attackRange = 70;
+        this.damage = 65;
+        this.swingDamge = 7.5;
+        this.attackDuration = 850;
+        this.attackCoolDown = 1000;
+    };
+};
+
 class weaponLongSword extends weaponHands {
     constructor() {
         super();
@@ -1124,7 +1242,7 @@ class playerProps {
     canShoot = true;
     shooting = false;
     currentWeapon = 'sword';
-    weaponData = new weaponElfSword;
+    weaponData = new weaponDiamondSword;
     bowData = new weaponHandCannon;
 };
 
@@ -2090,7 +2208,7 @@ const levelData = [
                 [2000, bigGoblin, [null, null], [500, 250]],
             ],
         ],
-        shopItems: {weapons: [weaponKatana, weaponSpear], bows: [null, weaponSlingShot]},
+        shopItems: {weapons: [weaponKatana, weaponSpear], bows: [weaponMetalBow, weaponSlingShot]},
     },
     {
         background: gameTextures.plainsBackground,
@@ -2198,13 +2316,13 @@ const levelData = [
             [
                 [200, bigGoblin, [weaponGiantSword, null], [0, 50]],
                 [800, goblin, [weaponSteelSword, null], [500, 40]],
-                [800, mirrorGoblin, [weaponTriSteelSword, null], [500, 50]],
-                [800, goblin, [weaponSteelSword, null], [500, 60]],
+                [1000, mirrorGoblin, [weaponTriSteelSword, null], [500, 50]],
+                [1200, goblin, [weaponSteelSword, null], [500, 60]],
 
-                [1400, mirrorGoblin, [weaponTriSteelSword, null], [0, 50]],
-                [1600, archerGoblin, [null, weaponGoldBow], [150, 500]],
-                [1800, archerGoblin, [null, weaponMultiShotBow], [500, 50]],
-                [2000, archerGoblin, [null, weaponGoldBow], [350, 500]],
+                [1800, mirrorGoblin, [weaponTriSteelSword, null], [0, 50]],
+                [2000, archerGoblin, [null, weaponGoldBow], [150, 500]],
+                [2200, archerGoblin, [null, weaponMultiShotBow], [500, 50]],
+                [2400, archerGoblin, [null, weaponGoldBow], [350, 500]],
             ],
             [
                 [200, bigGoblin, [weaponGiantSword, null], [250, 0]],
@@ -2243,7 +2361,45 @@ const levelData = [
         transition: [[gameTextures.missingTexture, 10], ],
         waves: [
             [
+                [200, goblin, [weaponSteelSword, null], [0, 50]],
+                [400, goblin, [weaponSteelSword, null], [250, 0]],
+                [600, goblin, [weaponTriSteelSword, null], [500, 50]],
+                [800, goblin, [weaponSteelSword, null], [250, 500]],
+                [1200, goblin, [weaponTriSteelSword, null], [0, 50]],
+                [1400, mirrorGoblin, [weaponSteelSword, null], [0, 50]],
+                [1800, goblin, [weaponSteelSword, null], [500, 50]],
+                [2000, mirrorGoblin, [weaponTriSteelSword, null], [500, 50]],
+                [2200, ninjaGoblin, [weaponEmeraldSword, null], [250, 500]],
+                [2400, goblin, [weaponAmethystSword, null], [0, 50]],
+                [2600, mirrorGoblin, [weaponTriSteelSword, null], [0, 50]],
+                [3000, goblin, [weaponSteelSword, null], [500, 50]],
+                [3200, mirrorGoblin, [weaponEmeraldSword, null], [500, 50]],
+            ],
+            [
+                [200, goblin, [weaponSteelSword, null], [225, 0]],
+                [200, goblin, [weaponTriSteelSword, null], [250, 0]],
+                [800, goblin, [weaponTriSteelSword, null], [200, 0]],
+                [800, mirrorGoblin, [weaponEmeraldSword, null], [225, 0]],
+                [800, goblin, [weaponSteelSword, null], [250, 0]],
+                [800, goblin, [weaponAmethystSword, null], [275, 0]],
+                [1600, goblin, [weaponTriSteelSword, null], [100, 0]],
+                [1600, goblin, [weaponTriSteelSword, null], [150, 0]],
+                [1600, mirrorGoblin, [weaponSteelSword, null], [200, 0]],
+                [1600, goblin, [weaponEmeraldSword, null], [250, 0]],
+                [1600, goblin, [weaponSteelSword, null], [300, 0]],
+                [1600, goblin, [weaponTriSteelSword, null], [350, 0]],
+                [2200, bigGoblin, [weaponGiantSword, null], [250, 0]],
+            ],
+            [
+                [200, archerGoblin, [null, weaponBow], [0, 50]],
+                [400, archerGoblin, [null, weaponBow], [500, 50]],
+                [600, archerGoblin, [null, weaponMultiShotBow], [250, 0]],
+                [1000, ninjaGoblin, [weaponEmeraldSword, null], [250, 500]],
 
+                [2400, mirrorGoblin, [weaponAmethystSword, null], [0, 50]],
+                [2600, mirrorGoblin, [weaponEmeraldSword, null], [250, 0]],
+                [2800, mirrorGoblin, [weaponSteelSword, null], [250, 500]],
+                [3000, ninjaGoblin, [weaponTriSteelSword, null], [500, 50]],
             ],
         ],
         shopItems: {weapons: [weaponImprovedFatherSword, weaponElfSword], bows: [weaponHandCannon, weaponMirror]},
