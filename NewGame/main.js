@@ -535,7 +535,7 @@ class clusterShard extends arrow {
         this.boxSizeX = 10;
         this.boxSizeY = 10;
         this.useTexture = gameTextures.bulletClusterShard;
-        this.damage = 15;
+        this.damage = 10;
     };
 };
 
@@ -1144,7 +1144,7 @@ class weaponScythe extends weaponHands {
         this.swingable = true;
         this.attackRange = 200;
         this.damage = 2.5;
-        this.swingDamge = 45;
+        this.swingDamge = 50;
         this.swingWeight = 5;
         this.attackDuration = 500;
         this.attackCoolDown = 500;
@@ -1280,18 +1280,18 @@ class playerProps {
 
     };
     updateXY() {
-        if (this.bites > 0) {
-            return;
-        };
+        const notBiten = (this.bites <= 0);
         const newX = this.x + (this.keyMovment.d - this.keyMovment.a) * this.playerMovmentAmount;
         const newY = this.y + (this.keyMovment.s - this.keyMovment.w) * this.playerMovmentAmount;
-        if (newX >= 0 && newX <= mainCanvas.width) {
-            this.x = newX
-        };
-        if (newY >= 0 && newY <= mainCanvas.height) {
-            this.y = newY
-        };
-        this.movementHistory.push([this.x, this.y]);
+        if (notBiten) {
+            if (newX >= 0 && newX <= mainCanvas.width) {
+                this.x = newX
+            };
+            if (newY >= 0 && newY <= mainCanvas.height) {
+                this.y = newY
+            };
+        }
+        this.movementHistory.push((notBiten ? [this.x, this.y] : [newX, newY]));
         if (this.movementHistory.length >= 50) {
             this.movementHistory.splice(0, 1);
         };
@@ -1310,7 +1310,7 @@ class playerProps {
     canShoot = true;
     shooting = false;
     currentWeapon = 'sword';
-    weaponData = new weaponDiamondSword;
+    weaponData = new weaponScythe;
     bowData = new weaponClusterBow;
 };
 
@@ -1504,6 +1504,7 @@ function handlePathing(source) {
         path.splice(0, 1);
     };
 
+
     return (path);
 };
 
@@ -1551,15 +1552,12 @@ class goblin {
 
     explode(damage) {
         if (this.health > 0) {
-
             this.health -= damage;
-            console.log(damage);
             if (this.constructor.name == 'bombGoblin' && !this.exploded) {
                 this.exploded = true;
                 this.exploding = true;
                 this.makeExplosion();
             };
-
 
             if (this.health <= 0) {
                 this.die(true);
@@ -2478,6 +2476,44 @@ const levelData = [
         transition: [[gameTextures.missingTexture, 10], ],
         waves: [
             [
+                [200, goblin, [weaponBlackOpalSword, null], [0, 250]],
+                [300, goblin, [weaponRubySword, null], [0, 125]],
+                [300, goblin, [weaponSpinelSword, null], [0, 250]],
+                [300, goblin, [weaponCritineSword, null], [0, 375]],
+                [400, biterGoblin, [null, null], [500, 250]],
+
+                [800, goblin, [weaponCritineSword, null], [500, 250]],
+                [900, goblin, [weaponRubySword, null], [500, 125]],
+                [900, goblin, [weaponBlackOpalSword, null], [500, 250]],
+                [900, goblin, [weaponSpinelSword, null], [500, 375]],
+                [1000, biterGoblin, [null, null], [0, 250]],
+            ],
+            [
+                [200, goblin, [weaponBlackOpalSword, null], [250, 0]],
+                [300, goblin, [weaponRubySword, null], [200, 0]],
+                [300, goblin, [weaponSpinelSword, null], [300, 0]],
+                [300, goblin, [weaponCritineSword, null], [250, 500]],
+                [400, goblin, [weaponRubySword, null], [200, 500]],
+                [400, goblin, [weaponBlackOpalSword, null], [300, 500]],
+                [500, biterGoblin, [null, null], [0, 250]],
+                [600, biterGoblin, [null, null], [500, 250]],
+            ],
+            [
+                [200, archerGoblin, [null, weaponGoldBow], [0, 0]],
+                [400, mirrorGoblin, [weaponCritineSword, null], [0, 250]],
+                [600, goblin, [weaponRubySword, null], [500, 250]],
+
+                [800, archerGoblin, [null, weaponMultiShotBow], [500, 0]],
+                [1000, mirrorGoblin, [weaponBlackOpalSword, null], [500, 250]],
+                [1200, biterGoblin, [null, null], [0, 250]],
+                
+                [1400, archerGoblin, [null, weaponBombBow], [500, 500]],
+                [1600, mirrorGoblin, [weaponRubySword, null], [0, 250]],
+                [1800, goblin, [weaponBlackOpalSword, null], [500, 250]],
+                
+                [2000, archerGoblin, [null, weaponCompactBow], [0, 500]],
+                [2200, mirrorGoblin, [weaponCritineSword, null], [500, 250]],
+                [2400, biterGoblin, [null, null], [0, 250]],
             ],
         ],
         shopItems: {weapons: [weaponDiamondSword, weaponScythe], bows: [weaponDiamondBow, weaponClusterBow]},
