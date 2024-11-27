@@ -199,6 +199,8 @@ const gameTextures = {
     forestForeground: makeImage('textures/areas/forestForeground.png'),
     villageBackground: makeImage('textures/areas/villageBackground.png'),
     villageForeground: makeImage('textures/areas/villageForeground.png'),
+    castleBackground: makeImage('textures/areas/castleBackground.png'),
+    castleForeground: makeImage('textures/areas/castleForeground.png'),
     shopBackground1: makeImage('textures/shopBackground/background1.png'),
 };
 
@@ -2470,6 +2472,16 @@ const levelData = [
         ],
         shopItems: {weapons: [weaponDiamondSword, weaponScythe], bows: [weaponDiamondBow, weaponClusterBow]},
     },
+    {
+        background: gameTextures.castleBackground,
+        foreground: gameTextures.castleForeground,
+        transition: [[gameTextures.missingTexture, 10], ],
+        waves: [
+            [
+            ],
+        ],
+        shopItems: {weapons: [weaponDiamondSword, weaponScythe], bows: [weaponDiamondBow, weaponClusterBow]},
+    },
 ];
 
 
@@ -2663,7 +2675,7 @@ function fillMouseHistoryWithBlanks() {
 // boots up game
 function bootGame() {
     settings.hasShownTransition = false;
-    settings.currentLevel = 5;
+    settings.currentLevel = 6;
     settings.currentWave = 0;
     amountSummoned = 0;
     stillEnemiesToSummon = true;
