@@ -150,7 +150,8 @@ const gameTextures = {
     weaponRubySword: makeImage('textures/weapons/rubySword.png'),
     weaponBlackOpalSword: makeImage('textures/weapons/blackOpalSword.png'),
     weaponSpinelSword: makeImage('textures/weapons/SpinelSword.png'),
-    weaponLongSword: makeImage('textures/weapons/longSword.png'),
+    weaponGreatSword: makeImage('textures/weapons/greatSword.png'),
+    weaponRocketSword: makeImage('textures/weapons/rocketSword.png'),
     weaponBow: makeImage('textures/weapons/bow.png'),
     weaponBowFull: makeImage('textures/weapons/bowFull.png'),
     weaponGoldBow: makeImage('textures/weapons/goldBow.png'),
@@ -176,6 +177,10 @@ const gameTextures = {
     weaponDiamondBowFull: makeImage('textures/weapons/diamondBowFull.png'),
     weaponClusterBow: makeImage('textures/weapons/clusterBow.png'),
     weaponClusterBowFull: makeImage('textures/weapons/clusterBowFull.png'),
+    weaponBoomStick: makeImage('textures/weapons/boomStick.png'),
+    weaponBoomStickFull: makeImage('textures/weapons/boomStickFull.png'),
+    weaponArrowShooter: makeImage('textures/weapons/arrowShooter.png'),
+    weaponArrowShooterFull: makeImage('textures/weapons/arrowShooterFull.png'),
     bulletArrow: makeImage('textures/weapons/arrow.png'),
     bulletGoldArrow: makeImage('textures/weapons/goldArrow.png'),
     bulletCrossArrow: makeImage('textures/weapons/crossArrow.png'),
@@ -190,6 +195,8 @@ const gameTextures = {
     bulletDiamondArrow: makeImage('textures/weapons/diamondArrow.png'),
     bulletClusterArrow: makeImage('textures/weapons/clusterArrow.png'),
     bulletClusterShard: makeImage('textures/weapons/clusterShard.png'),
+    bulletBoomStickBullet: makeImage('textures/weapons/boomStickBullet.png'),
+    bulletShooterArrow: makeImage('textures/weapons/shooterArrow.png'),
     heart: makeImage('textures/drops/heart.png'),
     explosion: makeImage('textures/explosion.png'),
     poisonTile: makeImage('textures/poisonTile.png'),
@@ -557,6 +564,26 @@ class clusterArrow extends arrow {
     };
 };
 
+class boomStickBullet extends arrow {
+    constructor() {
+        super();
+        this.sizeX = 8;
+        this.sizeY = 8;
+        this.boxSizeX = 16;
+        this.boxSizeY = 16;
+        this.useTexture = gameTextures.bulletBoomStickBullet;
+        this.damage = 15;
+    };
+};
+
+class shooterArrow extends arrow {
+    constructor() {
+        super();
+        this.useTexture = gameTextures.bulletShooterArrow;
+        this.damage = 25;
+    };
+};
+
 class weaponBow extends weaponHands {
     constructor() {
         super();
@@ -768,6 +795,48 @@ class weaponClusterBow extends weaponBow {
         this.texture = gameTextures.weaponClusterBow;
         this.fullTexture = gameTextures.weaponClusterBowFull;
         this.displayName = 'Cluster Bow';
+    };
+};
+
+class weaponBoomStick extends weaponBow {
+    constructor() {
+        super();
+        this.sizeX = 100;
+        this.sizeY = 100;
+        this.yOffset = -100;
+        this.fireRate = 1200;
+        this.useBullet = boomStickBullet;
+        this.texture = gameTextures.weaponBoomStick;
+        this.fullTexture = gameTextures.weaponBoomStickFull;
+        this.displayName = 'Boom Stick';
+    };
+    shoot(x1, x2, y1, y2, source) {
+        const dX = x2 - x1;
+        const dY = y2 - y1;
+        let angle = Math.atan2(dY, dX) + (Math.PI / 2);
+        for (let i = 0; i < 8; i++) {
+            const shotArrow = new this.useBullet;
+            shotArrow.source = source;
+            const averageSize = (shotArrow.boxSizeX + shotArrow.boxSizeY) / 2;
+            shotArrow.x = x1 + (-1 * (this.yOffset) - averageSize) * Math.cos(angle - Math.PI / 2);
+            shotArrow.y = y1 + (-1 * (this.yOffset) - averageSize) * Math.sin(angle - Math.PI / 2);
+            shotArrow.angle = angle + ((Math.floor(Math.random() * 700) - 350) * .0001);
+            currentBullets.push(shotArrow);
+        };
+    };
+};
+
+class weaponArrowShooter extends weaponBow {
+    constructor() {
+        super();
+        this.sizeX = 100;
+        this.sizeY = 100;
+        this.yOffset = -100;
+        this.fireRate = 250;
+        this.useBullet = shooterArrow;
+        this.texture = gameTextures.weaponArrowShooter;
+        this.fullTexture = gameTextures.weaponArrowShooterFull;
+        this.displayName = 'Arrow Shooter';
     };
 };
 
@@ -1208,20 +1277,40 @@ class weaponSpinelSword extends weaponGoldSword {
     };
 };
 
-class weaponLongSword extends weaponHands {
+class weaponRocketSword extends weaponHands {
     constructor() {
         super();
         this.swingable = true;
-        this.attackRange = 125;
-        this.damage = 85;
-        this.swingDamge = 11.3;
-        this.attackDuration = 800;
-        this.attackCoolDown = 950;
-        this.texture = gameTextures.weaponLongSword;
-        this.displayName = 'Long Sword';
-        this.sizeX = 50;
-        this.sizeY = 100;
+        this.canBlock = true;
+        this.attackRange = 90;
+        this.damage = 75;
+        this.swingDamge = 10;
+        this.swingWeight = 4;
+        this.attackDuration = 500;
+        this.attackCoolDown = 250;
+        this.texture = gameTextures.weaponRocketSword;
+        this.displayName = "Rocket Sword";
+        this.sizeX = 100;
+        this.sizeY = 200;
         this.offset = -75;
+    };
+};
+
+class weaponGreatSword extends weaponHands {
+    constructor() {
+        super();
+        this.swingable = true;
+        this.attackRange = 200;
+        this.damage = 0.5;
+        this.swingDamge = 75;
+        this.swingWeight = 8;
+        this.attackDuration = 500;
+        this.attackCoolDown = 500;
+        this.texture = gameTextures.weaponGreatSword;
+        this.displayName = 'Great Sword';
+        this.sizeX = 100;
+        this.sizeY = 200;
+        this.offset = -100;
     };
 };
 
@@ -1310,8 +1399,8 @@ class playerProps {
     canShoot = true;
     shooting = false;
     currentWeapon = 'sword';
-    weaponData = new weaponScythe;
-    bowData = new weaponClusterBow;
+    weaponData = new weaponRocketSword;
+    bowData = new weaponBoomStick;
 };
 
 function fillMap(sources, sSX, sSY, pathMap) {
@@ -2516,6 +2605,66 @@ const levelData = [
                 [2400, biterGoblin, [null, null], [0, 250]],
             ],
         ],
+        shopItems: {weapons: [weaponRocketSword, weaponGreatSword], bows: [weaponArrowShooter, weaponBoomStick]},
+    },
+    {
+        background: gameTextures.castleBackground,
+        foreground: gameTextures.castleForeground,
+        transition: [[gameTextures.missingTexture, 10], ],
+        waves: [
+            [
+                [200, goblin, [weaponBlackOpalSword, null], [0, 250]], 
+                [300, berserkerGoblin, [weaponCritineSword, null], [500, 250]], 
+                [400, archerGoblin, [null, weaponBombBow], [0, 0]], 
+                [500, biterGoblin, [null, null], [250, 500]], 
+                [600, archerGoblin, [null, weaponDiamondBow], [500, 500]], 
+                [700, berserkerGoblin, [weaponRubySword, null], [250, 0]], 
+                [800, goblin, [weaponSpinelSword, null], [250, 500]], 
+                [900, biterGoblin, [null, null], [0, 250]], 
+                [1000, bombGoblin, [null, null], [500, 250]], 
+            ],
+            [
+                [200, bombGoblin, [null, null], [0, 0]], 
+                [200, bombGoblin, [null, null], [0, 250]], 
+                [200, bombGoblin, [null, null], [0, 500]], 
+                [500, biterGoblin, [null, null], [250, 0]], 
+                [500, biterGoblin, [null, null], [250, 500]], 
+                [500, goblin, [weaponRubySword, null], [500, 250]],
+                [600, bombGoblin, [null, null], [500, 0]], 
+                [600, bombGoblin, [null, null], [500, 250]], 
+                [600, bombGoblin, [null, null], [500, 500]], 
+                [800, biterGoblin, [null, null], [250, 0]], 
+                [800, biterGoblin, [null, null], [250, 500]], 
+                [800, goblin, [weaponCritineSword, null], [0, 250]],
+            ],
+            [
+                [200, bombGoblin, [null, null], [0, 0]], 
+                [300, archerGoblin, [null, weaponCompactBow], [0, 250]], 
+                [400, mirrorGoblin, [null, null], [0, 500]], 
+                [500, ninjaGoblin, [weaponBlackOpalSword, null], [250, 500]], 
+                [600, poisonGoblin, [weaponRubySword, null], [500, 500]], 
+                [700, biterGoblin, [null, null], [500, 250]], 
+                [800, berserkerGoblin, [weaponCritineSword, null], [500, 0]], 
+                [900, goblin, [weaponSpinelSword, null], [250, 0]], 
+                [1000, berserkerGoblin, [weaponSpinelSword, null], [0, 0]], 
+                [1100, poisonGoblin, [null, weaponBlowDart], [0, 250]], 
+                [1200, goblin, [weaponBlackOpalSword, null], [0, 500]], 
+                [1300, biterGoblin, [null, null], [250, 500]], 
+                [1400, bombGoblin, [null, null], [500, 500]], 
+                [1500, poisonGoblin, [weaponRubySword, null], [0, 0]], 
+                [1600, biterGoblin, [null, null], [500, 250]], 
+                [1700, bigGoblin, [weaponCritineSword, null], [0, 250]], 
+                [1800, berserkerGoblin, [weaponRubySword, null], [500, 0]],
+                [1900, mirrorGoblin, [weaponBlackOpalSword, null], [0, 500]],  
+                [2000, archerGoblin, [null, weaponBombBow], [250, 0]], 
+                [2100, archerGoblin, [null, weaponDiamondBow], [250, 500]], 
+                [2200, ninjaGoblin, [weaponBlackOpalSword, null], [0, 0]], 
+                [2300, poisonGoblin, [weaponRubySword, null], [500, 500]],
+                [2400, biterGoblin, [null, null], [500, 250]], 
+                [2500, berserkerGoblin, [weaponCritineSword, null], [500, 0]], 
+                [2600, goblin, [weaponSpinelSword, null], [250, 0]], 
+            ],
+        ],
         shopItems: {weapons: [weaponDiamondSword, weaponScythe], bows: [weaponDiamondBow, weaponClusterBow]},
     },
 ];
@@ -2711,7 +2860,7 @@ function fillMouseHistoryWithBlanks() {
 // boots up game
 function bootGame() {
     settings.hasShownTransition = false;
-    settings.currentLevel = 6;
+    settings.currentLevel = 7;
     settings.currentWave = 0;
     amountSummoned = 0;
     stillEnemiesToSummon = true;
