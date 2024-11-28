@@ -42,22 +42,39 @@ function inBounds(x, y) {
 
 function lineIntersects(x1, y1, x2, y2, xMin, yMin, xMax, yMax) {
     function ccw(x1, y1, x2, y2, x3, y3) {
-        return((y3 - y1) * (x2 - x1) > (y2 - y1) * (x3 - x1));
+        const crossProduct = (y3 - y1) * (x2 - x1) - (y2 - y1) * (x3 - x1);
+        if (crossProduct === 0) {
+            // Check if x3, y3 is collinear and lies between x1, y1 and x2, y2
+            return (x3 >= Math.min(x1, x2) && x3 <= Math.max(x1, x2) &&
+                    y3 >= Math.min(y1, y2) && y3 <= Math.max(y1, y2));
+        };
+        return crossProduct > 0;
     };
 
     function intersect(x1, y1, x2, y2, x3, y3, x4, y4) {
-        return(ccw(x1, y1, x3, y3, x4, y4) !== ccw(x2, y2, x3, y3, x4, y4) && ccw(x1, y1, x2, y2, x3, y3) !== ccw(x1, y1, x2, y2, x4, y4));
+        function onSegment(px, py, qx, qy, rx, ry) {
+            return (rx >= Math.min(px, qx) && rx <= Math.max(px, qx) &&
+                    ry >= Math.min(py, qy) && ry <= Math.max(py, qy));
+        };
+
+        return (
+            (ccw(x1, y1, x3, y3, x4, y4) !== ccw(x2, y2, x3, y3, x4, y4) &&
+             ccw(x1, y1, x2, y2, x3, y3) !== ccw(x1, y1, x2, y2, x4, y4)) ||
+            // Handle collinear overlap
+            onSegment(x1, y1, x2, y2, x3, y3) ||
+            onSegment(x1, y1, x2, y2, x4, y4) ||
+            onSegment(x3, y3, x4, y4, x1, y1) ||
+            onSegment(x3, y3, x4, y4, x2, y2)
+        );
     };
 
-    if (
-        intersect(x1, y1, x2, y2, xMin, yMin, xMin, yMax) ||
-        intersect(x1, y1, x2, y2, xMin, yMax, xMax, yMax) ||
-        intersect(x1, y1, x2, y2, xMax, yMax, xMax, yMin) ||
-        intersect(x1, y1, x2, y2, xMax, yMin, xMin, yMin)
-    ) {
-        return(true);
-    }
-    return(false);
+    // Check if line intersects any of the rectangle's edges
+    return (
+        intersect(x1, y1, x2, y2, xMin, yMin, xMin, yMax) || // Left edge
+        intersect(x1, y1, x2, y2, xMin, yMax, xMax, yMax) || // Bottom edge
+        intersect(x1, y1, x2, y2, xMax, yMax, xMax, yMin) || // Right edge
+        intersect(x1, y1, x2, y2, xMax, yMin, xMin, yMin)    // Top edge
+    );
 };
 
 function getDistance(point1, point2) {
@@ -152,6 +169,12 @@ const gameTextures = {
     weaponSpinelSword: makeImage('textures/weapons/SpinelSword.png'),
     weaponGreatSword: makeImage('textures/weapons/greatSword.png'),
     weaponRocketSword: makeImage('textures/weapons/rocketSword.png'),
+    weaponDualGoldSword: makeImage('textures/weapons/dualGoldSword.png'),
+    weaponGoblinDiamondSword: makeImage('textures/weapons/goblinDiamondSword.png'),
+    weaponGoblinEmeraldSword: makeImage('textures/weapons/goblinEmeraldSword.png'),
+    weaponLongSword: makeImage('textures/weapons/longSword.png'),
+    weaponGoldenLongSword: makeImage('textures/weapons/goldenLongSword.png'),
+    weaponSpiritSword: makeImage('textures/weapons/spiritSword.png'),
     weaponBow: makeImage('textures/weapons/bow.png'),
     weaponBowFull: makeImage('textures/weapons/bowFull.png'),
     weaponGoldBow: makeImage('textures/weapons/goldBow.png'),
@@ -181,6 +204,9 @@ const gameTextures = {
     weaponBoomStickFull: makeImage('textures/weapons/boomStickFull.png'),
     weaponArrowShooter: makeImage('textures/weapons/arrowShooter.png'),
     weaponArrowShooterFull: makeImage('textures/weapons/arrowShooterFull.png'),
+    weaponSoulBow: makeImage('textures/weapons/soulBow.png'),
+    weaponSoulBowFull: makeImage('textures/weapons/soulBowFull.png'),
+    weaponBoomerang: makeImage('textures/weapons/boomerang.png'),
     bulletArrow: makeImage('textures/weapons/arrow.png'),
     bulletGoldArrow: makeImage('textures/weapons/goldArrow.png'),
     bulletCrossArrow: makeImage('textures/weapons/crossArrow.png'),
@@ -197,6 +223,7 @@ const gameTextures = {
     bulletClusterShard: makeImage('textures/weapons/clusterShard.png'),
     bulletBoomStickBullet: makeImage('textures/weapons/boomStickBullet.png'),
     bulletShooterArrow: makeImage('textures/weapons/shooterArrow.png'),
+    bulletSoulArrow: makeImage('textures/weapons/soulArrow.png'),
     heart: makeImage('textures/drops/heart.png'),
     explosion: makeImage('textures/explosion.png'),
     poisonTile: makeImage('textures/poisonTile.png'),
@@ -584,6 +611,69 @@ class shooterArrow extends arrow {
     };
 };
 
+class soulArrow extends arrow {
+    constructor() {
+        super();
+        this.ticksAfterShot = 0;
+        this.ticksBeforeFollow = 35;
+        this.useTexture = gameTextures.bulletSoulArrow;
+        this.damage = 50;
+    };
+    onStep() {
+        if (this.ticksAfterShot < this.ticksBeforeFollow) {
+            this.ticksAfterShot += 1;
+        } else {
+            const allEnemyDistances = [];
+            const currentEnemyLength = currentEnemies.length;
+            if (currentEnemyLength <= 0) {
+                return;
+            };
+    
+            for (let i = 0; i < currentEnemyLength; i++) {
+                const enemy = currentEnemies[i];
+                const [dX, dY, distance] = getDistance(this, enemy);
+                allEnemyDistances.push([distance, dX, dY]);
+            };
+    
+            let nearestIndex = 0;
+            if (currentEnemyLength > 1) {
+                for (let i = 0; i < currentEnemyLength; i++) {
+                    if (allEnemyDistances[i][0] <= allEnemyDistances[nearestIndex][0]) {
+                        nearestIndex = i;
+                    };
+                };
+            };
+    
+            this.angle = (Math.atan2(allEnemyDistances[nearestIndex][2], allEnemyDistances[nearestIndex][1]) + Math.PI / 2);
+        };
+    };
+};
+
+class bulletBoomerang extends throwingKinve {
+    constructor() {
+        super();
+        this.sizeX = 50;
+        this.sizeY = 50;
+        this.boxSizeX = 25;
+        this.boxSizeY = 25;
+        this.useTexture = gameTextures.weaponBoomerang;
+        this.damage = 200;
+        this.piercing = true;
+        this.ticksAfterShot = 0;
+        this.ticksBeforeReturn = 50;
+        this.returning = false;
+    };
+    onStep() {
+        if (!this.returning) {
+            this.ticksAfterShot += 1;
+            if (this.ticksAfterShot >= this.ticksBeforeReturn) {
+                this.returning = true;
+                this.angle += Math.PI;
+            };
+        };
+    }
+};
+
 class weaponBow extends weaponHands {
     constructor() {
         super();
@@ -696,6 +786,7 @@ class weaponThrowingKnives extends weaponBow {
         this.fireRate = 1250;
         this.useBullet = throwingKinve;
         this.texture = gameTextures.weaponThrowingKnives;
+        this.fullTexture = null;
         this.displayName = 'Throwing Knives';
         this.disappearOnUse = true;
     };
@@ -837,6 +928,29 @@ class weaponArrowShooter extends weaponBow {
         this.texture = gameTextures.weaponArrowShooter;
         this.fullTexture = gameTextures.weaponArrowShooterFull;
         this.displayName = 'Arrow Shooter';
+    };
+};
+
+class weaponSoulBow extends weaponBow {
+    constructor() {
+        super();
+        this.fireRate = 1000;
+        this.useBullet = soulArrow;
+        this.texture = gameTextures.weaponSoulBow;
+        this.fullTexture = gameTextures.weaponSoulBow;
+        this.displayName = 'Soul Bow';
+    };
+};
+
+class weaponBoomerang extends weaponBow {
+    constructor() {
+        super();
+        this.fireRate = 1000;
+        this.useBullet = bulletBoomerang;
+        this.texture = gameTextures.weaponBoomerang;
+        this.fullTexture = null;
+        this.displayName = 'Boomerang';
+        this.disappearOnUse = true;
     };
 };
 
@@ -1314,6 +1428,89 @@ class weaponGreatSword extends weaponHands {
     };
 };
 
+class weaponDualGoldSword extends weaponGoldSword {
+    constructor() {
+        super();
+        this.texture = gameTextures.weaponDualGoldSword;
+        this.displayName = 'Dual Gold Sword';
+        this.attackRange = 70;
+        this.damage = 85;
+        this.swingDamge = 12.5;
+        this.attackDuration = 800;
+        this.attackCoolDown = 1000;
+    };
+};
+
+class weaponGoblinDiamondSword extends weaponDualGoldSword {
+    constructor() {
+        super();
+        this.texture = gameTextures.weaponGoblinDiamondSword;
+        this.displayName = 'Goblin Diamond Sword';
+    };
+};
+
+class weaponGoblinEmeraldSword extends weaponDualGoldSword {
+    constructor() {
+        super();
+        this.texture = gameTextures.weaponGoblinEmeraldSword;
+        this.displayName = 'Goblin Emerald Sword';
+    };
+};
+
+class weaponLongSword extends weaponDualGoldSword {
+    constructor() {
+        super();
+        this.texture = gameTextures.weaponLongSword;
+        this.displayName = 'Long Sword';
+        this.sizeX = 100;
+        this.sizeY = 200;
+        this.offset = -65;
+        this.attackRange = 85;
+        this.damage = 75;
+        this.swingDamge = 8.5;
+        this.attackDuration = 900;
+        this.attackCoolDown = 1000;
+    };
+};
+
+class weaponGoldenLongSword extends weaponHands {
+    constructor() {
+        super();
+        this.swingable = true;
+        this.canBlock = true;
+        this.attackRange = 200;
+        this.damage = 25;
+        this.swingDamge = 100;
+        this.swingWeight = 8;
+        this.attackDuration = 900;
+        this.attackCoolDown = 850;
+        this.texture = gameTextures.weaponGoldenLongSword;
+        this.displayName = "Golden Long Sword";
+        this.sizeX = 100;
+        this.sizeY = 200;
+        this.offset = -100;
+    };
+};
+
+class weaponSpiritSword extends weaponHands {
+    constructor() {
+        super();
+        this.swingable = true;
+        this.canBlock = true;
+        this.attackRange = 100;
+        this.damage = 75;
+        this.swingDamge = 15;
+        this.swingWeight = 0;
+        this.attackDuration = 300;
+        this.attackCoolDown = 400;
+        this.texture = gameTextures.weaponSpiritSword;
+        this.displayName = "Spirit Sword";
+        this.sizeX = 100;
+        this.sizeY = 100;
+        this.offset = -75;
+    };
+};
+
 class playerProps {
     // texture stuff
     useTexture = null;
@@ -1399,8 +1596,8 @@ class playerProps {
     canShoot = true;
     shooting = false;
     currentWeapon = 'sword';
-    weaponData = new weaponRocketSword;
-    bowData = new weaponBoomStick;
+    weaponData = new weaponSpiritSword;
+    bowData = new weaponBoomerang;
 };
 
 function fillMap(sources, sSX, sSY, pathMap) {
@@ -3067,6 +3264,9 @@ function moveBullets() {
         if (!useBullet) {
             continue;
         };
+        if (useBullet.onStep) {
+            useBullet.onStep();
+        };
         useBullet.x += (settings.bulletSpeed * Math.cos(useBullet.angle + Math.PI / 2));
         useBullet.y += (settings.bulletSpeed * Math.sin(useBullet.angle + Math.PI / 2));
         if (useBullet.x < 0 || useBullet.x > mainCanvas.width || useBullet.y < 0 || useBullet.y > mainCanvas.height) {
@@ -3355,6 +3555,7 @@ async function playLevel() {
                 const yMax = selectedEnemy.y + selectedEnemy.hitBoxY/2;
 
                 if (lineIntersects(x1, y1, x2, y2, xMin, yMin, xMax, yMax)) {
+                    console.log('intersection!');
                     if ((canStab && !stabSwinging)) {
                         console.log('stabbed!');
                         selectedEnemy.wasAttacked = true;
@@ -3367,6 +3568,8 @@ async function playLevel() {
                     if (selectedEnemy.health <= 0) {
                         selectedEnemy.die();
                     };
+                } else {
+                    console.log('no intersection!');
                 };
                 
             };
