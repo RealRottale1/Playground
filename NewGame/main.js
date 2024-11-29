@@ -235,6 +235,8 @@ const gameTextures = {
     villageForeground: makeImage('textures/areas/villageForeground.png'),
     castleBackground: makeImage('textures/areas/castleBackground.png'),
     castleForeground: makeImage('textures/areas/castleForeground.png'),
+    warBackground: makeImage('textures/areas/warBackground.png'),
+    warForeground: makeImage('textures/areas/warForeground.png'),
     shopBackground1: makeImage('textures/shopBackground/background1.png'),
 };
 
@@ -657,7 +659,7 @@ class bulletBoomerang extends throwingKinve {
         this.boxSizeX = 25;
         this.boxSizeY = 25;
         this.useTexture = gameTextures.weaponBoomerang;
-        this.damage = 200;
+        this.damage = 150;
         this.piercing = true;
         this.ticksAfterShot = 0;
         this.ticksBeforeReturn = 50;
@@ -945,7 +947,7 @@ class weaponSoulBow extends weaponBow {
 class weaponBoomerang extends weaponBow {
     constructor() {
         super();
-        this.fireRate = 1000;
+        this.fireRate = 1250;
         this.useBullet = bulletBoomerang;
         this.texture = gameTextures.weaponBoomerang;
         this.fullTexture = null;
@@ -1465,7 +1467,7 @@ class weaponLongSword extends weaponDualGoldSword {
         this.sizeX = 100;
         this.sizeY = 200;
         this.offset = -65;
-        this.attackRange = 85;
+        this.attackRange = 150;
         this.damage = 75;
         this.swingDamge = 8.5;
         this.attackDuration = 900;
@@ -2240,22 +2242,23 @@ class ghostGoblin extends goblin {
         const ran = Math.floor(Math.floor(Math.random()*30)/10);
         const newAngle = (ran == 0 ? Math.PI : (ran == 1 ? 3*Math.PI/2 : Math.PI/2));
         const weaponAngle = usePlayerProps.getWeaponAngle() + newAngle;
-        const [newX, newY] = inBounds((this.x - (-250 * Math.cos(weaponAngle))), (this.y - (-250 * Math.sin(weaponAngle))));
+        const [newX, newY] = inBounds((this.x - (-325 * Math.cos(weaponAngle))), (this.y - (-325 * Math.sin(weaponAngle))));
         this.x = newX;
         this.y = newY;
     };
     getUseTexture() {
+        console.log(!this.hits)
         if (this.health > 66) {
             this.useTexture = this.fullHealth;
         } else if (this.health <= 66 && this.health > 33) {
             this.useTexture = this.halfHealth;
-            if (this.hits == 0) {
+            if (!this.hits) {
                 this.hits = 1;
                 this.tpAway();
             };
         } else {
             this.useTexture = this.nearDeath;
-            if (this.hits == 1) {
+            if (this.hits < 2) {
                 this.hits = 2;
                 this.tpAway();
             };
@@ -2363,7 +2366,7 @@ class skeletonGoblin extends goblin {
         this.nearDeath = gameTextures.skeletonGoblinNearDeath;
         this.dead = gameTextures.skeletonGoblinDead;
         this.reviving = false;
-        this.reviveTime = 7500;
+        this.reviveTime = 6000;
         this.killCD = false;
     };
 
@@ -2862,7 +2865,62 @@ const levelData = [
                 [2600, goblin, [weaponSpinelSword, null], [250, 0]], 
             ],
         ],
-        shopItems: {weapons: [weaponDiamondSword, weaponScythe], bows: [weaponDiamondBow, weaponClusterBow]},
+        shopItems: {weapons: [weaponGoldenLongSword, weaponSpiritSword], bows: [weaponSoulBow, weaponBoomerang]},
+    },
+    {
+        background: gameTextures.warBackground,
+        foreground: gameTextures.warForeground,
+        transition: [[gameTextures.missingTexture, 10], ],
+        waves: [
+            [
+                [200, goblin, [weaponDualGoldSword, null], [0, 250]], 
+                [200, skeletonGoblin, [weaponGoblinDiamondSword, null], [500, 250]], 
+                [300, skeletonGoblin, [weaponGoblinEmeraldSword, null], [250, 0]],
+                [300, goblin, [weaponLongSword, null], [250, 500]],  
+                [800, skeletonGoblin, [null, weaponMetalBow], [0, 0]],  
+                [900, goblin, [null, weaponMetalBow], [0, 500]], 
+                [1000, skeletonGoblin, [null, weaponMetalBow], [500, 500]], 
+                [1100, skeletonGoblin, [null, weaponMetalBow], [500, 0]], 
+                [1300, bombGoblin, [null, null], [0, 250]],  
+            ],
+            [
+                [200, goblin, [weaponDualGoldSword, null], [0, 0]], 
+                [300, skeletonGoblin, [weaponGoblinDiamondSword, null], [50, 0]], 
+                [300, ghostGoblin, [weaponGoblinEmeraldSword, null], [0, 50]], 
+                [400, ghostGoblin, [weaponGoblinEmeraldSword, null], [500, 500]], 
+                [500, skeletonGoblin, [weaponLongSword, null], [450, 500]], 
+                [500, skeletonGoblin, [weaponDualGoldSword, null], [500, 450]], 
+                [1000, ghostGoblin, [weaponGoblinEmeraldSword, null], [250, 0]], 
+                [1100, ghostGoblin, [weaponDualGoldSword, null], [0, 0]], 
+                [1200, ghostGoblin, [weaponGoblinDiamondSword, null], [0, 250]], 
+                [1300, ghostGoblin, [weaponLongSword, null], [0, 500]], 
+                [1400, ghostGoblin, [weaponGoblinDiamondSword, null], [250, 500]], 
+                [1500, ghostGoblin, [weaponGoblinEmeraldSword, null], [500, 500]], 
+                [1600, ghostGoblin, [weaponDualGoldSword, null], [500, 250]], 
+                [1700, ghostGoblin, [weaponGoblinEmeraldSword, null], [500, 0]], 
+            ],
+            [
+                [200, skeletonGoblin, [weaponDualGoldSword, null], [0, 250]], 
+                [250, skeletonGoblin, [weaponLongSword, null], [0, 225]],
+                [250, skeletonGoblin, [weaponDualGoldSword, null], [0, 250]],
+                [250, skeletonGoblin, [weaponGoblinDiamondSword, null], [0, 275]],
+                [300, skeletonGoblin, [weaponLongSword, null], [0, 200]],
+                [300, skeletonGoblin, [weaponDualGoldSword, null], [0, 225]],
+                [300, skeletonGoblin, [weaponGoblinDiamondSword, null], [0, 250]],
+                [300, skeletonGoblin, [weaponGoblinEmeraldSword, null], [0, 275]],
+                [300, skeletonGoblin, [weaponLongSword, null], [0, 300]],
+                [1000, ghostGoblin, [weaponDualGoldSword, null], [500, 250]], 
+                [1050, ghostGoblin, [weaponLongSword, null], [500, 225]],
+                [1050, ghostGoblin, [weaponDualGoldSword, null], [500, 250]],
+                [1050, ghostGoblin, [weaponGoblinDiamondSword, null], [500, 275]],
+                [1100, ghostGoblin, [weaponGoblinEmeraldSword, null], [500, 200]],
+                [1100, ghostGoblin, [weaponDualGoldSword, null], [500, 225]],
+                [1100, ghostGoblin, [weaponLongSword, null], [500, 250]],
+                [1100, ghostGoblin, [weaponGoblinDiamondSword, null], [500, 275]],
+                [1100, ghostGoblin, [weaponGoblinEmeraldSword, null], [500, 300]],
+            ],
+        ],
+        shopItems: {weapons: [weaponGoldenLongSword, weaponSpiritSword], bows: [weaponSoulBow, weaponBoomerang]},
     },
 ];
 
@@ -3057,7 +3115,7 @@ function fillMouseHistoryWithBlanks() {
 // boots up game
 function bootGame() {
     settings.hasShownTransition = false;
-    settings.currentLevel = 7;
+    settings.currentLevel = 8;
     settings.currentWave = 0;
     amountSummoned = 0;
     stillEnemiesToSummon = true;
@@ -3555,21 +3613,16 @@ async function playLevel() {
                 const yMax = selectedEnemy.y + selectedEnemy.hitBoxY/2;
 
                 if (lineIntersects(x1, y1, x2, y2, xMin, yMin, xMax, yMax)) {
-                    console.log('intersection!');
                     if ((canStab && !stabSwinging)) {
-                        console.log('stabbed!');
                         selectedEnemy.wasAttacked = true;
                         selectedEnemy.health -= usePlayerProps.weaponData.damage;
                     } else {
-                        console.log('slashed!');
                         selectedEnemy.wasSwingAttacked = true;
                         selectedEnemy.health -= weaponUsing.swingDamge;
                     };
                     if (selectedEnemy.health <= 0) {
                         selectedEnemy.die();
                     };
-                } else {
-                    console.log('no intersection!');
                 };
                 
             };
