@@ -175,6 +175,8 @@ const gameTextures = {
     weaponLongSword: makeImage('textures/weapons/longSword.png'),
     weaponGoldenLongSword: makeImage('textures/weapons/goldenLongSword.png'),
     weaponSpiritSword: makeImage('textures/weapons/spiritSword.png'),
+    weaponFlameSword: makeImage('textures/weapons/flameSword.png'),
+    weaponMineralSword: makeImage('textures/weapons/mineralSword.png'),
     weaponBow: makeImage('textures/weapons/bow.png'),
     weaponBowFull: makeImage('textures/weapons/bowFull.png'),
     weaponGoldBow: makeImage('textures/weapons/goldBow.png'),
@@ -207,6 +209,10 @@ const gameTextures = {
     weaponSoulBow: makeImage('textures/weapons/soulBow.png'),
     weaponSoulBowFull: makeImage('textures/weapons/soulBowFull.png'),
     weaponBoomerang: makeImage('textures/weapons/boomerang.png'),
+    weaponPentaShotBow: makeImage('textures/weapons/pentaShotBow.png'),
+    weaponPentaShotBowFull: makeImage('textures/weapons/pentaShotBowFull.png'),
+    weaponHugeHandCannon: makeImage('textures/weapons/hugeHandCannon.png'),
+    weaponHugeHandCannonFull: makeImage('textures/weapons/hugeHandCannonFull.png'),
     bulletArrow: makeImage('textures/weapons/arrow.png'),
     bulletGoldArrow: makeImage('textures/weapons/goldArrow.png'),
     bulletCrossArrow: makeImage('textures/weapons/crossArrow.png'),
@@ -224,6 +230,8 @@ const gameTextures = {
     bulletBoomStickBullet: makeImage('textures/weapons/boomStickBullet.png'),
     bulletShooterArrow: makeImage('textures/weapons/shooterArrow.png'),
     bulletSoulArrow: makeImage('textures/weapons/soulArrow.png'),
+    bulletPentaArrow: makeImage('textures/weapons/pentaArrow.png'),
+    bulletHugeCannonBall: makeImage('textures/weapons/hugeCannonBall.png'),
     heart: makeImage('textures/drops/heart.png'),
     explosion: makeImage('textures/explosion.png'),
     poisonTile: makeImage('textures/poisonTile.png'),
@@ -676,6 +684,27 @@ class bulletBoomerang extends throwingKinve {
     }
 };
 
+class hugeCannonBall extends arrow {
+    constructor() {
+        super();
+        this.sizeX = 100;
+        this.sizeY = 100;
+        this.boxSizeX = 100;
+        this.boxSizeY = 100;
+        this.useTexture = gameTextures.bulletHugeCannonBall;
+        this.damage = 300;
+        this.piercing = true;
+    };
+};
+
+class pentaArrow extends arrow {
+    constructor() {
+        super();
+        this.useTexture = gameTextures.bulletPentaArrow;
+        this.damage = 35;
+    };
+};
+
 class weaponBow extends weaponHands {
     constructor() {
         super();
@@ -953,6 +982,50 @@ class weaponBoomerang extends weaponBow {
         this.fullTexture = null;
         this.displayName = 'Boomerang';
         this.disappearOnUse = true;
+    };
+};
+
+class weaponHugeHandCannon extends weaponBow {
+    constructor() {
+        super();
+        this.fireRate = 5000;
+        this.swingWeight = 7;
+        this.useBullet = hugeCannonBall;
+        this.texture = gameTextures.weaponHugeHandCannon;
+        this.fullTexture = gameTextures.weaponHugeHandCannonFull;
+        this.displayName = 'Huge Hand Cannon';
+        this.sizeX = 125;
+        this.sizeY = 125;
+        this.yOffset = -125;
+    };
+};
+
+class weaponPentaShotBow extends weaponBow {
+    constructor() {
+        super();
+        this.sizeX = 100;
+        this.sizeY = 50;
+        this.fireRate = 1000;
+        this.useBullet = pentaArrow;
+        this.texture = gameTextures.weaponPentaShotBow;
+        this.fullTexture = gameTextures.weaponPentaShotBowFull;
+        this.displayName = 'Penta Shot Bow';
+    };
+    shoot(x1, x2, y1, y2, source) {
+        const dX = x2 - x1;
+        const dY = y2 - y1;
+        const changeBy = (Math.PI/72)
+        let angle = Math.atan2(dY, dX) + (Math.PI / 2) - (changeBy*2);
+        for (let i = 0; i < 5; i++) {
+            const shotArrow = new this.useBullet;
+            shotArrow.source = source;
+            const averageSize = (shotArrow.boxSizeX + shotArrow.boxSizeY) / 2;
+            shotArrow.x = x1 + (-1 * (this.yOffset) - averageSize) * Math.cos(angle - Math.PI / 2);
+            shotArrow.y = y1 + (-1 * (this.yOffset) - averageSize) * Math.sin(angle - Math.PI / 2);
+            shotArrow.angle = angle;
+            angle += changeBy;
+            currentBullets.push(shotArrow);
+        };
     };
 };
 
@@ -1513,6 +1586,44 @@ class weaponSpiritSword extends weaponHands {
     };
 };
 
+class weaponFlameSword extends weaponHands {
+    constructor() {
+        super();
+        this.swingable = true;
+        this.canBlock = false;
+        this.attackRange = 125;
+        this.damage = 125;
+        this.swingDamge = 75;
+        this.swingWeight = 0;
+        this.attackDuration = 900;
+        this.attackCoolDown = 850;
+        this.texture = gameTextures.weaponFlameSword;
+        this.displayName = "Flame Sword";
+        this.sizeX = 100;
+        this.sizeY = 200;
+        this.offset = -85;
+    };
+};
+
+class weaponMineralSword extends weaponHands {
+    constructor() {
+        super();
+        this.swingable = true;
+        this.canBlock = true;
+        this.attackRange = 95;
+        this.damage = 150;
+        this.swingDamge = 50;
+        this.swingWeight = 0;
+        this.attackDuration = 800;
+        this.attackCoolDown = 750;
+        this.texture = gameTextures.weaponMineralSword;
+        this.displayName = "Mineral Sword";
+        this.sizeX = 100;
+        this.sizeY = 100;
+        this.offset = -65;
+    };
+};
+
 class playerProps {
     // texture stuff
     useTexture = null;
@@ -1598,8 +1709,8 @@ class playerProps {
     canShoot = true;
     shooting = false;
     currentWeapon = 'sword';
-    weaponData = new weaponSpiritSword;
-    bowData = new weaponBoomerang;
+    weaponData = new weaponMineralSword;
+    bowData = new weaponPentaShotBow;
 };
 
 function fillMap(sources, sSX, sSY, pathMap) {
@@ -1964,14 +2075,17 @@ class goblin {
         const [dX, dY, distance] = getDistance(usePlayerProps, this);
         const trueDistance = distance - (this.hitBoxX + this.hitBoxY)/2;
         const ratio = (trueDistance/((mainCanvas.width + mainCanvas.height)/8));
-        const proximity = ((ratio < 0) ? 0 : ((ratio >= 1) ? 1 : ratio));
+        const proximity = Math.round(((ratio < 0) ? 0 : ((ratio >= 1) ? 1 : ratio)) * 1000) / 1000;
         
         const useAdjustmentSpeed = ((this.currentWeapon == 'sword') ? (this.adjustmentSpeed) : Math.floor(this.adjustmentSpeed/2));
         const moveLength = (usePlayerProps.movementHistory.length + 1);
         const adjustDiff = (moveLength - useAdjustmentSpeed);
         const speed = ((proximity >= 1) ? adjustDiff : ((proximity < 0) ? moveLength : Math.floor(adjustDiff + ((1-proximity) * useAdjustmentSpeed))) - this.minAdjustSpeed);
-        const useSpeed = ((speed > (moveLength - this.minAdjustSpeed)) ? (moveLength - this.minAdjustSpeed) : speed);
+        let useSpeed = ((speed > (moveLength - this.minAdjustSpeed)) ? (moveLength - this.minAdjustSpeed) : speed);
 
+        if (useSpeed < 0) {
+            useSpeed *= -1;
+        };
         const pDX = (usePlayerProps.movementHistory[useSpeed][0] - this.x);
         const pDY = (usePlayerProps.movementHistory[useSpeed][1] - this.y);
         const pastAttackAngle = Math.atan2(pDY, pDX);
@@ -2419,7 +2533,7 @@ class shamanGoblin extends goblin {
         this.halfHealthMagic = gameTextures.shamanGoblinHalfHealthMagic;
         this.nearDeathMagic = gameTextures.shamanGoblinNearDeathMagic;
         this.summoning = false;
-        this.summonRange = 150;
+        this.summonRange = 250;
         this.summoningDuration = 2500;
         this.summonCD = false;
         this.summonCDTime = 5000;
@@ -2468,9 +2582,9 @@ class shamanGoblin extends goblin {
                 const summonX = (onX ? 0 : Math.floor(Math.random()*mainCanvas.width));
                 const summonY = (onX ? Math.floor(Math.random()*mainCanvas.width) : 0);
                 if (Math.round(Math.random()) == 1) {
-                    summonEnemy([null, ghostGoblin, [weaponDefaultSword, null], [summonX, summonY]]);
+                    summonEnemy([null, ghostGoblin, [(Math.random() > .5 ? weaponDualGoldSword : weaponGoblinDiamondSword), null], [summonX, summonY]]);
                 } else {
-                    summonEnemy([null, skeletonGoblin, [weaponDefaultSword, null], [summonX, summonY]]);
+                    summonEnemy([null, skeletonGoblin, [(Math.random() > .5 ? weaponLongSword: weaponGoblinEmeraldSword), null], [summonX, summonY]]);
                 };
                 this.summonCD = true;
                 setTimeout(() => {
@@ -2533,99 +2647,26 @@ class heartItem extends dropItem {
 };
 // End
 
-const levelData = [
+const levelData = [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
     {
         background: gameTextures.plainsBackground,
         foreground: gameTextures.plainsForeground,
         transition: [[gameTextures.missingTexture, 10], ],
-        waves: [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
-            [
-                [500, goblin, [null, null], [250, 0]],
-                [700, goblin, [null, null], [0, 250]],
-            ],
-            [
-                [200, goblin, [null, null], [250, 500]],
-                [600, goblin, [null, null], [0, 250]],
-                [1000, goblin, [null, null], [250, 0]],
-                [1400, archerGoblin, [null, weaponBow], [500, 250]],
-            ],
-            [
-                [200, archerGoblin, [null, weaponBow], [0, 125]],
-                [300, archerGoblin, [null, weaponBow], [0, 875]],
-                [1300, archerGoblin, [null, weaponBow], [500, 125]],
-                [1400, archerGoblin, [null, weaponBow], [500, 875]],
-            ],
-            [
-                [200, goblin, [null, null], [0, 0]],
-                [800, archerGoblin, [null, weaponBow], [500, 500]],
-                [1600, goblin, [null, null], [250, 500]],
-                [1800, goblin, [null, null], [250, 0]],
-                [2000, bigGoblin, [null, null], [500, 250]],
-            ],
-        ],
+        waves: [[[500, goblin, [null, null], [250, 0]],[700, goblin, [null, null], [0, 250]],],[[200, goblin, [null, null], [250, 500]],[600, goblin, [null, null], [0, 250]],[1000, goblin, [null, null], [250, 0]],[1400, archerGoblin, [null, weaponBow], [500, 250]],],[[200, archerGoblin, [null, weaponBow], [0, 125]],[300, archerGoblin, [null, weaponBow], [0, 875]],[1300, archerGoblin, [null, weaponBow], [500, 125]],[1400, archerGoblin, [null, weaponBow], [500, 875]],],[[200, goblin, [null, null], [0, 0]],[800, archerGoblin, [null, weaponBow], [500, 500]],[1600, goblin, [null, null], [250, 500]],[1800, goblin, [null, null], [250, 0]],[2000, bigGoblin, [null, null], [500, 250]],],],
         shopItems: {weapons: [weaponKatana, weaponSpear], bows: [weaponMetalBow, weaponSlingShot]},
     },
     {
         background: gameTextures.plainsBackground,
         foreground: gameTextures.plainsForeground,
         transition: [[gameTextures.missingTexture, 10], ],
-        waves: [
-            [
-                [200, bigGoblin, [null, null], [250, 500]],
-                [1000, goblin, [null, null], [0, 0]],
-                [1000, archerGoblin, [null, weaponBow], [0, 250]],
-                [1000, goblin, [null, null], [0, 500]],
-                [2000, goblin, [weaponEarlyGoblinSword, null], [0, 0]],
-            ],
-            [
-                [200, goblin, [null, null], [0, 250]],
-                [800, archerGoblin, [null, weaponBow], [500, 250]],
-                [800, bigGoblin, [weaponEarlyGoblinSword, null], [500, 150]],
-                [800, goblin, [weaponEarlyGoblinSword, null], [500, 350]],
-            ],
-            [
-                [200, goblin, [weaponEarlyGoblinSword, null], [0, 250]],
-                [200, archerGoblin, [null, weaponBow], [500, 250]],
-                [1400, goblin, [weaponEarlyGoblinSword, null], [500, 250]],
-                [1400, archerGoblin, [null, weaponBow], [0, 250]],
-                [2600, berserkerGoblin, [weaponEarlyGoblinSword], [250, 500]],
-            ],
-        ],
+        waves: [[[200, bigGoblin, [null, null], [250, 500]],[1000, goblin, [null, null], [0, 0]],[1000, archerGoblin, [null, weaponBow], [0, 250]],[1000, goblin, [null, null], [0, 500]],[2000, goblin, [weaponEarlyGoblinSword, null], [0, 0]],],[[200, goblin, [null, null], [0, 250]],[800, archerGoblin, [null, weaponBow], [500, 250]],[800, bigGoblin, [weaponEarlyGoblinSword, null], [500, 150]],[800, goblin, [weaponEarlyGoblinSword, null], [500, 350]],],[[200, goblin, [weaponEarlyGoblinSword, null], [0, 250]],[200, archerGoblin, [null, weaponBow], [500, 250]],[1400, goblin, [weaponEarlyGoblinSword, null], [500, 250]],[1400, archerGoblin, [null, weaponBow], [0, 250]],[2600, berserkerGoblin, [weaponEarlyGoblinSword], [250, 500]],],],
         shopItems: {weapons: [weaponSickle, weaponMace], bows: [weaponMultiShotBow, weaponBlowDart]},
     },
     {
         background: gameTextures.forestBackground,
         foreground: gameTextures.forestForeground,
         transition: [[gameTextures.missingTexture, 10], ],
-        waves: [
-            [
-                [200, goblin, [weaponCopperSword, null], [0, 0]],
-                [1200, goblin, [weaponGoldSword, null], [0, 0]],
-                [1200, goblin, [weaponRhodoniteSword, null], [500, 500]],
-                [2200, goblin, [weaponGoldSword, null], [0, 0]],
-                [2200, goblin, [weaponCobaltSword, null], [500, 500]],
-                [2200, poisonGoblin, [null, weaponBlowDart], [500, 0]],
-            ],
-            [
-                [200, poisonGoblin, [null, null], [0, 0]],
-                [400, poisonGoblin, [null, null], [500, 500]],
-                [600, poisonGoblin, [null, null], [500, 0]],
-                [800, poisonGoblin, [null, weaponBlowDart], [0, 500]],
-
-                [1600, poisonGoblin, [null, null], [0, 0]],
-                [1800, poisonGoblin, [null, null], [500, 500]],
-                [2000, poisonGoblin, [null, null], [500, 0]],
-                [2200, poisonGoblin, [null, weaponBlowDart], [0, 500]],
-            ],
-            [
-                [200, poisonGoblin, [weaponCobaltSword, null], [0, 500]],
-                [200, goblin, [weaponGoldSword, null], [500, 500]],
-                [800, bigGoblin, [weaponGoldSword, null], [250, 500]],
-                [1800, goblin, [weaponCopperSword, null], [0, 500]],
-                [1800, poisonGoblin, [weaponRhodoniteSword, null], [500, 500]],
-                [2400, bigGoblin, [weaponCobaltSword, null], [250, 0]],
-            ],
-        ],
+        waves: [[[200, goblin, [weaponCopperSword, null], [0, 0]],[1200, goblin, [weaponGoldSword, null], [0, 0]],[1200, goblin, [weaponRhodoniteSword, null], [500, 500]],[2200, goblin, [weaponGoldSword, null], [0, 0]],[2200, goblin, [weaponCobaltSword, null], [500, 500]],[2200, poisonGoblin, [null, weaponBlowDart], [500, 0]],],[[200, poisonGoblin, [null, null], [0, 0]],[400, poisonGoblin, [null, null], [500, 500]],[600, poisonGoblin, [null, null], [500, 0]],[800, poisonGoblin, [null, weaponBlowDart], [0, 500]],[1600, poisonGoblin, [null, null], [0, 0]],[1800, poisonGoblin, [null, null], [500, 500]],[2000, poisonGoblin, [null, null], [500, 0]],[2200, poisonGoblin, [null, weaponBlowDart], [0, 500]],],[[200, poisonGoblin, [weaponCobaltSword, null], [0, 500]],[200, goblin, [weaponGoldSword, null], [500, 500]],[800, bigGoblin, [weaponGoldSword, null], [250, 500]],[1800, goblin, [weaponCopperSword, null], [0, 500]],[1800, poisonGoblin, [weaponRhodoniteSword, null], [500, 500]],[2400, bigGoblin, [weaponCobaltSword, null], [250, 0]],],],
         shopItems: {weapons: [weaponBattleAxe, weaponTriblade], bows: [weaponGoldBow, weaponCrossbow]},
     },
     {
@@ -2920,7 +2961,63 @@ const levelData = [
                 [1100, ghostGoblin, [weaponGoblinEmeraldSword, null], [500, 300]],
             ],
         ],
-        shopItems: {weapons: [weaponGoldenLongSword, weaponSpiritSword], bows: [weaponSoulBow, weaponBoomerang]},
+        shopItems: {weapons: [weaponFlameSword, weaponMineralSword], bows: [weaponHugeHandCannon, weaponPentaShotBow]},
+    },
+    {
+        background: gameTextures.warBackground,
+        foreground: gameTextures.warForeground,
+        transition: [[gameTextures.missingTexture, 10], ],
+        waves: [
+            [
+                [200, shamanGoblin, [null, null], [0, 0]], 
+                [250, shamanGoblin, [null, null], [500, 500]], 
+                [300, shamanGoblin, [null, null], [500, 0]], 
+                [350, shamanGoblin, [null, null], [0, 500]], 
+                [400, shamanGoblin, [null, null], [0, 250]], 
+                [450, shamanGoblin, [null, null], [250, 500]], 
+                [500, shamanGoblin, [null, null], [500, 250]], 
+                [550, shamanGoblin, [null, null], [250, 0]], 
+                [750, berserkerGoblin, [weaponDualGoldSword, null], [250, 500]],
+            ],
+            [
+                [200, skeletonGoblin, [weaponDualGoldSword, null], [0, 250]], 
+                [250, skeletonGoblin, [weaponGoblinDiamondSword, null], [250, 500]], 
+                [300, skeletonGoblin, [weaponLongSword, null], [500, 250]], 
+                [350, skeletonGoblin, [weaponGoblinEmeraldSword, null], [250, 0]], 
+                [1000, shamanGoblin, [null, null], [0, 0]], 
+                [1000, skeletonGoblin, [null, weaponBoomStick], [500, 500]], 
+                [1050, archerGoblin, [null, weaponDiamondBow], [500, 0]], 
+                [1050, skeletonGoblin, [null, weaponDiamondBow], [0, 500]], 
+            ],
+            [
+                [200, skeletonGoblin, [weaponDualGoldSword, weaponMetalBow], [0, 250]],
+                [250, skeletonGoblin, [weaponGoblinEmeraldSword, weaponMetalBow], [500, 250]],
+                [325, skeletonGoblin, [weaponLongSword, null], [0, 0]],
+                [350, skeletonGoblin, [weaponGoblinDiamondSword, null], [0, 500]],
+                [375, goblin, [weaponGoblinDiamondSword, null], [500, 500]],
+                [400, skeletonGoblin, [weaponDualGoldSword, null], [500, 0]],
+                [1000, skeletonGoblin, [weaponGoblinDiamondSword, null], [0, 50]],
+                [1000, ghostGoblin, [weaponDualGoldSword, null], [50, 0]],
+                [1100, ghostGoblin, [weaponGoblinEmeraldSword, null], [50, 500]],
+                [1100, ghostGoblin, [weaponLongSword, null], [0, 450]],
+                [1200, skeletonGoblin, [weaponDualGoldSword, null], [450, 500]],
+                [1200, goblin, [weaponGoblinDiamondSword, null], [500, 450]],
+                [1300, goblin, [weaponGoblinEmeraldSword, null], [450, 0]],
+                [1300, skeletonGoblin, [weaponLongSword, null], [500, 50]],
+            ],
+            [
+                [200, shamanGoblin, [null, null], [0, 0]], 
+                [250, shamanGoblin, [null, null], [500, 500]], 
+                [300, shamanGoblin, [null, null], [500, 0]], 
+                [350, shamanGoblin, [null, null], [0, 500]], 
+                [400, shamanGoblin, [null, null], [0, 250]], 
+                [450, shamanGoblin, [null, null], [250, 500]], 
+                [500, shamanGoblin, [null, null], [500, 250]], 
+                [550, shamanGoblin, [null, null], [250, 0]], 
+                [750, berserkerGoblin, [weaponDualGoldSword, null], [250, 500]],
+            ],
+        ],
+        shopItems: {weapons: [weaponFlameSword, weaponMineralSword], bows: [weaponHugeHandCannon, weaponPentaShotBow]},
     },
 ];
 
@@ -3115,7 +3212,7 @@ function fillMouseHistoryWithBlanks() {
 // boots up game
 function bootGame() {
     settings.hasShownTransition = false;
-    settings.currentLevel = 8;
+    settings.currentLevel = 9;
     settings.currentWave = 0;
     amountSummoned = 0;
     stillEnemiesToSummon = true;
