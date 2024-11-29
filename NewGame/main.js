@@ -213,6 +213,10 @@ const gameTextures = {
     weaponPentaShotBowFull: makeImage('textures/weapons/pentaShotBowFull.png'),
     weaponHugeHandCannon: makeImage('textures/weapons/hugeHandCannon.png'),
     weaponHugeHandCannonFull: makeImage('textures/weapons/hugeHandCannonFull.png'),
+    weaponTriBombBow: makeImage('textures/weapons/triBombBow.png'),
+    weaponTriBombBowFull: makeImage('textures/weapons/triBombBowFull.png'),
+    weaponDoubleBoomStick: makeImage('textures/weapons/doubleBoomStick.png'),
+    weaponDoubleBoomStickFull: makeImage('textures/weapons/doubleBoomStickFull.png'),
     bulletArrow: makeImage('textures/weapons/arrow.png'),
     bulletGoldArrow: makeImage('textures/weapons/goldArrow.png'),
     bulletCrossArrow: makeImage('textures/weapons/crossArrow.png'),
@@ -232,6 +236,7 @@ const gameTextures = {
     bulletSoulArrow: makeImage('textures/weapons/soulArrow.png'),
     bulletPentaArrow: makeImage('textures/weapons/pentaArrow.png'),
     bulletHugeCannonBall: makeImage('textures/weapons/hugeCannonBall.png'),
+    bulletTriBombArrow: makeImage('textures/weapons/triBombArrow.png'),
     heart: makeImage('textures/drops/heart.png'),
     explosion: makeImage('textures/explosion.png'),
     poisonTile: makeImage('textures/poisonTile.png'),
@@ -705,6 +710,29 @@ class pentaArrow extends arrow {
     };
 };
 
+class triBombArrow extends arrow {
+    constructor() {
+        super();
+        this.sizeX = 100;
+        this.sizeY = 100;
+        this.boxSizeX = 50;
+        this.boxSizeY = 50;
+        this.useTexture = gameTextures.bulletTriBombArrow;
+        this.damage = 5;
+    };
+    async onImpact(hit) {
+        const effect = new effectExplosion;
+        effect.x = this.x;
+        effect.y = this.y;
+        effect.sizeX = 125;
+        effect.sizeY = 125;
+        effect.range = 63;
+        effect.damage = 100;
+        effect.activate();
+        currentForegrounds.push(effect);
+    }; 
+};
+
 class weaponBow extends weaponHands {
     constructor() {
         super();
@@ -762,6 +790,7 @@ class weaponGoldBow extends weaponBow {
 class weaponMultiShotBow extends weaponBow {
     constructor() {
         super();
+        this.bulletMultiplier = 3;
         this.sizeX = 100;
         this.sizeY = 50;
         this.fireRate = 1250;
@@ -775,7 +804,7 @@ class weaponMultiShotBow extends weaponBow {
         const dY = y2 - y1;
         const changeBy = (Math.PI/36)
         let angle = Math.atan2(dY, dX) + (Math.PI / 2) - changeBy;
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < this.bulletMultiplier; i++) {
             const shotArrow = new this.useBullet;
             shotArrow.source = source;
             const averageSize = (shotArrow.boxSizeX + shotArrow.boxSizeY) / 2;
@@ -863,6 +892,7 @@ class weaponHandCannon extends weaponBow {
 class weaponMirror extends weaponBow {
     constructor() {
         super();
+        this.bulletMultiplier = 3;
         this.fireRate = 0;
         this.useBullet = bulletLight;
         this.texture = gameTextures.weaponMirror;
@@ -873,7 +903,7 @@ class weaponMirror extends weaponBow {
         const dX = x2 - x1;
         const dY = y2 - y1;
         let angle = Math.atan2(dY, dX) + (Math.PI / 2);
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < this.bulletMultiplier; i++) {
             setTimeout(() => {
                 const shotArrow = new this.useBullet;
                 shotArrow.source = source;
@@ -923,6 +953,7 @@ class weaponClusterBow extends weaponBow {
 class weaponBoomStick extends weaponBow {
     constructor() {
         super();
+        this.bulletMultiplier = 8;
         this.sizeX = 100;
         this.sizeY = 100;
         this.yOffset = -100;
@@ -936,7 +967,7 @@ class weaponBoomStick extends weaponBow {
         const dX = x2 - x1;
         const dY = y2 - y1;
         let angle = Math.atan2(dY, dX) + (Math.PI / 2);
-        for (let i = 0; i < 8; i++) {
+        for (let i = 0; i < this.bulletMultiplier; i++) {
             const shotArrow = new this.useBullet;
             shotArrow.source = source;
             const averageSize = (shotArrow.boxSizeX + shotArrow.boxSizeY) / 2;
@@ -1003,6 +1034,7 @@ class weaponHugeHandCannon extends weaponBow {
 class weaponPentaShotBow extends weaponBow {
     constructor() {
         super();
+        this.bulletMultiplier = 5;
         this.sizeX = 100;
         this.sizeY = 50;
         this.fireRate = 1000;
@@ -1016,7 +1048,7 @@ class weaponPentaShotBow extends weaponBow {
         const dY = y2 - y1;
         const changeBy = (Math.PI/72)
         let angle = Math.atan2(dY, dX) + (Math.PI / 2) - (changeBy*2);
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < this.bulletMultiplier; i++) {
             const shotArrow = new this.useBullet;
             shotArrow.source = source;
             const averageSize = (shotArrow.boxSizeX + shotArrow.boxSizeY) / 2;
@@ -1024,6 +1056,65 @@ class weaponPentaShotBow extends weaponBow {
             shotArrow.y = y1 + (-1 * (this.yOffset) - averageSize) * Math.sin(angle - Math.PI / 2);
             shotArrow.angle = angle;
             angle += changeBy;
+            currentBullets.push(shotArrow);
+        };
+    };
+};
+
+class weaponTriBombBow extends weaponBow {
+    constructor() {
+        super();
+        this.bulletMultiplier = 3;
+        this.sizeX = 100;
+        this.sizeY = 50;
+        this.fireRate = 1500;
+        this.useBullet = triBombArrow;
+        this.texture = gameTextures.weaponTriBombBow;
+        this.fullTexture = gameTextures.weaponTriBombBowFull;
+        this.displayName = 'Tri-Bomb Bow';
+    };
+    shoot(x1, x2, y1, y2, source) {
+        const dX = x2 - x1;
+        const dY = y2 - y1;
+        const changeBy = (Math.PI/36)
+        let angle = Math.atan2(dY, dX) + (Math.PI / 2) - changeBy;
+        for (let i = 0; i < this.bulletMultiplier; i++) {
+            const shotArrow = new this.useBullet;
+            shotArrow.source = source;
+            const averageSize = (shotArrow.boxSizeX + shotArrow.boxSizeY) / 2;
+            shotArrow.x = x1 + (-1 * (this.yOffset) - averageSize) * Math.cos(angle - Math.PI / 2);
+            shotArrow.y = y1 + (-1 * (this.yOffset) - averageSize) * Math.sin(angle - Math.PI / 2);
+            shotArrow.angle = angle;
+            angle += changeBy;
+            currentBullets.push(shotArrow);
+        };
+    };
+};
+
+class weaponDoubleBoomStick extends weaponBow {
+    constructor() {
+        super();
+        this.bulletMultiplier = 16;
+        this.sizeX = 100;
+        this.sizeY = 100;
+        this.yOffset = -100;
+        this.fireRate = 1200;
+        this.useBullet = boomStickBullet;
+        this.texture = gameTextures.weaponDoubleBoomStick;
+        this.fullTexture = gameTextures.weaponDoubleBoomStickFull;
+        this.displayName = 'Double Boom Stick';
+    };
+    shoot(x1, x2, y1, y2, source) {
+        const dX = x2 - x1;
+        const dY = y2 - y1;
+        let angle = Math.atan2(dY, dX) + (Math.PI / 2);
+        for (let i = 0; i < this.bulletMultiplier; i++) {
+            const shotArrow = new this.useBullet;
+            shotArrow.source = source;
+            const averageSize = (shotArrow.boxSizeX + shotArrow.boxSizeY) / 2;
+            shotArrow.x = x1 + (-1 * (this.yOffset) - averageSize) * Math.cos(angle - Math.PI / 2);
+            shotArrow.y = y1 + (-1 * (this.yOffset) - averageSize) * Math.sin(angle - Math.PI / 2);
+            shotArrow.angle = angle + ((Math.floor(Math.random() * 1400) - 700) * .0001);
             currentBullets.push(shotArrow);
         };
     };
@@ -1710,7 +1801,7 @@ class playerProps {
     shooting = false;
     currentWeapon = 'sword';
     weaponData = new weaponMineralSword;
-    bowData = new weaponPentaShotBow;
+    bowData = new weaponDoubleBoomStick;
 };
 
 function fillMap(sources, sSX, sSY, pathMap) {
@@ -2361,7 +2452,6 @@ class ghostGoblin extends goblin {
         this.y = newY;
     };
     getUseTexture() {
-        console.log(!this.hits)
         if (this.health > 66) {
             this.useTexture = this.fullHealth;
         } else if (this.health <= 66 && this.health > 33) {
@@ -2969,17 +3059,6 @@ const levelData = [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
         transition: [[gameTextures.missingTexture, 10], ],
         waves: [
             [
-                [200, shamanGoblin, [null, null], [0, 0]], 
-                [250, shamanGoblin, [null, null], [500, 500]], 
-                [300, shamanGoblin, [null, null], [500, 0]], 
-                [350, shamanGoblin, [null, null], [0, 500]], 
-                [400, shamanGoblin, [null, null], [0, 250]], 
-                [450, shamanGoblin, [null, null], [250, 500]], 
-                [500, shamanGoblin, [null, null], [500, 250]], 
-                [550, shamanGoblin, [null, null], [250, 0]], 
-                [750, berserkerGoblin, [weaponDualGoldSword, null], [250, 500]],
-            ],
-            [
                 [200, skeletonGoblin, [weaponDualGoldSword, null], [0, 250]], 
                 [250, skeletonGoblin, [weaponGoblinDiamondSword, null], [250, 500]], 
                 [300, skeletonGoblin, [weaponLongSword, null], [500, 250]], 
@@ -3209,6 +3288,15 @@ function fillMouseHistoryWithBlanks() {
     };
 };
 
+// clears data from vital lists
+function clearVitalLists() {
+    currentEnemies.splice(0, currentEnemies.length);
+    currentBullets.splice(0, currentBullets.length);
+    currentDropItems.splice(0, currentDropItems.length);
+    currentForegrounds.splice(0, currentForegrounds.length);
+    currentFloorgrounds.splice(0, currentFloorgrounds.length);
+};
+
 // boots up game
 function bootGame() {
     settings.hasShownTransition = false;
@@ -3218,11 +3306,7 @@ function bootGame() {
     stillEnemiesToSummon = true;
     gameClock = 0;
     usePlayerProps = new playerProps();
-    currentEnemies.splice(0, currentEnemies.length);
-    currentBullets.splice(0, currentBullets.length);
-    currentDropItems.splice(0, currentDropItems.length);
-    currentForegrounds.splice(0, currentForegrounds.length);
-    currentFloorgrounds.splice(0, currentFloorgrounds.length);
+    clearVitalLists();
     fillMouseHistoryWithBlanks();
 
     return new Promise((success) => {
@@ -3263,11 +3347,7 @@ function reloadGame() {
     usePlayerProps.mouseHistory = [];
     fillMouseHistoryWithBlanks();
 
-    currentEnemies.splice(0, currentEnemies.length);
-    currentBullets.splice(0, currentBullets.length);
-    currentDropItems.splice(0, currentDropItems.length);
-    currentForegrounds.splice(0, currentForegrounds.length);
-    currentFloorgrounds.splice(0, currentFloorgrounds.length);
+    clearVitalLists();
 };
 
 // handles setting key movment
@@ -3834,6 +3914,7 @@ async function runGame() {
         await makeLoadingScreen();
         await bootGame();
         while (true) {
+            clearVitalLists();
             if (!settings.hasShownTransition) {
                 await playTransition();
                 settings.hasShownTransition = true;
