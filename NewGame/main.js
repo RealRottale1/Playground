@@ -41,41 +41,55 @@ function inBounds(x, y) {
 };
 
 function lineIntersects(x1, y1, x2, y2, xMin, yMin, xMax, yMax) {
-    function ccw(x1, y1, x2, y2, x3, y3) {
-        const crossProduct = (y3 - y1) * (x2 - x1) - (y2 - y1) * (x3 - x1);
-        if (crossProduct === 0) {
-            // Check if x3, y3 is collinear and lies between x1, y1 and x2, y2
-            return (x3 >= Math.min(x1, x2) && x3 <= Math.max(x1, x2) &&
-                    y3 >= Math.min(y1, y2) && y3 <= Math.max(y1, y2));
+    // Helper to find intersection of two segments
+    function segmentIntersection(p1, p2, q1, q2) {
+        const A1 = p2[1] - p1[1];
+        const B1 = p1[0] - p2[0];
+        const C1 = A1 * p1[0] + B1 * p1[1];
+
+        const A2 = q2[1] - q1[1];
+        const B2 = q1[0] - q2[0];
+        const C2 = A2 * q1[0] + B2 * q1[1];
+
+        const determinant = A1 * B2 - A2 * B1;
+
+        if (Math.abs(determinant) < 1e-9) {
+            // Lines are parallel or collinear
+            return false;
         };
-        return crossProduct > 0;
+
+        const intersectX = (B2 * C1 - B1 * C2) / determinant;
+        const intersectY = (A1 * C2 - A2 * C1) / determinant;
+
+        // Check if the intersection point is within both segments
+        if (
+            Math.min(p1[0], p2[0]) <= intersectX && intersectX <= Math.max(p1[0], p2[0]) &&
+            Math.min(p1[1], p2[1]) <= intersectY && intersectY <= Math.max(p1[1], p2[1]) &&
+            Math.min(q1[0], q2[0]) <= intersectX && intersectX <= Math.max(q1[0], q2[0]) &&
+            Math.min(q1[1], q2[1]) <= intersectY && intersectY <= Math.max(q1[1], q2[1])
+        ) {
+            return true;
+        };
+
+        return false;
     };
 
-    function intersect(x1, y1, x2, y2, x3, y3, x4, y4) {
-        function onSegment(px, py, qx, qy, rx, ry) {
-            return (rx >= Math.min(px, qx) && rx <= Math.max(px, qx) &&
-                    ry >= Math.min(py, qy) && ry <= Math.max(py, qy));
+    // Check the four edges of the rectangle
+    const rectEdges = [
+        [[xMin, yMin], [xMin, yMax]], // Left edge
+        [[xMin, yMax], [xMax, yMax]], // Bottom edge
+        [[xMax, yMax], [xMax, yMin]], // Right edge
+        [[xMax, yMin], [xMin, yMin]]  // Top edge
+    ];
+    const line = [[x1, y1], [x2, y2]];
+    for (const edge of rectEdges) {
+        if (segmentIntersection(line[0], line[1], edge[0], edge[1])) {
+            return true;
         };
-
-        return (
-            (ccw(x1, y1, x3, y3, x4, y4) !== ccw(x2, y2, x3, y3, x4, y4) &&
-             ccw(x1, y1, x2, y2, x3, y3) !== ccw(x1, y1, x2, y2, x4, y4)) ||
-            // Handle collinear overlap
-            onSegment(x1, y1, x2, y2, x3, y3) ||
-            onSegment(x1, y1, x2, y2, x4, y4) ||
-            onSegment(x3, y3, x4, y4, x1, y1) ||
-            onSegment(x3, y3, x4, y4, x2, y2)
-        );
     };
-
-    // Check if line intersects any of the rectangle's edges
-    return (
-        intersect(x1, y1, x2, y2, xMin, yMin, xMin, yMax) || // Left edge
-        intersect(x1, y1, x2, y2, xMin, yMax, xMax, yMax) || // Bottom edge
-        intersect(x1, y1, x2, y2, xMax, yMax, xMax, yMin) || // Right edge
-        intersect(x1, y1, x2, y2, xMax, yMin, xMin, yMin)    // Top edge
-    );
+    return false;
 };
+
 
 function getDistance(point1, point2) {
     const dX = (point2.x - point1.x);
@@ -177,6 +191,12 @@ const gameTextures = {
     weaponSpiritSword: makeImage('textures/weapons/spiritSword.png'),
     weaponFlameSword: makeImage('textures/weapons/flameSword.png'),
     weaponMineralSword: makeImage('textures/weapons/mineralSword.png'),
+    weaponRocketMace: makeImage('textures/weapons/rocketMace.png'),
+    weaponLongRubySword: makeImage('textures/weapons/longRubySword.png'),
+    weaponRubyDiamondSword: makeImage('textures/weapons/rubyDiamondSword.png'),
+    weaponMagmaSword: makeImage('textures/weapons/magmaSword.png'),
+    weaponLongSteelSword: makeImage('textures/weapons/longSteelSword.png'),
+    weaponObsidianSword: makeImage('textures/weapons/obsidianSword.png'),
     weaponBow: makeImage('textures/weapons/bow.png'),
     weaponBowFull: makeImage('textures/weapons/bowFull.png'),
     weaponGoldBow: makeImage('textures/weapons/goldBow.png'),
@@ -250,6 +270,8 @@ const gameTextures = {
     castleForeground: makeImage('textures/areas/castleForeground.png'),
     warBackground: makeImage('textures/areas/warBackground.png'),
     warForeground: makeImage('textures/areas/warForeground.png'),
+    bossCastleBackground: makeImage('textures/areas/bossCastleBackground.png'),
+    bossCastleForeground: makeImage('textures/areas/bossCastleForeground.png'),
     shopBackground1: makeImage('textures/shopBackground/background1.png'),
 };
 
@@ -1102,7 +1124,7 @@ class weaponDoubleBoomStick extends weaponBow {
         this.useBullet = boomStickBullet;
         this.texture = gameTextures.weaponDoubleBoomStick;
         this.fullTexture = gameTextures.weaponDoubleBoomStickFull;
-        this.displayName = 'Double Boom Stick';
+        this.displayName = 'Dual Boom Stick';
     };
     shoot(x1, x2, y1, y2, source) {
         const dX = x2 - x1;
@@ -1715,6 +1737,97 @@ class weaponMineralSword extends weaponHands {
     };
 };
 
+class weaponRocketMace extends weaponHands {
+    constructor() {
+        super();
+        this.swingable = true;
+        this.canBlock = true;
+        this.attackRange = 100;
+        this.damage = 75;
+        this.swingDamge = 75;
+        this.swingWeight = 2;
+        this.attackDuration = 500;
+        this.attackCoolDown = 600;
+        this.texture = gameTextures.weaponRocketMace;
+        this.displayName = "Rocket Mace";
+        this.sizeX = 100;
+        this.sizeY = 100;
+        this.offset = -75;
+    };
+};
+
+class weaponLongRubySword extends weaponHands {
+    constructor() {
+        super();
+        this.swingable = true;
+        this.canBlock = true;
+        this.attackRange = 175;
+        this.damage = 200;
+        this.swingDamge = 45;
+        this.swingWeight = 3;
+        this.attackDuration = 600;
+        this.attackCoolDown = 600;
+        this.texture = gameTextures.weaponLongRubySword;
+        this.displayName = "Long Ruby Sword";
+        this.sizeX = 100;
+        this.sizeY = 200;
+        this.offset = -75;
+    };
+};
+
+class weaponRubyDiamondSword extends weaponGoldSword {
+    constructor() {
+        super();
+        this.texture = gameTextures.weaponRubyDiamondSword;
+        this.displayName = 'Ruby Diamond Sword';
+        this.attackRange = 75;
+        this.damage = 100;
+        this.swingDamge = 15;
+        this.attackDuration = 800;
+        this.attackCoolDown = 1000;
+    };
+};
+
+class weaponMagmaSword extends weaponGoldSword {
+    constructor() {
+        super();
+        this.texture = gameTextures.weaponMagmaSword;
+        this.displayName = 'Magma Sword';
+        this.attackRange = 75;
+        this.damage = 125;
+        this.swingDamge = 20;
+        this.attackDuration = 800;
+        this.attackCoolDown = 1000;
+    };
+};
+
+class weaponLongSteelSword extends weaponGoldSword {
+    constructor() {
+        super();
+        this.texture = gameTextures.weaponLongSteelSword;
+        this.displayName = 'Long Steel Sword';
+        this.attackRange = 100;
+        this.damage = 100;
+        this.swingDamge = 20;
+        this.attackDuration = 800;
+        this.attackCoolDown = 1000;
+        this.offset = -75;
+    };
+};
+
+class weaponObsidianSword extends weaponGoldSword {
+    constructor() {
+        super();
+        this.texture = gameTextures.weaponObsidianSword;
+        this.displayName = 'Obsidian Sword';
+        this.attackRange = 75;
+        this.damage = 105;
+        this.swingDamge = 20;
+        this.attackDuration = 800;
+        this.attackCoolDown = 1000;
+    };
+};
+
 class playerProps {
     // texture stuff
     useTexture = null;
@@ -1800,7 +1913,7 @@ class playerProps {
     canShoot = true;
     shooting = false;
     currentWeapon = 'sword';
-    weaponData = new weaponMineralSword;
+    weaponData = new weaponLongRubySword;
     bowData = new weaponDoubleBoomStick;
 };
 
@@ -2345,8 +2458,10 @@ class bombGoblin extends goblin {
         if (trueDistance <= this.bombRange) {
             this.exploding = true;
             setTimeout(() => {
-                this.exploded = true;
-                this.makeExplosion();
+                if (this.health > 0) {
+                    this.exploded = true;
+                    this.makeExplosion();
+                };
             }, this.explodeIn);
         } else {
             this.handleMovment();
@@ -3096,7 +3211,70 @@ const levelData = [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
                 [750, berserkerGoblin, [weaponDualGoldSword, null], [250, 500]],
             ],
         ],
-        shopItems: {weapons: [weaponFlameSword, weaponMineralSword], bows: [weaponHugeHandCannon, weaponPentaShotBow]},
+        shopItems: {weapons: [weaponLongRubySword, weaponRocketMace], bows: [weaponTriBombBow, weaponDoubleBoomStick]},
+    },
+    {
+        background: gameTextures.bossCastleBackground,
+        foreground: gameTextures.bossCastleForeground,
+        transition: [[gameTextures.missingTexture, 10], ],
+        waves: [
+            [
+                [200, goblin, [weaponObsidianSword, null], [250, 0]], 
+                [250, goblin, [weaponMagmaSword, null], [0, 0]], 
+                [250, goblin, [weaponRubyDiamondSword, null], [250, 0]], 
+                [250, goblin, [weaponLongSteelSword, null], [500, 0]], 
+                [300, bombGoblin, [null, null], [0, 0]], 
+                [300, bombGoblin, [null, null], [0, 250]], 
+                [300, bombGoblin, [null, null], [0, 500]], 
+                [400, archerGoblin, [weaponObsidianSword, weaponDiamondBow], [500, 250]], 
+                [550, biterGoblin, [null, null], [250, 500]],
+                [600, berserkerGoblin, [weaponMagmaSword, null], [250, 0]], 
+            ],
+            [
+                [200, archerGoblin, [null, weaponMetalBow], [0, 250]], 
+                [250, archerGoblin, [null, weaponMetalBow], [0, 200]], 
+                [250, archerGoblin, [null, weaponMetalBow], [0, 300]], 
+                [300, archerGoblin, [weaponMagmaSword, weaponMetalBow], [0, 350]], 
+                [300, archerGoblin, [null, weaponMetalBow], [0, 150]], 
+                [350, archerGoblin, [null, weaponMetalBow], [0, 400]],
+                [350, archerGoblin, [weaponObsidianSword, weaponMetalBow], [0, 100]],  
+                [400, archerGoblin, [null, weaponMetalBow], [0, 450]], 
+                [400, archerGoblin, [weaponRubyDiamondSword, weaponMetalBow], [0, 50]], 
+                [450, archerGoblin, [null, weaponMetalBow], [0, 500]],
+                [450, archerGoblin, [null, weaponMetalBow], [0, 0]],  
+
+
+                [850, bigGoblin, [weaponMagmaSword, null], [500, 0]], 
+                [850, bigGoblin, [weaponRubyDiamondSword, null], [500, 500]], 
+                [950, bigGoblin, [weaponObsidianSword, null], [500, 100]], 
+                [950, bigGoblin, [weaponMagmaSword, null], [500, 400]], 
+                [1050, bigGoblin, [weaponLongSteelSword, null], [500, 200]], 
+                [1050, bigGoblin, [weaponObsidianSword, null], [500, 300]], 
+            ],
+            [
+                [200, goblin, [weaponRubyDiamondSword, null], [0, 0]], 
+                [250, berserkerGoblin, [weaponMagmaSword, null], [0, 250]], 
+                [300, mirrorGoblin, [weaponLongSteelSword, weaponBoomStick], [0, 500]], 
+                [350, ghostGoblin, [weaponObsidianSword, null], [250, 500]], 
+                [400, archerGoblin, [weaponLongSteelSword, weaponDiamondBow], [500, 500]], 
+                [450, poisonGoblin, [weaponMagmaSword, weaponBlowDart], [500, 250]], 
+                [500, ninjaGoblin, [weaponRubyDiamondSword, null], [500, 0]], 
+                [550, shamanGoblin, [null, null], [250, 0]], 
+
+                [1050, bombGoblin, [null, null], [0, 0]], 
+                [1100, ghostGoblin, [weaponRubyDiamondSword, null], [0, 250]], 
+                [1150, bigGoblin, [weaponLongSteelSword, null], [0, 500]], 
+                [1200, berserkerGoblin, [weaponMagmaSword, null], [250, 500]], 
+                [1250, ninjaGoblin, [weaponObsidianSword, null], [500, 500]], 
+                [1300, poisonGoblin, [weaponRubyDiamondSword, weaponHandCannon], [500, 250]], 
+                [1350, shamanGoblin, [null, null], [500, 0]], 
+                [1400, biterGoblin, [null, null], [250, 0]], 
+            ],
+            [
+                [200, goblin, [weaponRubyDiamondSword, null], [0, 0]], 
+            ],
+        ],
+        shopItems: {weapons: [weaponLongRubySword, weaponRocketMace], bows: [weaponTriBombBow, weaponDoubleBoomStick]},
     },
 ];
 
@@ -3300,7 +3478,7 @@ function clearVitalLists() {
 // boots up game
 function bootGame() {
     settings.hasShownTransition = false;
-    settings.currentLevel = 9;
+    settings.currentLevel = 10;
     settings.currentWave = 0;
     amountSummoned = 0;
     stillEnemiesToSummon = true;
@@ -3789,7 +3967,25 @@ async function playLevel() {
                 const yMin = selectedEnemy.y - selectedEnemy.hitBoxY/2;
                 const yMax = selectedEnemy.y + selectedEnemy.hitBoxY/2;
 
+                /*ctx.fillStyle = 'rgb(125, 125, 125)';
+                ctx.beginPath();
+                ctx.rect(xMin, yMin, 25, 25);
+                ctx.fill();
+                ctx.closePath();
+
+                ctx.save();
+                ctx.translate(x1, y1);
+                //ctx.rotate(useAngle+ Math.PI / 2);
+                ctx.fillStyle = 'rgb(200, 200, 200)';
+                ctx.beginPath();
+                ctx.rect(0, 0, 5, 5);
+                ctx.fill();
+                ctx.closePath();
+                ctx.restore();
+
+                debugger;*/
                 if (lineIntersects(x1, y1, x2, y2, xMin, yMin, xMax, yMax)) {
+                    console.log('attacking!');
                     if ((canStab && !stabSwinging)) {
                         selectedEnemy.wasAttacked = true;
                         selectedEnemy.health -= usePlayerProps.weaponData.damage;
