@@ -154,6 +154,9 @@ const gameTextures = {
     shamanGoblinFullHealthMagic: makeImage('textures/enemies/shamanGoblin/shamanGoblin3Magic.png'),
     shamanGoblinHalfHealthMagic: makeImage('textures/enemies/shamanGoblin/shamanGoblin2Magic.png'),
     shamanGoblinNearDeathMagic: makeImage('textures/enemies/shamanGoblin/shamanGoblin1Magic.png'),
+    aldrinFullHealth: makeImage('textures/enemies/aldrin/aldrin3.png'),
+    aldrinHalfHealth: makeImage('textures/enemies/aldrin/aldrin2.png'),
+    aldrinNearDeath: makeImage('textures/enemies/aldrin/aldrin1.png'),
     weaponDefaultSword: makeImage('textures/weapons/defaultSword.png'),
     weaponMace: makeImage('textures/weapons/mace.png'),
     weaponKatana: makeImage('textures/weapons/katana.png'),
@@ -243,6 +246,7 @@ const gameTextures = {
     weaponDualSoulClusterBowFull: makeImage('textures/weapons/dualSoulClusterBowFull.png'),
     weaponUpgradedTriBombShooterBow: makeImage('textures/weapons/upgradedTriBombShooterBow.png'),
     weaponUpgradedTriBombShooterBowFull: makeImage('textures/weapons/upgradedTriBombShooterBowFull.png'),
+    weaponAldrinStaff: makeImage('textures/weapons/aldrinStaff.png'),
     bulletArrow: makeImage('textures/weapons/arrow.png'),
     bulletGoldArrow: makeImage('textures/weapons/goldArrow.png'),
     bulletCrossArrow: makeImage('textures/weapons/crossArrow.png'),
@@ -265,6 +269,7 @@ const gameTextures = {
     bulletTriBombArrow: makeImage('textures/weapons/triBombArrow.png'),
     bulletDualSoulClusterArrow: makeImage('textures/weapons/dualSoulClusterArrow.png'),
     bulletUpgradedTriBombShooterArrow: makeImage('textures/weapons/upgradedTriBombShooterArrow.png'),
+    bulletAldrinStaffMagic: makeImage('textures/weapons/aldrinStaffMagic.png'),
     heart: makeImage('textures/drops/heart.png'),
     explosion: makeImage('textures/explosion.png'),
     poisonTile: makeImage('textures/poisonTile.png'),
@@ -509,6 +514,7 @@ class throwingKinve extends arrow {
         this.boxSizeY = 25;
         this.useTexture = gameTextures.weaponThrowingKnives;
         this.damage = 25;
+        this.rotateAmount = 12.5
         this.rotation = 0;
     };
     draw() {
@@ -518,7 +524,7 @@ class throwingKinve extends arrow {
         if ((this.rotation*Math.PI/180) >= (2*Math.PI)) {
             this.rotation = 0;
         } else {
-            this.rotation += 12.5;
+            this.rotation += this.rotateAmount;
         };
         ctx.save();
         ctx.translate(this.x, this.y);
@@ -810,6 +816,20 @@ class dualSoulClusterArrow extends arrow {
         };
     };
 };
+
+class aldrinStaffMagic extends throwingKinve {
+    constructor() {
+        super();
+        this.sizeX = 25;
+        this.sizeY = 25;
+        this.boxSizeX = 12.5;
+        this.boxSizeY = 12.5;
+        this.useTexture = gameTextures.bulletAldrinStaffMagic;
+        this.damage = 200;
+        this.rotateAmount = 1.5625
+        this.rotation = 0;
+    };
+}
 
 
 class weaponBow extends weaponHands {
@@ -1247,7 +1267,7 @@ class weaponUpgradedTriBombShooterBow extends weaponBow {
         const dX = x2 - x1;
         const dY = y2 - y1;
         const changeBy = (Math.PI/36)
-        let angle = Math.atan2(dY, dX) + (Math.PI / 2) - changeBy*2;
+        let angle = Math.atan2(dY, dX) + (Math.PI / 2) - changeBy;
         for (let i = 0; i < this.bulletMultiplier; i++) {
             const shotArrow = new this.useBullet;
             shotArrow.source = source;
@@ -1261,6 +1281,36 @@ class weaponUpgradedTriBombShooterBow extends weaponBow {
     };
 };
 
+class weaponAldrinStaff extends weaponBow {
+    constructor() {
+        super();
+        this.bulletMultiplier = 3;
+        this.sizeX = 75;
+        this.sizeY = 75;
+        this.yOffset = -150;
+        this.fireRate = 500;
+        this.useBullet = aldrinStaffMagic;
+        this.texture = gameTextures.weaponAldrinStaff;
+        this.fullTexture = null;
+        this.displayName = "Aldrin's Staff";
+    };
+    shoot(x1, x2, y1, y2, source) {
+        const dX = x2 - x1;
+        const dY = y2 - y1;
+        const changeBy = (Math.PI/9)
+        let angle = Math.atan2(dY, dX) + (Math.PI / 2) - changeBy;
+        for (let i = 0; i < this.bulletMultiplier; i++) {
+            const shotArrow = new this.useBullet;
+            shotArrow.source = source;
+            const averageSize = (shotArrow.boxSizeX + shotArrow.boxSizeY) / 2;
+            shotArrow.x = x1 + (-1 * (this.yOffset) - averageSize) * Math.cos(angle - Math.PI / 2);
+            shotArrow.y = y1 + (-1 * (this.yOffset) - averageSize) * Math.sin(angle - Math.PI / 2);
+            shotArrow.angle = angle;
+            angle += changeBy;
+            currentBullets.push(shotArrow);
+        };
+    };
+};
 
 class weaponDefaultSword extends weaponHands {
     constructor() {
@@ -2361,7 +2411,6 @@ class goblin {
     bowData = null;
     adjustmentSpeed = 25;
     minAdjustSpeed = 10;
-
     // movment/tick stuff
     maxSpeed = 1.5;
     movementSpeed = 1.5;
@@ -2546,6 +2595,88 @@ class goblin {
         } else {
             this.moving = true;
             this.handleMovment();
+        };
+    };
+};
+
+class aldrin extends goblin {
+    constructor() {
+        super();
+        this.hitBoxX = 50;
+        this.hitBoxY = 50;
+        this.sizeX = 200;
+        this.sizeY = 200;
+        this.fullHealth = gameTextures.aldrinFullHealth;
+        this.halfHealth = gameTextures.aldrinHalfHealth;
+        this.nearDeath = gameTextures.aldrinNearDeath;
+        this.starterHealth = 10000; // 10,000
+        this.health = 10000;
+        this.currentWeapon = 'sword';
+        this.weaponData = new weaponHands;
+        this.bowData = null;
+
+        this.atPosition = false;
+        this.attackTick = 0;
+        this.possibleAttacks = {
+            bowAttack: {
+                moveTo: {
+                    x: 250,
+                    y: 100
+                },
+                attackDuration: 1000, // 1 = 10
+                attackSetUp: () => {
+                    this.currentWeapon = 'bow';
+                    this.weaponData = null;
+                    this.bowData = new weaponAldrinStaff;
+                },
+                attackFunction: () => {
+                    if (this.attackTick <= 100) {
+                        return;
+                    };
+                    if (this.canShoot) {
+                        this.superShoot();
+                    };
+                },
+            },
+        };
+        this.currentAttackInfo = this.possibleAttacks.bowAttack;
+    };
+
+    superShoot() {
+        super.shoot();
+    };
+
+    tickAction() {
+        const trueDistance = this.criticalTickAction();
+
+        if (!this.atPosition) {
+            this.move(this.currentAttackInfo.moveTo);
+        } else {
+            if (this.attackTick === 0) {
+                this.currentAttackInfo.attackSetUp();
+            };
+            this.attackTick += 1;
+            if (this.attackTick >= this.currentAttackInfo.attackDuration) {
+                // Change to new attack
+                console.log('done!');
+            } else {
+                this.currentAttackInfo.attackFunction();
+            };
+        };
+    };
+
+    move(endPos) {
+        //console.log(endPos.y);
+        const [dX, dY, distance] = getDistance(endPos, this);
+        //console.log(dX+','+dY);
+        const nX = dX / distance;
+        const nY = dY / distance;
+        this.x -= nX * this.movementSpeed;
+        this.y -= nY * this.movementSpeed;
+        const [nDX, nDY, newDistance] = getDistance(endPos, this);
+        console.log(newDistance);
+        if (newDistance <= 5) {
+            this.atPosition = true;
         };
     };
 };
@@ -3434,6 +3565,17 @@ const levelData = [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
         ],
         shopItems: {weapons: [weaponLongRubySword, weaponRocketMace], bows: [weaponTriBombBow, weaponDoubleBoomStick]},
     },
+    {
+        background: gameTextures.bossCastleBackground,
+        foreground: gameTextures.bossCastleForeground,
+        transition: [[gameTextures.missingTexture, 10], ],
+        waves: [
+            [
+                [200, aldrin, [null, null], [250, 0]], 
+            ],
+        ],
+        shopItems: null,
+    },
 ];
 
 
@@ -3636,7 +3778,7 @@ function clearVitalLists() {
 // boots up game
 function bootGame() {
     settings.hasShownTransition = false;
-    settings.currentLevel = 10;
+    settings.currentLevel = 11;
     settings.currentWave = 0;
     amountSummoned = 0;
     stillEnemiesToSummon = true;
@@ -4048,7 +4190,7 @@ async function playLevel() {
                         };
                     };
                 };
-            } else {
+            } else if (currentEnemies.length <= 0){
                 console.log('Next Level');
                 settings.currentLevel += 1;
                 break;
@@ -4303,3 +4445,4 @@ async function runGame() {
 
 runGame();
 // End
+
