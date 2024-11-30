@@ -197,6 +197,8 @@ const gameTextures = {
     weaponMagmaSword: makeImage('textures/weapons/magmaSword.png'),
     weaponLongSteelSword: makeImage('textures/weapons/longSteelSword.png'),
     weaponObsidianSword: makeImage('textures/weapons/obsidianSword.png'),
+    weaponYourSword: makeImage('textures/weapons/yourSword.png'),
+    weaponYourHammer: makeImage('textures/weapons/yourHammer.png'),
     weaponBow: makeImage('textures/weapons/bow.png'),
     weaponBowFull: makeImage('textures/weapons/bowFull.png'),
     weaponGoldBow: makeImage('textures/weapons/goldBow.png'),
@@ -237,6 +239,10 @@ const gameTextures = {
     weaponTriBombBowFull: makeImage('textures/weapons/triBombBowFull.png'),
     weaponDoubleBoomStick: makeImage('textures/weapons/doubleBoomStick.png'),
     weaponDoubleBoomStickFull: makeImage('textures/weapons/doubleBoomStickFull.png'),
+    weaponDualSoulClusterBow: makeImage('textures/weapons/dualSoulClusterBow.png'),
+    weaponDualSoulClusterBowFull: makeImage('textures/weapons/dualSoulClusterBowFull.png'),
+    weaponUpgradedTriBombShooterBow: makeImage('textures/weapons/upgradedTriBombShooterBow.png'),
+    weaponUpgradedTriBombShooterBowFull: makeImage('textures/weapons/upgradedTriBombShooterBowFull.png'),
     bulletArrow: makeImage('textures/weapons/arrow.png'),
     bulletGoldArrow: makeImage('textures/weapons/goldArrow.png'),
     bulletCrossArrow: makeImage('textures/weapons/crossArrow.png'),
@@ -257,6 +263,8 @@ const gameTextures = {
     bulletPentaArrow: makeImage('textures/weapons/pentaArrow.png'),
     bulletHugeCannonBall: makeImage('textures/weapons/hugeCannonBall.png'),
     bulletTriBombArrow: makeImage('textures/weapons/triBombArrow.png'),
+    bulletDualSoulClusterArrow: makeImage('textures/weapons/dualSoulClusterArrow.png'),
+    bulletUpgradedTriBombShooterArrow: makeImage('textures/weapons/upgradedTriBombShooterArrow.png'),
     heart: makeImage('textures/drops/heart.png'),
     explosion: makeImage('textures/explosion.png'),
     poisonTile: makeImage('textures/poisonTile.png'),
@@ -755,6 +763,55 @@ class triBombArrow extends arrow {
     }; 
 };
 
+class dualSoulClusterArrow extends arrow {
+    constructor() {
+        super();
+        this.ticksAfterShot = 0;
+        this.ticksBeforeFollow = 25;
+        this.useTexture = gameTextures.bulletDualSoulClusterArrow;
+        this.damage = 10;
+    };
+    onStep() {
+        if (this.ticksAfterShot < this.ticksBeforeFollow) {
+            this.ticksAfterShot += 1;
+        } else {
+            const allEnemyDistances = [];
+            const currentEnemyLength = currentEnemies.length;
+            if (currentEnemyLength <= 0) {
+                return;
+            };
+    
+            for (let i = 0; i < currentEnemyLength; i++) {
+                const enemy = currentEnemies[i];
+                const [dX, dY, distance] = getDistance(this, enemy);
+                allEnemyDistances.push([distance, dX, dY]);
+            };
+    
+            let nearestIndex = 0;
+            if (currentEnemyLength > 1) {
+                for (let i = 0; i < currentEnemyLength; i++) {
+                    if (allEnemyDistances[i][0] <= allEnemyDistances[nearestIndex][0]) {
+                        nearestIndex = i;
+                    };
+                };
+            };
+    
+            this.angle = (Math.atan2(allEnemyDistances[nearestIndex][2], allEnemyDistances[nearestIndex][1]) + Math.PI / 2);
+        };
+    };
+    async onImpact(hit) {
+        for (let i = 0; i < 8; i++) {
+            const shotArrow = new clusterShard;
+            shotArrow.source = this.source;
+            shotArrow.x = this.x;
+            shotArrow.y = this.y;
+            shotArrow.angle = this.angle + (i*(45*Math.PI/180));
+            currentBullets.push(shotArrow);
+        };
+    };
+};
+
+
 class weaponBow extends weaponHands {
     constructor() {
         super();
@@ -1141,6 +1198,69 @@ class weaponDoubleBoomStick extends weaponBow {
         };
     };
 };
+
+class weaponDualSoulClusterBow extends weaponBow {
+    constructor() {
+        super();
+        this.bulletMultiplier = 2;
+        this.sizeX = 200;
+        this.sizeY = 100;
+        this.yOffset = -100;
+        this.fireRate = 1000;
+        this.useBullet = dualSoulClusterArrow;
+        this.texture = gameTextures.weaponDualSoulClusterBow;
+        this.fullTexture = gameTextures.weaponDualSoulClusterBowFull;
+        this.displayName = 'Dual Soul Cluster Bow';
+    };
+    shoot(x1, x2, y1, y2, source) {
+        const dX = x2 - x1;
+        const dY = y2 - y1;
+        const changeBy = (Math.PI/72)
+        let angle = Math.atan2(dY, dX) + (Math.PI / 2) - changeBy;
+        for (let i = 0; i < this.bulletMultiplier; i++) {
+            const shotArrow = new this.useBullet;
+            shotArrow.source = source;
+            const averageSize = (shotArrow.boxSizeX + shotArrow.boxSizeY) / 2;
+            shotArrow.x = x1 + (-1 * (this.yOffset) - averageSize) * Math.cos(angle - Math.PI / 2);
+            shotArrow.y = y1 + (-1 * (this.yOffset) - averageSize) * Math.sin(angle - Math.PI / 2);
+            shotArrow.angle = angle;
+            angle += changeBy*2;
+            currentBullets.push(shotArrow);
+        };
+    };
+};
+
+class weaponUpgradedTriBombShooterBow extends weaponBow {
+    constructor() {
+        super();
+        this.bulletMultiplier = 3;
+        this.sizeX = 100;
+        this.sizeY = 100;
+        this.yOffset = -100;
+        this.fireRate = 350;
+        this.useBullet = triBombArrow;
+        this.texture = gameTextures.weaponUpgradedTriBombShooterBow;
+        this.fullTexture = gameTextures.weaponUpgradedTriBombShooterBowFull;
+        this.displayName = 'Upgraded Tri-Bomb Shooter';
+    };
+    shoot(x1, x2, y1, y2, source) {
+        const dX = x2 - x1;
+        const dY = y2 - y1;
+        const changeBy = (Math.PI/36)
+        let angle = Math.atan2(dY, dX) + (Math.PI / 2) - changeBy*2;
+        for (let i = 0; i < this.bulletMultiplier; i++) {
+            const shotArrow = new this.useBullet;
+            shotArrow.source = source;
+            const averageSize = (shotArrow.boxSizeX + shotArrow.boxSizeY) / 2;
+            shotArrow.x = x1 + (-1 * (this.yOffset) - averageSize) * Math.cos(angle - Math.PI / 2);
+            shotArrow.y = y1 + (-1 * (this.yOffset) - averageSize) * Math.sin(angle - Math.PI / 2);
+            shotArrow.angle = angle;
+            angle += changeBy;
+            currentBullets.push(shotArrow);
+        };
+    };
+};
+
 
 class weaponDefaultSword extends weaponHands {
     constructor() {
@@ -1828,6 +1948,44 @@ class weaponObsidianSword extends weaponGoldSword {
     };
 };
 
+class weaponYourSword extends weaponHands {
+    constructor() {
+        super();
+        this.swingable = true;
+        this.canBlock = true;
+        this.attackRange = 175;
+        this.damage = 200;
+        this.swingDamge = 100;
+        this.swingWeight = 0;
+        this.attackDuration = 700;
+        this.attackCoolDown = 650;
+        this.texture = gameTextures.weaponYourSword;
+        this.displayName = "Your Sword";
+        this.sizeX = 50;
+        this.sizeY = 100;
+        this.offset = -65;
+    };
+};
+
+class weaponYourHammer extends weaponHands {
+    constructor() {
+        super();
+        this.swingable = true;
+        this.canBlock = true;
+        this.attackRange = 175;
+        this.damage = 100;
+        this.swingDamge = 200;
+        this.swingWeight = 0;
+        this.attackDuration = 700;
+        this.attackCoolDown = 750;
+        this.texture = gameTextures.weaponYourHammer;
+        this.displayName = "Your Hammer";
+        this.sizeX = 50;
+        this.sizeY = 100;
+        this.offset = -65;
+    };
+};
+
 class playerProps {
     // texture stuff
     useTexture = null;
@@ -1913,8 +2071,8 @@ class playerProps {
     canShoot = true;
     shooting = false;
     currentWeapon = 'sword';
-    weaponData = new weaponLongRubySword;
-    bowData = new weaponDoubleBoomStick;
+    weaponData = new weaponYourSword;
+    bowData = new weaponUpgradedTriBombShooterBow;
 };
 
 function fillMap(sources, sSX, sSY, pathMap) {
