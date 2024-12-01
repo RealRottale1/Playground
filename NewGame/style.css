@@ -2,6 +2,10 @@ body {
     background-color: black;
 }
 
+button:focus {
+    outline: none;
+}
+
 #mainDiv {
     display: flex;
     align-items: center;
@@ -21,31 +25,68 @@ body {
     cursor: pointer;
 }
 
+#playButton:hover {
+    color: #052b2f;
+    background-color: #357c87;
+}
+
+#playButton:hover {
+    transition: 1s;
+    border: #031d1f solid 5px;
+}
+
+#retryButton:hover, #resetButton:hover {
+    color: #322b0e;
+    background-color: #937d28;
+}
+
+#retryButton:hover, #resetButton:hover {
+    transition: 1s;
+    border: #241f0a solid 5px;
+}
+
 #playButton, #retryButton {
     z-index: 6;
     font-family: 'Black Ops One', system-ui;
     position: absolute;
-    top: 187.5px;
-    left: calc(50%-125px);
-    height: 125px;
-    width: 250px;
     display: flex;
     justify-content: center;
     align-items: center;
     font-size: 75px;
     border-radius: 10px;
-    background-color: royalblue;
     border: 0px;
     padding: 0px;
     margin: 0px;
+}
+
+#playButton {
+    top: 250px;
+    left: calc(50% - 125px);
+    height: 125px;
+    width: 250px;
+    color: #073c42;
+    background-color: #439daa;
+    transition: 1s;
+    border: #439daa solid 1px;
+}
+
+#retryButton {
+    top: 150px;
+    left: calc(50% - 125px);
+    height: 125px;
+    width: 250px;
+    color: #453b13;
+    background-color: #a78f2e;
+    transition: 1s;
+    border: #a78f2e solid 1px;
 }
 
 #resetButton {
     z-index: 6;
     font-family: 'Black Ops One', system-ui;
     position: absolute;
-    top: 325px;
-    left: calc(50%-75px);
+    top: 300px;
+    left: calc(50% - 62.5px);
     height: 75px;
     width: 125px;
     display: flex;
@@ -53,7 +94,10 @@ body {
     align-items: center;
     font-size: 35px;
     border-radius: 10px;
-    background-color: royalblue;
+    color: #453b13;
+    background-color: #a78f2e;
+    transition: 1s;
+    border: #a78f2e solid 1px;
     border: 0px;
     padding: 0px;
     margin: 0px;

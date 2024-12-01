@@ -110,6 +110,8 @@ function makeImage(url) {
 
 const gameTextures = {
     missingTexture: makeImage('textures/missing.png'),
+    titleCard: makeImage('textures/titleCard.png'),
+    deathCard: makeImage('textures/deathCard.png'),
     playerFullHealth: makeImage('textures/players/playerH3.png'),
     playerHalfHealth: makeImage('textures/players/playerH2.png'),
     playerNearDeath: makeImage('textures/players/playerH1.png'),
@@ -3343,7 +3345,7 @@ const levelData = [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
         background: gameTextures.plainsBackground,
         foreground: gameTextures.plainsForeground,
         transition: [[gameTextures.missingTexture, 10], ],
-        waves:[[[50, goblin, [null, null], [250, 0]]]], //[[[500, goblin, [null, null], [250, 0]],[700, goblin, [null, null], [0, 250]],],[[200, goblin, [null, null], [250, 500]],[600, goblin, [null, null], [0, 250]],[1000, goblin, [null, null], [250, 0]],[1400, archerGoblin, [null, weaponBow], [500, 250]],],[[200, archerGoblin, [null, weaponBow], [0, 125]],[300, archerGoblin, [null, weaponBow], [0, 875]],[1300, archerGoblin, [null, weaponBow], [500, 125]],[1400, archerGoblin, [null, weaponBow], [500, 875]],],[[200, goblin, [null, null], [0, 0]],[800, archerGoblin, [null, weaponBow], [500, 500]],[1600, goblin, [null, null], [250, 500]],[1800, goblin, [null, null], [250, 0]],[2000, bigGoblin, [null, null], [500, 250]],],],
+        waves: [[[500, goblin, [null, null], [250, 0]],[700, goblin, [null, null], [0, 250]],],[[200, goblin, [null, null], [250, 500]],[600, goblin, [null, null], [0, 250]],[1000, goblin, [null, null], [250, 0]],[1400, archerGoblin, [null, weaponBow], [500, 250]],],[[200, archerGoblin, [null, weaponBow], [0, 125]],[300, archerGoblin, [null, weaponBow], [0, 875]],[1300, archerGoblin, [null, weaponBow], [500, 125]],[1400, archerGoblin, [null, weaponBow], [500, 875]],],[[200, goblin, [null, null], [0, 0]],[800, archerGoblin, [null, weaponBow], [500, 500]],[1600, goblin, [null, null], [250, 500]],[1800, goblin, [null, null], [250, 0]],[2000, bigGoblin, [null, null], [500, 250]],],],
         shopItems: {weapons: [weaponKatana, weaponSpear], bows: [weaponMetalBow, weaponSlingShot]},
     },
     {
@@ -3805,17 +3807,16 @@ function waitTick() {
 // game loop
 
 // makes background for title screen
-function makeTitleScreenBackground() {
+function makeTitleScreenBackground(useImage) {
     ctx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
-    ctx.fillStyle = 'rgb(255 0 0)';
     ctx.beginPath();
-    ctx.rect(0, 0, mainCanvas.width, mainCanvas.height);
-    ctx.fill();
+    ctx.drawImage(useImage, 0, 0, mainCanvas.width, mainCanvas.height);
+    ctx.closePath();
 };
 
 // loads on death options
 function optionsOnDeath() {
-    makeTitleScreenBackground()
+    makeTitleScreenBackground(gameTextures.deathCard);
     const retryButton = document.createElement('button');
     retryButton.textContent = 'Retry';
     retryButton.id = 'retryButton';
@@ -3835,11 +3836,14 @@ function optionsOnDeath() {
         resetButton.addEventListener('click', function () {
             resetButton.textContent = 'Confirm';
             resetButton.style.width = '200px';
-            resetButton.addEventListener('click', function () {
-                retryButton.remove();
-                resetButton.remove();
-                results(false);
-            });
+            resetButton.style.left = `calc(50% - 100px)`;
+            setTimeout(() => {
+                resetButton.addEventListener('click', function () {
+                    retryButton.remove();
+                    resetButton.remove();
+                    results(false);
+                });
+            }, 1000)
         });
     });
 }
@@ -3948,7 +3952,7 @@ function handleShop() {
 
 // loads main menu
 function makeLoadingScreen() {
-    makeTitleScreenBackground()
+    makeTitleScreenBackground(gameTextures.titleCard)
 
     const startButton = document.createElement('button');
     startButton.textContent = 'Play';
@@ -4611,6 +4615,11 @@ async function playLevel() {
 
 // handles core loop
 async function runGame() {
+    await new Promise((results) => {
+        gameTextures.titleCard.onload = () => {
+            results();
+        };
+    })
     while (true) {
         await makeLoadingScreen();
         await bootGame();
