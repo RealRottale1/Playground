@@ -322,7 +322,8 @@ class effectExplosion {
         const bulletLength = currentBullets.length;
         for (let i = bulletLength - 1; i >= 0; i--) {
             const bullet = currentBullets[i];
-            if (bullet) {
+            console.log(bullet.constructor.name);
+            if (bullet && (bullet.constructor.name != 'aldrinStaffMagic' && bullet.constructor.name != 'aldrinStaffHugeMagic')) {
                 const [dX, dY, distance] = getDistance(this, bullet);
                 const trueDistance = distance - (bullet.boxSizeX + bullet.boxSizeY) / 2;
                 if (trueDistance <= this.range) {
@@ -829,8 +830,21 @@ class aldrinStaffMagic extends throwingKinve {
         this.rotateAmount = 1.5625
         this.rotation = 0;
     };
-}
+};
 
+class aldrinStaffHugeMagic extends throwingKinve {
+    constructor() {
+        super();
+        this.sizeX = 50;
+        this.sizeY = 50;
+        this.boxSizeX = 25;
+        this.boxSizeY = 25;
+        this.useTexture = gameTextures.bulletAldrinStaffMagic;
+        this.damage = 200;
+        this.rotateAmount = 1.5625
+        this.rotation = 0;
+    };
+};
 
 class weaponBow extends weaponHands {
     constructor() {
@@ -1288,7 +1302,7 @@ class weaponAldrinStaff extends weaponBow {
         this.sizeX = 75;
         this.sizeY = 75;
         this.yOffset = -150;
-        this.fireRate = 500;
+        this.fireRate = 750;
         this.useBullet = aldrinStaffMagic;
         this.texture = gameTextures.weaponAldrinStaff;
         this.fullTexture = null;
@@ -1309,6 +1323,27 @@ class weaponAldrinStaff extends weaponBow {
             angle += changeBy;
             currentBullets.push(shotArrow);
         };
+    };
+};
+
+class weaponAldrinStaffHuge extends weaponBow {
+    constructor() {
+        super();
+        this.sizeX = 75;
+        this.sizeY = 75;
+        this.yOffset = -150;
+        this.fireRate = 500;
+        this.useBullet = aldrinStaffHugeMagic;
+        this.texture = gameTextures.weaponAldrinStaff;
+        this.fullTexture = null;
+        this.displayName = "Aldrin's Staff";
+    };
+};
+
+class weaponAldrinStaffFastHuge extends weaponAldrinStaffHuge {
+    constructor() {
+        super();
+        this.fireRate = 100;
     };
 };
 
@@ -2615,10 +2650,12 @@ class aldrin extends goblin {
         this.weaponData = new weaponHands;
         this.bowData = null;
 
+        this.currentAttack = 0;
+        this.allAtacks = [1, 2, 3, 4];
         this.atPosition = false;
         this.attackTick = 0;
-        this.possibleAttacks = {
-            bowAttack: {
+        this.possibleAttacks = [
+            { // tri magic attack
                 moveTo: {
                     x: 250,
                     y: 100
@@ -2637,9 +2674,139 @@ class aldrin extends goblin {
                         this.superShoot();
                     };
                 },
+                attackEnd: () => {
+                    this.currentWeapon = 'sword';
+                    this.weaponData = new weaponHands;
+                    this.bowData = null;
+                },
             },
-        };
-        this.currentAttackInfo = this.possibleAttacks.bowAttack;
+            { // large magic attack
+                moveTo: {
+                    x: 400,
+                    y: 250
+                },
+                attackDuration: 1000, // 1 = 10
+                attackSetUp: () => {
+                    this.currentWeapon = 'bow';
+                    this.weaponData = null;
+                    this.bowData = new weaponAldrinStaffHuge;
+                },
+                attackFunction: () => {
+                    if (this.attackTick <= 100) {
+                        return;
+                    };
+                    if (this.canShoot) {
+                        this.superShoot();
+                    };
+                },
+                attackEnd: () => {
+                    this.currentWeapon = 'sword';
+                    this.weaponData = new weaponHands;
+                    this.bowData = null;
+                },
+            },
+            { // summon enemies
+                moveTo: {
+                    x: 100,
+                    y: 250
+                },
+                attackDuration: 1200, // 1 = 10
+                attackSetUp: () => {
+                    this.currentWeapon = 'sword';
+                    this.weaponData = new weaponHands;
+                    this.bowData = null;
+                },
+                attackFunction: () => {
+                    if (this.attackTick < 50 || this.attackTick >= 1000) {
+                        return;
+                    };
+                    if (!(this.attackTick % 100)) {
+                        const onX = Math.round(Math.random());
+                        const summonX = (onX ? 0 : Math.floor(Math.random()*mainCanvas.width));
+                        const summonY = (onX ? Math.floor(Math.random()*mainCanvas.width) : 0);
+                        const ran = Math.random();
+                        const useWeapon = ((ran > 0.75) ? weaponMagmaSword : ((ran > 0.5) ? weaponLongSteelSword : ((ran > 0.25) ? weaponObsidianSword : weaponRubyDiamondSword)));
+                        if (Math.round(Math.random()) == 1) {
+                            summonEnemy([null, ghostGoblin, [useWeapon, null], [summonX, summonY]]);
+                        } else {
+                            summonEnemy([null, skeletonGoblin, [useWeapon, null], [summonX, summonY]]);
+                        };
+                    };
+                },
+                attackEnd: () => {
+                },
+            },
+            { // rapid fire
+                moveTo: {
+                    x: 250,
+                    y: 400
+                },
+                attackDuration: 1500, // 1 = 10
+                attackSetUp: () => {
+                    this.currentWeapon = 'bow';
+                    this.weaponData = null;
+                    this.bowData = new weaponAldrinStaffFastHuge;
+                },
+                attackFunction: () => {
+                    if (this.attackTick <= 50) {
+                        return;
+                    };
+                    if ((this.attackTick % 100) <= 30) {
+                        return;
+                    } else {
+                        this.superShoot();
+                    };
+                },
+                attackEnd: () => {
+                    this.currentWeapon = 'sword';
+                    this.weaponData = new weaponHands;
+                    this.bowData = null;
+                },
+            },
+            { // rapid fire from middle
+                moveTo: {
+                    x: 250,
+                    y: 250
+                },
+                attackDuration: 1000, // 1 = 10
+                attackSetUp: () => {
+                    this.currentWeapon = 'bow';
+                    this.weaponData = null;
+                    this.bowData = new weaponAldrinStaffFastHuge;
+                    this.adjustmentSpeed = 35;
+                    this.minAdjustSpeed = 25;
+                },
+                attackFunction: () => {
+                    if (this.attackTick <= 50) {
+                        return;
+                    };
+                    if ((this.attackTick % 100) <= 30) {
+                        return;
+                    } else {
+                        const [couldAttack, pastAttackAngle] = this.checkIfCanAttack();
+                        if (couldAttack) {
+                            this.superShoot();
+                        } else {
+                            if (this.canShoot) {
+                                this.canShoot = false;
+                                this.shooting = true;
+                                this.bowData.shoot(this.x, this.x+5* Math.cos(pastAttackAngle), this.y, this.y+5* Math.sin(pastAttackAngle), 'enemy');
+                                setTimeout(() => {
+                                    this.canShoot = true;
+                                    this.shooting = false;
+                                }, this.bowData.fireRate);
+                            };
+                        };
+                    };
+                },
+                attackEnd: () => {
+                    this.currentWeapon = 'sword';
+                    this.weaponData = new weaponHands;
+                    this.bowData = null;
+                },
+            },
+        ],
+        this.currentAttackInfo = this.possibleAttacks[this.currentAttack];
     };
 
     superShoot() {
@@ -2648,7 +2815,9 @@ class aldrin extends goblin {
 
     tickAction() {
         const trueDistance = this.criticalTickAction();
-
+        if (trueDistance <= 0) {
+            usePlayerProps.health = 0;
+        };
         if (!this.atPosition) {
             this.move(this.currentAttackInfo.moveTo);
         } else {
@@ -2657,8 +2826,19 @@ class aldrin extends goblin {
             };
             this.attackTick += 1;
             if (this.attackTick >= this.currentAttackInfo.attackDuration) {
-                // Change to new attack
-                console.log('done!');
+                this.currentAttackInfo.attackEnd();
+
+                const ran = Math.round(Math.random() * (this.allAtacks.length-1));
+                console.log(ran);
+                console.log(this.currentAttack);
+                this.allAtacks.push(this.currentAttack);
+                this.currentAttack = this.allAtacks[ran];
+                this.currentAttackInfo = this.possibleAttacks[this.currentAttack];
+                console.log(this.allAtacks[ran]);
+                this.allAtacks.splice(ran, 1);
+
+                this.atPosition = false;
+                this.attackTick = 0;
             } else {
                 this.currentAttackInfo.attackFunction();
             };
@@ -2666,15 +2846,12 @@ class aldrin extends goblin {
     };
 
     move(endPos) {
-        //console.log(endPos.y);
         const [dX, dY, distance] = getDistance(endPos, this);
-        //console.log(dX+','+dY);
         const nX = dX / distance;
         const nY = dY / distance;
         this.x -= nX * this.movementSpeed;
         this.y -= nY * this.movementSpeed;
         const [nDX, nDY, newDistance] = getDistance(endPos, this);
-        console.log(newDistance);
         if (newDistance <= 5) {
             this.atPosition = true;
         };
