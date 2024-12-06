@@ -112,6 +112,9 @@ const gameTextures = {
     missingTexture: makeImage('textures/missing.png'),
     titleCard: makeImage('textures/titleCard.png'),
     deathCard: makeImage('textures/deathCard.png'),
+    introSlide1: makeImage('textures/slides/introSlide1.png'),
+    introSlide2: makeImage('textures/slides/introSlide2.png'),
+    introSlide3: makeImage('textures/slides/introSlide3.png'),
     playerFullHealth: makeImage('textures/players/playerH3.png'),
     playerHalfHealth: makeImage('textures/players/playerH2.png'),
     playerNearDeath: makeImage('textures/players/playerH1.png'),
@@ -3344,7 +3347,7 @@ const levelData = [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
     {
         background: gameTextures.plainsBackground,
         foreground: gameTextures.plainsForeground,
-        transition: [[gameTextures.missingTexture, 10], ],
+        transition: [[gameTextures.introSlide1, 3500], [gameTextures.introSlide2, 3500], [gameTextures.introSlide3, 3500]],
         waves: [[[500, goblin, [null, null], [250, 0]],[700, goblin, [null, null], [0, 250]],],[[200, goblin, [null, null], [250, 500]],[600, goblin, [null, null], [0, 250]],[1000, goblin, [null, null], [250, 0]],[1400, archerGoblin, [null, weaponBow], [500, 250]],],[[200, archerGoblin, [null, weaponBow], [0, 125]],[300, archerGoblin, [null, weaponBow], [0, 875]],[1300, archerGoblin, [null, weaponBow], [500, 125]],[1400, archerGoblin, [null, weaponBow], [500, 875]],],[[200, goblin, [null, null], [0, 0]],[800, archerGoblin, [null, weaponBow], [500, 500]],[1600, goblin, [null, null], [250, 500]],[1800, goblin, [null, null], [250, 0]],[2000, bigGoblin, [null, null], [500, 250]],],],
         shopItems: {weapons: [weaponKatana, weaponSpear], bows: [weaponMetalBow, weaponSlingShot]},
     },
@@ -4280,7 +4283,13 @@ async function playTransition() {
     const transitionSlides = levelData[settings.currentLevel].transition.length;
     for (let i = 0; i < transitionSlides; i++) {
         const useImageData = levelData[settings.currentLevel].transition[i];
-        ctx.drawImage(useImageData[0], 0, 0);
+
+        ctx.save();
+        ctx.translate(0, 0);
+        ctx.beginPath();
+        ctx.drawImage(useImageData[0], 0, 0, 500, 500);
+        ctx.closePath();
+        ctx.restore();
         await wait(useImageData[1]);
     };
 };
