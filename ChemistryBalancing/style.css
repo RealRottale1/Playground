@@ -1,0 +1,78 @@
+#equationHolder:focus {
+    outline: none;
+}
+
+#main {
+    display: flex;
+    position: absolute;
+    align-items: center;
+    align-content: center;
+    justify-items: center;
+    justify-items: center;
+    top: calc(50% - 10px);
+    left: calc(50% - 152px);
+}
+
+#answer {
+    margin: 0px;
+    display: block;
+    position: absolute;
+    top: calc(50% - 32.5px);
+    left: calc(50% - 100px);
+    height: 15px;
+    width: 200px;
+    text-align: center;
+}
+
+#equationHolder::placeholder {
+    color: rgb(51, 51, 51); 
+}
+
+#equationHolder {
+    margin-right: 4px;
+    height: 20px;
+    width: 200px;
+    text-align: center;
+    color: rgb(51, 51, 51); 
+    background-color: rgb(233, 233, 233);
+    border: 0px rgb(152, 152, 152) solid;
+    border-radius: 0%;
+}
+
+#balanceButton {
+    height: 20px;
+    width: 75px;
+    text-align: center;
+    color: rgb(100, 100, 100); 
+    background-color: rgb(185, 185, 185);
+    border: 0px rgb(74, 74, 74) solid;
+    border-radius: 0%;
+}
+
+#equationHolder:hover {
+    color: rgb(40, 40, 40);
+    background-color: rgb(185, 185, 185);
+}
+
+#equationHolder:hover {
+    transition: 1s;
+    outline: #000000 solid 3px;
+    border-radius: 0%;
+}
+
+#balanceButton:hover {
+    color: rgb(84, 84, 84); 
+    background-color: rgb(167, 167, 167);
+}
+
+#balanceButton:hover {
+    transition: 1s;
+    outline: #000000 solid 3px;
+    border-radius: 0%;
+}
+
+#balanceButton:active {
+    transition: 0s;
+    color: rgb(57, 57, 57); 
+    background-color: rgb(132, 132, 132);
+}

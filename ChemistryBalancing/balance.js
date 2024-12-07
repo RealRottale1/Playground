@@ -1,3 +1,6 @@
+const equationHolder = document.getElementById('equationHolder');
+const balanceButton = document.getElementById('balanceButton');
+const answerText = document.getElementById('answer');
 
 function balance(source) {
     class equationClass {
@@ -82,6 +85,7 @@ function balance(source) {
                     return(false);
                 };
             } else {
+                answerText.textContent = 'Equation is missing 1 or more elements!';
                 throw new Error('Equation is missing 1 or more elements!');
             };
         };
@@ -108,8 +112,6 @@ function balance(source) {
     makeParts(equationTable.reactants, reactants)
     makeParts(equationTable.products, products)
 
-
-    console.log(equationTable);
     let multiplier = [];
     const multiplierLength = equationTable.reactants.length + equationTable.products.length;
     for (let i = 0; i < multiplierLength; i++) {
@@ -125,15 +127,17 @@ function balance(source) {
             multiplier = nextMultiplier(multiplierI, multiplierLength);
             multiplierI += 1;
             if (multiplierI >= 6562) {
+                answerText.textContent = 'Equation went past 6561 combo limit!';
                 throw new Error('Equation went past 6561 combo limit!');
             };
         };
     };
 };
 
-
-
-
-//Rb3P1O4 + H2O1 > Rb1O1H1 + H3P1O4
-const equation = 'Al2S3O12 + K1O1H1 > Al1O3H3 + K2S1O4';
-console.log(balance(equation));
+//Rb3P1O4 + H2O1 > Rb1O1H1 + H3P1O4 
+// Rb3P1O4 + H2O1 > Rb1O1H4 + H3P1O4 Gives the same as above?
+balanceButton.addEventListener('click', function() {
+    console.log(equationHolder.value);
+    const multiplier = balance(equationHolder.value);
+    answerText.textContent = multiplier;
+});
