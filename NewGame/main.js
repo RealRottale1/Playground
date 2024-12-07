@@ -115,6 +115,18 @@ const gameTextures = {
     introSlide1: makeImage('textures/slides/introSlide1.png'),
     introSlide2: makeImage('textures/slides/introSlide2.png'),
     introSlide3: makeImage('textures/slides/introSlide3.png'),
+    glv1: makeImage('textures/slides/glv1.png'),
+    glv2: makeImage('textures/slides/glv2.png'),
+    dlv1: makeImage('textures/slides/dlv1.png'),
+    dlv2: makeImage('textures/slides/dlv2.png'),
+    vlv1: makeImage('textures/slides/vlv1.png'),
+    vlv2: makeImage('textures/slides/vlv2.png'),
+    clv1: makeImage('textures/slides/clv1.png'),
+    blv2: makeImage('textures/slides/blv2.png'),
+    blv1: makeImage('textures/slides/blv1.png'),
+    dlv2: makeImage('textures/slides/dlv2.png'),
+    alv1: makeImage('textures/slides/alv1.png'),
+    alv2: makeImage('textures/slides/alv2.png'),
     playerFullHealth: makeImage('textures/players/playerH3.png'),
     playerHalfHealth: makeImage('textures/players/playerH2.png'),
     playerNearDeath: makeImage('textures/players/playerH1.png'),
@@ -3347,28 +3359,28 @@ const levelData = [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
     {
         background: gameTextures.plainsBackground,
         foreground: gameTextures.plainsForeground,
-        transition: [[gameTextures.introSlide1, 3500], [gameTextures.introSlide2, 3500], [gameTextures.introSlide3, 3500]],
+        transition: [[gameTextures.introSlide1, 3500], [gameTextures.introSlide2, 5000], [gameTextures.introSlide3, 3500], [gameTextures.glv1, 1000]],
         waves: [[[500, goblin, [null, null], [250, 0]],[700, goblin, [null, null], [0, 250]],],[[200, goblin, [null, null], [250, 500]],[600, goblin, [null, null], [0, 250]],[1000, goblin, [null, null], [250, 0]],[1400, archerGoblin, [null, weaponBow], [500, 250]],],[[200, archerGoblin, [null, weaponBow], [0, 125]],[300, archerGoblin, [null, weaponBow], [0, 875]],[1300, archerGoblin, [null, weaponBow], [500, 125]],[1400, archerGoblin, [null, weaponBow], [500, 875]],],[[200, goblin, [null, null], [0, 0]],[800, archerGoblin, [null, weaponBow], [500, 500]],[1600, goblin, [null, null], [250, 500]],[1800, goblin, [null, null], [250, 0]],[2000, bigGoblin, [null, null], [500, 250]],],],
         shopItems: {weapons: [weaponKatana, weaponSpear], bows: [weaponMetalBow, weaponSlingShot]},
     },
     {
         background: gameTextures.plainsBackground,
         foreground: gameTextures.plainsForeground,
-        transition: [[gameTextures.missingTexture, 10], ],
+        transition: [[gameTextures.glv2, 1000]],
         waves: [[[200, bigGoblin, [null, null], [250, 500]],[1000, goblin, [null, null], [0, 0]],[1000, archerGoblin, [null, weaponBow], [0, 250]],[1000, goblin, [null, null], [0, 500]],[2000, goblin, [weaponEarlyGoblinSword, null], [0, 0]],],[[200, goblin, [null, null], [0, 250]],[800, archerGoblin, [null, weaponBow], [500, 250]],[800, bigGoblin, [weaponEarlyGoblinSword, null], [500, 150]],[800, goblin, [weaponEarlyGoblinSword, null], [500, 350]],],[[200, goblin, [weaponEarlyGoblinSword, null], [0, 250]],[200, archerGoblin, [null, weaponBow], [500, 250]],[1400, goblin, [weaponEarlyGoblinSword, null], [500, 250]],[1400, archerGoblin, [null, weaponBow], [0, 250]],[2200, berserkerGoblin, [weaponEarlyGoblinSword], [250, 500]],],],
         shopItems: {weapons: [weaponSickle, weaponMace], bows: [weaponMultiShotBow, weaponBlowDart]},
     },
     {
         background: gameTextures.forestBackground,
         foreground: gameTextures.forestForeground,
-        transition: [[gameTextures.missingTexture, 10], ],
+        transition: [[gameTextures.dlv1, 1000]],
         waves: [[[200, goblin, [weaponCopperSword, null], [0, 0]],[1200, goblin, [weaponGoldSword, null], [0, 0]],[1200, goblin, [weaponRhodoniteSword, null], [500, 500]],[2200, goblin, [weaponGoldSword, null], [0, 0]],[2200, goblin, [weaponCobaltSword, null], [500, 500]],[2200, poisonGoblin, [null, weaponBlowDart], [500, 0]],],[[200, poisonGoblin, [null, null], [0, 0]],[400, poisonGoblin, [null, null], [500, 500]],[600, poisonGoblin, [null, null], [500, 0]],[800, poisonGoblin, [null, weaponBlowDart], [0, 500]],[1600, poisonGoblin, [null, null], [0, 0]],[1800, poisonGoblin, [null, null], [500, 500]],[2000, poisonGoblin, [null, null], [500, 0]],[2200, poisonGoblin, [null, weaponBlowDart], [0, 500]],],[[200, poisonGoblin, [weaponCobaltSword, null], [0, 500]],[200, goblin, [weaponGoldSword, null], [500, 500]],[800, bigGoblin, [weaponGoldSword, null], [250, 500]],[1800, goblin, [weaponCopperSword, null], [0, 500]],[1800, poisonGoblin, [weaponRhodoniteSword, null], [500, 500]],[2400, bigGoblin, [weaponCobaltSword, null], [250, 0]],],],
         shopItems: {weapons: [weaponBattleAxe, weaponTriblade], bows: [weaponGoldBow, weaponCrossbow]},
     },
     {
         background: gameTextures.forestBackground,
         foreground: gameTextures.forestForeground,
-        transition: [[gameTextures.missingTexture, 10], ],
+        transition: [[gameTextures.dlv2, 1000]],
         waves: [
             [
                 [200, goblin, [weaponCopperSword, null], [0, 0]],
@@ -3403,7 +3415,7 @@ const levelData = [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
     {
         background: gameTextures.villageBackground,
         foreground: gameTextures.villageForeground,
-        transition: [[gameTextures.missingTexture, 10], ],
+        transition: [[gameTextures.vlv1, 1000]],
         waves: [
             [
                 [200, bigGoblin, [weaponGiantSword, null], [0, 50]],
@@ -3450,7 +3462,7 @@ const levelData = [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
     {
         background: gameTextures.villageBackground,
         foreground: gameTextures.villageForeground,
-        transition: [[gameTextures.missingTexture, 10], ],
+        transition: [[gameTextures.vlv2, 1000]],
         waves: [
             [
                 [200, goblin, [weaponSteelSword, null], [0, 50]],
@@ -3499,7 +3511,7 @@ const levelData = [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
     {
         background: gameTextures.castleBackground,
         foreground: gameTextures.castleForeground,
-        transition: [[gameTextures.missingTexture, 10], ],
+        transition: [[gameTextures.clv1, 1000]],
         waves: [
             [
                 [200, goblin, [weaponBlackOpalSword, null], [0, 250]],
@@ -3547,7 +3559,7 @@ const levelData = [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
     {
         background: gameTextures.castleBackground,
         foreground: gameTextures.castleForeground,
-        transition: [[gameTextures.missingTexture, 10], ],
+        transition: [[gameTextures.clv2, 1000]],
         waves: [
             [
                 [200, goblin, [weaponBlackOpalSword, null], [0, 250]], 
@@ -3607,7 +3619,7 @@ const levelData = [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
     {
         background: gameTextures.warBackground,
         foreground: gameTextures.warForeground,
-        transition: [[gameTextures.missingTexture, 10], ],
+        transition: [[gameTextures.blv1, 1000]],
         waves: [
             [
                 [200, goblin, [weaponDualGoldSword, null], [0, 250]], 
@@ -3662,7 +3674,7 @@ const levelData = [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
     {
         background: gameTextures.warBackground,
         foreground: gameTextures.warForeground,
-        transition: [[gameTextures.missingTexture, 10], ],
+        transition: [[gameTextures.blv2, 1000]],
         waves: [
             [
                 [200, skeletonGoblin, [weaponDualGoldSword, null], [0, 250]], 
@@ -3707,7 +3719,7 @@ const levelData = [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
     {
         background: gameTextures.bossCastleBackground,
         foreground: gameTextures.bossCastleForeground,
-        transition: [[gameTextures.missingTexture, 10], ],
+        transition: [[gameTextures.alv1, 1000]],
         waves: [
             [
                 [200, goblin, [weaponObsidianSword, null], [250, 0]], 
@@ -3770,7 +3782,7 @@ const levelData = [ // spawnTick#, enemy, [weaponData, bowData] , [x,y]
     {
         background: gameTextures.bossCastleBackground,
         foreground: gameTextures.bossCastleForeground,
-        transition: [[gameTextures.missingTexture, 10], ],
+        transition: [[gameTextures.alv2, 1000]],
         waves: [
             [
                 [200, aldrin, [null, null], [250, 0]], 
@@ -3988,6 +4000,7 @@ function clearVitalLists() {
 
 // boots up game
 function bootGame() {
+    settings.hasShownTransition = false;
     settings.hasShownTransition = false;
     settings.currentLevel = 0;
     settings.currentWave = 0;
@@ -4652,7 +4665,6 @@ async function runGame() {
             currentHords.splice(0, currentHords.length);
             if (usePlayerProps.health > 0) {
                 if (settings.currentLevel == 12) {
-                    console.log('you sin!');
                     const retry = await optionsOnDeath();
                     if (retry) {
                         settings.currentLevel = 11;
@@ -4664,6 +4676,7 @@ async function runGame() {
                     settings.currentLevel += 1;
                     await handleShop();
                     reloadGame();
+                    settings.hasShownTransition = false;
                 };
             } else {
                 const retry = await optionsOnDeath();
