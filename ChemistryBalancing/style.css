@@ -1,3 +1,7 @@
+body {
+    background-color: rgb(192, 192, 192);  
+}
+
 #equationHolder:focus {
     outline: none;
 }
@@ -18,9 +22,9 @@
     display: block;
     position: absolute;
     top: calc(50% - 32.5px);
-    left: calc(50% - 100px);
+    left: calc(50% - 150px);
     height: 15px;
-    width: 200px;
+    width: 300px;
     text-align: center;
 }
 

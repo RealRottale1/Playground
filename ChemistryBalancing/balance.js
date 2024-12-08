@@ -2,22 +2,26 @@ const equationHolder = document.getElementById('equationHolder');
 const balanceButton = document.getElementById('balanceButton');
 const answerText = document.getElementById('answer');
 
-function balance(source) {
+async function waitTick() {
+    return new Promise((results) => {
+        setTimeout(() => {
+            results();
+        },0.0025);
+    });
+};
+
+async function balance(source) {
     class equationClass {
         reactants = [];
         products = [];
     };
-
-    function makeParts(equationSection, part) {
+    function makeParts(equationSection, part, isReactant) {
         const sections = part.split('+').length;
-
         let startIndex = 0;
         for (let i = 0; i < sections; i++) {
             const endIndex = (part.indexOf('+') != -1 ? part.indexOf('+') : part.length);
             const portion = part.slice(startIndex, endIndex);
-
             const portionSize = portion.length;
-
             const portionTable = {}
             let element = '';
             let number = '';
@@ -34,11 +38,16 @@ function balance(source) {
                     number += character;
                 };
             };
+            if (number) {
+                portionTable[element] = number;
+                element = '';
+                number = ''
+            };
             equationSection.push(portionTable);
-
             part = part.replace('+', '');
             startIndex = endIndex;
         };
+        return(sections);
     };
 
     function multiplyAndCalculate(equationTable, multiplier) {
@@ -75,8 +84,6 @@ function balance(source) {
         multiply(equationTable.products, productsLength, reactantsLength);
         merge(equationTable.reactants, reactantsLength);
         merge(equationTable.products, productsLength);
-
-        
         const allReactantsLength = Object.keys(equationTable.reactants[0]).length;
         for (let i = 0; i < allReactantsLength; i++) {
             const element = Object.keys(equationTable.reactants[0])[i]
@@ -85,11 +92,10 @@ function balance(source) {
                     return(false);
                 };
             } else {
-                answerText.textContent = 'Equation is missing 1 or more elements!';
-                throw new Error('Equation is missing 1 or more elements!');
+                answerText.textContent = 'Unclosed Equation!';
+                throw new Error('Unclosed Equation!');
             };
         };
-
         return(true);
     };
 
@@ -102,42 +108,45 @@ function balance(source) {
         };
         return(combination);
     };
-
     let equation = source.replaceAll(' ','');
-    const midPoint = source.indexOf('>')-2;
-    let reactants = equation.slice(0, midPoint-1);
-    let products = equation.slice(midPoint, equation.length);
-    
+    const midPoint = equation.indexOf('>');
+    if (midPoint <= 0) {
+        answerText.textContent = 'Invalid Equation!';
+        throw new Error('Invalid Equation!');
+    };
+    let reactants = equation.slice(0, midPoint);
+    let products = equation.slice(midPoint+1, equation.length);
     const equationTable = new equationClass;
-    makeParts(equationTable.reactants, reactants)
-    makeParts(equationTable.products, products)
-
+    let totalParts = 0;
+    totalParts += makeParts(equationTable.reactants, reactants, true);
+    totalParts += makeParts(equationTable.products, products, false);
     let multiplier = [];
     const multiplierLength = equationTable.reactants.length + equationTable.products.length;
     for (let i = 0; i < multiplierLength; i++) {
         multiplier.push(1);
     };
-
     let multiplierI = 1;
-    while (true) {
+    const maxLimit = 9**totalParts;
+    answerText.textContent = `Max wait time: ~${(maxLimit)*0.0025}sec`
+    while (true) {;
         const solvedEquation = multiplyAndCalculate(structuredClone(equationTable), multiplier);
         if (solvedEquation) {
             return(`Multipliers are: ${multiplier}`);
         } else {
             multiplier = nextMultiplier(multiplierI, multiplierLength);
             multiplierI += 1;
-            if (multiplierI >= 6562) {
-                answerText.textContent = 'Equation went past 6561 combo limit!';
-                throw new Error('Equation went past 6561 combo limit!');
+            if (multiplierI >= maxLimit) {
+                answerText.textContent = 'Equation Unsolvable/Too Big!';
+                throw new Error('Equation Unsolvable/Too Big!');
             };
+            await waitTick();
         };
     };
 };
 
-//Rb3P1O4 + H2O1 > Rb1O1H1 + H3P1O4 
-// Rb3P1O4 + H2O1 > Rb1O1H4 + H3P1O4 Gives the same as above?
-balanceButton.addEventListener('click', function() {
-    console.log(equationHolder.value);
-    const multiplier = balance(equationHolder.value);
+//Example Problem: Rb3P1O4 + H2O1 > Rb1O1H1 + H3P1O4 
+balanceButton.addEventListener('click', async function() {
+    answerText.textContent = 'Multiplier: Waiting!'
+    const multiplier =  await balance(equationHolder.value);
     answerText.textContent = multiplier;
 });
