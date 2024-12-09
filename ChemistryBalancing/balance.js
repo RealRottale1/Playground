@@ -126,7 +126,7 @@ async function balance(source) {
         multiplier.push(1);
     };
     let multiplierI = 1;
-    const maxLimit = 9**totalParts;
+    const maxLimit = (9**totalParts)/2;
 
     function tryMultiplier(reverse) {
         multiplier = nextMultiplier(multiplierI, multiplierLength, reverse);
