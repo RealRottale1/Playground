@@ -99,10 +99,10 @@ async function balance(source) {
         return(true);
     };
 
-    function nextMultiplier(index, length) {
+    function nextMultiplier(index, length, reverse) {
         const combination = [];
         for (let i = 0; i < length; i++) {
-            const digit = (index%9)+1;
+            const digit = (!reverse ? (index%9)+1 : 9 - (index%9));
             combination.unshift(digit);
             index = Math.floor(index/9);
         };
@@ -127,19 +127,32 @@ async function balance(source) {
     };
     let multiplierI = 1;
     const maxLimit = 9**totalParts;
-    while (true) {;
-        answerText.textContent = `Max wait time: ~${(Math.round((maxLimit-multiplierI)*0.005)*1000)/1000}sec`
+
+    function tryMultiplier(reverse) {
+        multiplier = nextMultiplier(multiplierI, multiplierLength, reverse);
         const solvedEquation = multiplyAndCalculate(structuredClone(equationTable), multiplier);
+        return(solvedEquation);
+    };
+
+    while (true) {;
+        answerText.textContent = `Max wait time: ~${(Math.round((maxLimit-multiplierI)*0.0000125)*1000)/1000}sec`
+        const solvedEquation = tryMultiplier(false);
         if (solvedEquation) {
             return(`Multipliers are: ${multiplier}`);
-        } else {
-            multiplier = nextMultiplier(multiplierI, multiplierLength);
-            multiplierI += 1;
-            console.log(multiplier);
-            if (multiplierI >= maxLimit) {
-                answerText.textContent = 'Equation Unsolvable/Too Big!';
-                throw new Error('Equation Unsolvable/Too Big!');
-            };
+        };
+
+        const solvedReverseEquation = tryMultiplier(true);
+        if (solvedReverseEquation) {
+            return(`Multipliers are: ${multiplier}`);
+        };
+
+        multiplierI += 1;
+        if (multiplierI >= maxLimit) {
+            answerText.textContent = 'Equation Unsolvable/Too Big!';
+            throw new Error('Equation Unsolvable/Too Big!');
+        };
+
+        if (!(multiplierI % 1000)) {
             await waitTick();
         };
     };
