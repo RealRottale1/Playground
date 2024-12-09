@@ -135,6 +135,7 @@ async function balance(source) {
         } else {
             multiplier = nextMultiplier(multiplierI, multiplierLength);
             multiplierI += 1;
+            console.log(multiplier);
             if (multiplierI >= maxLimit) {
                 answerText.textContent = 'Equation Unsolvable/Too Big!';
                 throw new Error('Equation Unsolvable/Too Big!');
