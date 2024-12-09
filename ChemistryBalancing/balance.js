@@ -127,8 +127,8 @@ async function balance(source) {
     };
     let multiplierI = 1;
     const maxLimit = 9**totalParts;
-    answerText.textContent = `Max wait time: ~${(maxLimit)*0.0025}sec`
     while (true) {;
+        answerText.textContent = `Max wait time: ~${(Math.round((maxLimit-multiplierI)*0.005)*1000)/1000}sec`
         const solvedEquation = multiplyAndCalculate(structuredClone(equationTable), multiplier);
         if (solvedEquation) {
             return(`Multipliers are: ${multiplier}`);
