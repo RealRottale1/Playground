@@ -1,0 +1,150 @@
+.single_line {
+    white-space: nowrap;
+}
+
+body {
+    margin: 0%;
+    background-color: rgb(19, 27, 41);
+}
+
+#title_cm {
+    border: 0px solid black;
+    height: 100px;
+    width: 100vw;
+    margin: 0%;
+    font-size: 75px;
+    text-align: center;
+    color: red;
+    background-color: rgb(29, 55, 82);
+    -webkit-text-stroke: 0.5px yellow;
+}
+
+#title_cm:hover {
+    cursor: pointer;
+}
+
+.row_1_cm, .row_2_cm {
+    display: flex;
+    justify-content: center;
+}
+
+.main_div_cm {
+    display: inline-block;
+}
+
+#competitors_cm {
+    margin: 25px 0px 25px 25px;
+    display: flexbox;
+    background-color: rgb(29, 55, 82);
+    width: 1000px;
+}
+
+#about_cm {
+    margin: 25px 0px 0px 25px;
+    display: flexbox;
+    background-color: rgb(29, 55, 82);
+    width: 1000px;
+}
+
+#now_cm {
+    margin: 25px 0px 0px 25px;
+    display: flexbox;
+    background-color: rgb(29, 55, 82);
+    width: 1000px;
+}
+
+.section_title_cm {
+    text-align: center;
+    margin: 0px;
+    padding: 0px 50px 0px 50px;
+    font-size: 45px;
+    background-color: rgb(241, 219, 0);
+}
+
+.section_body_cm {
+    text-align: center;
+    margin: 0px;
+    padding: 5px;
+    font-size: 35px;
+    background-color: rgb(28, 82, 125);
+    color: white;
+    word-wrap:break-word;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.game_display_cm {
+    margin: 25px 0px 0px 25px;
+    display: inline-block;
+    background-color: rgb(29, 55, 82);
+    width: 500px;
+}
+
+.game_image_cm {
+    height: 500px;
+    width: 500px;
+}
+
+.game_info_cm {
+    border: 0px solid black;
+    text-align: center;
+    margin: 0px;
+    padding: 5px;
+    font-size: 35px;
+    background-color: rgb(28, 82, 125);
+    color: white;
+    word-wrap:break-word;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    text-decoration: none;
+    width: 500px;
+}
+
+.game_info_cm:hover {
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+#ad_cm {
+    margin-left: 12.5px;
+    display: flexbox;
+    align-items: center;
+    justify-items: center;
+    align-content: center;
+    justify-content: center;
+}
+
+.ad {
+    position: relative;
+    margin: 25px 5px 5px 25px;
+    display: inline-block;
+    width: 300px;
+    height: 200px;
+}
+
+.ad_button {
+    width: 300px;
+    height: 200px;
+    padding: 0px;
+    border: 0px solid black;
+}
+
+.ad_button:hover {
+    cursor: pointer; 
+}
+
+.ad_img {
+    width: 300px;
+    height: 200px;
+}
+
+.ad_text {
+    margin: 0px;
+    position: absolute;
+    color: black;
+    right: 0px;
+    bottom: 0px;
+    font-size: 25px;
+    background-color: rgb(241, 219, 0);
+    color: rgb(0, 0, 0);
+}
