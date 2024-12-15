@@ -1,1 +1,1 @@
-console.log('NEW:'+decodeURIComponent(document.cookie));
+console.log(window.location.search);
