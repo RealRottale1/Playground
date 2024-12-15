@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>jQuery Attribute Test with URL Change</title>
+
+    <!-- Include jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <style>
+        #myElement {
+            padding: 20px;
+            background-color: #ffeb3d;
+            text-align: center;
+            font-weight: bold;
+            font-size: 24px;
+            border: 2px dashed #000;
+            cursor: pointer;
+            margin: 50px;
+        }
+        #myElement:hover {
+            background-color: #ffe082;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Click the Element to Change URL</h2>
+    <div id="myElement">Click me</div>
+
+    <script>
+        $(document).ready(function() {
+            $("#myElement").click(function() {
+                var newValue = "newValue";
+
+                // Update the element's custom attribute
+                $(this).attr("data-custom-attribute", newValue);
+
+                // Construct the new URL with query parameter
+                var newUrl = window.location.origin + window.location.pathname + "?currentPage=" + newValue;
+
+                // Use history.pushState to change the URL without reloading the page
+                history.pushState({ path: newUrl }, '', newUrl);
+
+                console.log("Custom attribute value:", $(this).attr("data-custom-attribute"));
+                console.log("Updated URL:", newUrl);
+            });
+        });
+    </script>
+
+</body>
+</html>
