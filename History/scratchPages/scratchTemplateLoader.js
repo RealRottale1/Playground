@@ -129,7 +129,7 @@ const templateData = {
         name: 'Red Battle',
         image: '../images/redBattle.png',
         description: "In this game you play as the last warrior on a mission to kill the Goblin King. To achieve this you not only must platform across a hazardous world but also fight goblins, turrets, and mini bosses. You can also upgrade your sword, but watch out because the goblins can upgrade their armor!",
-        importance: 'This game is objectively the most complex Scratch game I ever made. This game has multiple never-seen-before mechanics like checkpoints and enemy AIs that utilize tables and other advanced coding mechanisms to be pulled off. This game would also be my last Scratch game before I fully migrated to Roblox Studio.',
+        importance: 'This game is objectively the most complex Scratch game I ever made. This game has multiple never-seen-before mechanics like checkpoints, enemy AIs, and proximity textboxes that utilize tables and other advanced coding mechanisms to be pulled off. This game would also be my last Scratch game before I fully migrated to Roblox Studio.',
         playPage: 'https://scratch.mit.edu/projects/631315810/',
     },
 };

@@ -84,13 +84,13 @@ body {
 
 #gameplay_img {
     margin: 20px 0px 0px 20px;
-    width: 800px;
-    height: 500px;
+    width: 850px;
+    height: 525px;
 }
 
 #play_button {
     position: absolute;
-    top: 425px;
+    top: 450px;
     left: 900px;
     padding: 0px;
     border: 0px solid black;
@@ -111,7 +111,7 @@ body {
 
 #about {
     position: absolute;
-    top: 150px;
+    top: 100px;
     left: 900px;
 }
 
@@ -122,7 +122,7 @@ body {
 }
 
 #about_title {
-    margin: 0px 0px 25px 0px;
+    margin: 0px 0px 12.5px 0px;
     font-size: 35px;
     color: rgb(29, 30, 31);
     font-family: "Builder Sans", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
