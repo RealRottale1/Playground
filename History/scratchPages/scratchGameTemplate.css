@@ -13,7 +13,7 @@ body {
     align-content: center;
     justify-items: center;
     justify-content: center;
-    padding-left: 6.25%;
+    padding-left: 1%;
     height: 75px;
     width: 100%;
     background-color: hsl(260, 60%, 60%);
@@ -87,7 +87,7 @@ body {
     margin-top: 5px;
     margin-left: 50px;
     padding: 0px 20px 0px 20px;
-    width: 500px;
+    width: 750px;
     height: 65px;
     display: flexbox;
     align-items: center;
@@ -199,18 +199,22 @@ body {
     height: 750px;
     width: 850px;
     border-radius: 5px;  
+    border: 1px gray solid;
 }
 
 #game_text {
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    text-align: center;
     color: rgb(0, 0, 0);
     position: relative;
     margin: 0px;
     left: 150px;
     bottom: 100px;
-    height: 100px;
+    height: 90px;
     width: 500px;
     font-size: 70px;
+    border-radius: 5px;
+    background-color: hsl(260, 60%, 60%);
 }
 
 #about {
@@ -229,14 +233,14 @@ body {
     width: 750px;
 }
 
-#about_title {
+#about_title, #importance_title {
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     color: rgb(87, 94, 117);
     font-size: 30px;
     margin: 0px;
 }
 
-#about_description {
+#about_description, #importance_description {
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     height: 250px;
     width: 725px;
