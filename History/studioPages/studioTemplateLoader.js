@@ -122,7 +122,7 @@ const templateData = {
         name: 'Protect The Server',
         image: '../images/protectTheServer2.png',
         description: 'In this game your job is to protect the server by completing random challenges. You can earn coins and diamonds, which can be used to buy items, trails, pets, name themes, emotes, and even event rounds.',
-        importance: "This is by far the most complex video game I have ever made. This game has a fully dynamic 3D rendering shop, a daily reward system, over 39 different minigames, a plinko machine, exclusive VIP and premium benefits, multiple monetization methods, a game pass gifting system, a music system linked with the game's status, and a dynamic auto patching/updating data system that allows for easy data structure reform. This game was also my first game to utilize module scripts and is overall a very professional game.",
+        importance: "This is by far the most complex video game I have ever made. This game has a fully dynamic 3D rendering shop, a daily reward system, over 38 different minigames, a plinko machine, exclusive VIP and premium benefits, multiple monetization methods, a game pass gifting system, a music system linked with the game's status, and a dynamic auto patching/updating data system that allows for easy data structure reform. This game was also my first game to utilize module scripts and is overall a very professional game.",
         playPage: 'https://www.roblox.com/games/18475941513/Protect-The-Server',
     },
 };
