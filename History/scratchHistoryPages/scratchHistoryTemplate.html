@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scratch Game</title>
+    <link rel="icon" type="image/vnd.microsoft.icon" href="https://scratch.mit.edu/favicon.ico">
+    <link rel="stylesheet" href="./scratchHistoryTemplate.css">
+</head>
+<body>
+    <header id="header">
+        <ul id="title">
+            <li id="scratch_icon">
+                <button id="scratch_button" onclick="window.open('https://scratch.mit.edu/', '_blank')">
+                    <img src="https://scratch.mit.edu/images/logo_sm.png" alt="scratch logo">
+                </button>
+            </li>
+            <li class="fake_tab single_line" id="firstgame_name_tab">Create</li>
+            <li class="fake_tab single_line">Explore</li>
+            <li class="fake_tab single_line">Ideas</li>
+            <li class="fake_tab single_line">About</li>
+            <li id="fake_search_bar">
+                <img id="fake_search" src="https://scratch.mit.edu/images/nav-search-glass.png" alt="search icon">
+                <p class="single_line" id="game_name">Search</p>
+            </li>
+            <li class="fake_button">
+                <img class="fake_button_img" src="https://scratch.mit.edu/images/nav-notifications.png" alt="mail icon">
+            </li>
+            <li class="fake_button">
+                <img class="fake_button_img" src="https://scratch.mit.edu/images/mystuff.png" alt="my stuff icon">
+            </li>
+            <li class="fake_profile">
+                <img id="fake_profile_pic" src="https://uploads.scratch.mit.edu/get_image/user/41550185_32x32.png" alt="LES-CAM profile icon">
+                <p class="single_line" id="fake_username">LES-CAM</p>
+                <img id="fake_dropdown" src="https://scratch.mit.edu/images/dropdown.png" alt="dropdown icon">
+            </li>
+        </ul>
+    </header>
+    <div id="about">
+        <p id="about_title"></p>
+        <p id="about_description"></p>
+    </div>
+    <div id="importance">
+        <p id="importance_title">Importance</p>
+        <p id="importance_description"></p>
+    </div>
+
+    <div id="game_1">
+        <button id="first_game">
+            <img id="game_1_img" src="" alt="screenshot of gameplay">
+            <p id="game_text">Click to play!</p>
+        </button>
+        <button id="see_inside_1">
+            <img id="inside_icon" src="https://scratch.mit.edu/svgs/project/see-inside-white.svg" alt="see inside icon">
+            <p class="single_line" id="see_text">See inside</p>
+        </button>
+        <p class="single_line" id="first_name">Name</p>
+    </div>
+
+    <div id="game_2">
+        <button id="second_game">
+            <img id="game_2_img" src="" alt="screenshot of gameplay">
+            <p id="game_text">Click to play!</p>
+        </button>
+        <button id="see_inside_2">
+            <img id="inside_icon" src="https://scratch.mit.edu/svgs/project/see-inside-white.svg" alt="see inside icon">
+            <p class="single_line" id="see_text">See inside</p>
+        </button>
+        <p class="single_line" id="second_name">Name</p>
+    </div>
+
+    <script src="./scratchHistoryTemplateLoader.js"></script>
+</body>
+</html>
