@@ -37,7 +37,7 @@ body {
     height: 75px;
 }
 
-#fake_tab {
+.fake_tab {
     color: rgb(57, 59, 61);
     font-family: "Builder Sans", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
     font-size: 25px;

@@ -1,0 +1,98 @@
+.single_line {
+    white-space: nowrap;
+}
+
+body {
+    margin: 0px;
+    background-color: rgb(30, 30, 30);
+}
+
+#top_bar {
+    padding: 0px;
+    margin: 0px;
+    background-color: rgb(24, 24, 24);
+    border-bottom: 2px solid rgb(68, 68, 68);
+    height: 75px;
+    width: 100%;
+    display: flex;
+    list-style: none;
+    flex-wrap: nowrap;
+    flex-direction: row;
+    justify-content: flex-start;
+}
+
+#logo_button:hover {
+    cursor: pointer;
+}
+
+#logo_button, #logo_img {
+    position: relative;
+    left: 7.5px;
+    margin-top: 7.5px;
+    margin-right: 40px;
+    background-color: rgb(30, 30, 30);
+    padding: 0px;
+    width: 45px;
+    height: 45px;
+    border: 0px solid black;
+}
+
+.fake_tab {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    color: rgb(175, 175, 175);
+    font-size: 30px;
+    height: 30px;
+    width: fit-content;
+    margin: 19px 20px 0px 20px;
+}
+
+#setting_tab {
+    margin-top: 7px;
+}
+
+#arrow_buttons {
+    margin: 10px 0px 0px 75px;
+    height: 60px;
+    width: 84px;
+}
+
+#fake_searchbar {
+    display: flexbox;
+    align-items: center;
+    justify-items: center;
+    align-content: center;
+    justify-content: center;
+    margin: 7.5px 0px 0px 40px;
+    background-color: rgb(48, 48, 48);
+    height: 55px;
+    width: 1000px;
+    border: 2px solid rgb(77, 77, 77);
+    border-radius: 10px;
+}
+
+#project_title {
+    display: inline;
+    width: fit-content;
+    margin: 0px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    color: rgb(175, 175, 175);
+    font-size: 35px;
+}
+
+#search_icon {
+    position: relative;
+    top: 5px;
+    right: 5px;
+    display: inline;
+    height: 40px;
+    width: 40px;
+    transform: rotate(90deg);
+}
+
+#option_buttons {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 422.5px;
+    height: 45px;
+}
