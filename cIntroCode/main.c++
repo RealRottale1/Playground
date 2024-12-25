@@ -7,19 +7,21 @@
 #include <ctype.h>
 
 int makeParts(std::vector<std::map<std::string, std::string>>& equationSection, std::string part) {
-    const int sections = std::count(part.begin(), part.end(), '+');
+    const int sections = std::count(part.begin(), part.end(), '+')+1;
     int startIndex = 0;
     
     for (int i = 0; i < sections; i++) {
-        std::cout << "Iteration: " << i << std::endl;
-        const int endIndex = (part.find('+') != -1 ? part.find('+') : part.length());
-        const std::string portion = part.substr(startIndex, endIndex);
+        const size_t plusPos = part.find('+', startIndex);
+        const int endIndex = (plusPos != std::string::npos) ? plusPos : part.length();
+        const std::string portion = part.substr(startIndex, endIndex - startIndex);
         const int portionSize = portion.length();
+        std::cout << "Portion Size: " << portionSize << std::endl;
         std::map<std::string, std::string> portionMap;
         std::string element;
-        std::string number;
+        std::string number; 
         for (int j = 0; j < portionSize; j++) {
             const char character = portion[j];
+            std::cout << "Character: " << character << std::endl;
             if (!isdigit(character)) {
                 if (number.length() > 0) {
                     portionMap[element] = number;
@@ -33,14 +35,14 @@ int makeParts(std::vector<std::map<std::string, std::string>>& equationSection, 
         };
         if (number.length() > 0) {
             portionMap[element] = number;
-            element = "";
-            number = "";
         };
 
         equationSection.push_back(portionMap);
-        part.erase(part.find('+'), 1);
-        std::cout << "Part: " << part << std::endl;
-        startIndex = endIndex;
+        if (plusPos != std::string::npos) {
+            startIndex = plusPos + 1;
+        } else {
+            break;
+        };
     };
 
     return sections;
@@ -80,6 +82,6 @@ std::string balanceEquation(std::string source) {
 }
 
 int main() {
-    std::string balancedEquation = balanceEquation("H2O1 + C4 + F3 > H4O2 + F6");
+    std::string balancedEquation = balanceEquation("H2O1 + U2Z4T7 + C4 + F3 > H4O2 + F6");
     std::cout << balancedEquation;
 };
