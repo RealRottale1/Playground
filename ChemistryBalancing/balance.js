@@ -15,7 +15,7 @@ async function balance(source) {
         reactants = [];
         products = [];
     };
-    function makeParts(equationSection, part, isReactant) {
+    function makeParts(equationSection, part) {
         const sections = part.split('+').length;
         let startIndex = 0;
         for (let i = 0; i < sections; i++) {
@@ -25,6 +25,7 @@ async function balance(source) {
             const portionTable = {}
             let element = '';
             let number = '';
+            console.log(portionSize);
             for (let j = 0; j < portionSize; j++) {
                 const character = portion[j];
                 if (isNaN(character)) {
