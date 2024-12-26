@@ -5,8 +5,18 @@
 #include <map>
 #include <vector>
 #include <ctype.h>
+#include <thread>
+#include <chrono>
+#include <cmath>
 
-int makeParts(std::vector<std::map<std::string, std::string>>& equationSection, std::string part) {
+class equationClass {
+    public:
+        std::vector<std::map<std::string, int>> reactants;
+        std::vector<std::map<std::string, int>> products;
+};
+
+
+int makeParts(std::vector<std::map<std::string, int>>& equationSection, std::string part) {
     const int sections = std::count(part.begin(), part.end(), '+')+1;
     int startIndex = 0;
     
@@ -16,7 +26,7 @@ int makeParts(std::vector<std::map<std::string, std::string>>& equationSection, 
         const std::string portion = part.substr(startIndex, endIndex - startIndex);
         const int portionSize = portion.length();
         std::cout << "Portion Size: " << portionSize << std::endl;
-        std::map<std::string, std::string> portionMap;
+        std::map<std::string, int> portionMap;
         std::string element;
         std::string number; 
         for (int j = 0; j < portionSize; j++) {
@@ -24,7 +34,7 @@ int makeParts(std::vector<std::map<std::string, std::string>>& equationSection, 
             std::cout << "Character: " << character << std::endl;
             if (!isdigit(character)) {
                 if (number.length() > 0) {
-                    portionMap[element] = number;
+                    portionMap[element] = std::stoi(number);
                     element = "";
                     number = "";
                 };
@@ -34,7 +44,7 @@ int makeParts(std::vector<std::map<std::string, std::string>>& equationSection, 
             };
         };
         if (number.length() > 0) {
-            portionMap[element] = number;
+            portionMap[element] = std::stoi(number);
         };
 
         equationSection.push_back(portionMap);
@@ -48,14 +58,50 @@ int makeParts(std::vector<std::map<std::string, std::string>>& equationSection, 
     return sections;
 };
 
-std::string balanceEquation(std::string source) {
-    
-    class equationClass {
-        public:
-            std::vector<std::map<std::string, std::string>> reactants;
-            std::vector<std::map<std::string, std::string>> products;
+std::vector<int> nextMultiplier(int index, int length, bool reverse) {
+    std::vector<int> combination;
+    for (int i = 0; i < length; i++) {
+        const int digit = (!reverse ? (index%9)+1 : 9 - (index%9));
+        combination.insert(combination.begin(), digit);
+        index = std::floor(index/9);
+    };
+    return combination;
+};
+
+bool multiplyAndCalculate(equationClass equationTable, int multiplierI, std::vector<int> multiplier) {
+    auto multiply = [multiplier] (std::vector<std::map<std::string, int>>& section, int sectionLength, int multiplierStart) {
+        for (int i = 0; i < sectionLength; i++) {
+            std::map<std::string, int> portion = section[i];
+            for (auto pair = portion.begin(); pair != portion.end(); pair++) {
+                pair->second *= multiplier[i+multiplierStart];
+            };
+        };
     };
 
+    auto merge = [] (std::vector<std::map<std::string, int>>& section, int sectionLength) {
+        for (int i = 0; i < sectionLength; i++) {
+            std::map<std::string, int> portion = section[i];
+            for (auto pair = portion.begin(); pair != portion.end(); pair++) {
+                if (section[0].find(pair->first) != section[0].end()) {
+                    section[0][pair->first] += pair->second;
+                } else {
+                    section[0][pair->first] = pair->second;
+                };
+            };
+        };
+        section.erase(section.begin()+1, section.end());
+    };
+
+    const int reactantsLength = equationTable.reactants.size();
+    const int productsLength = equationTable.products.size(); 
+
+    multiply(equationTable.reactants, reactantsLength, 0);
+    multiply(equationTable.products, productsLength, reactantsLength);
+    merge(equationTable.reactants, reactantsLength);
+    merge(equationTable.products, productsLength);
+};
+
+std::string balanceEquation(std::string source) {
     source.erase(std::remove(source.begin(), source.end(), ' '), source.end());
     int midPoint = source.find('>', 0);
     if (midPoint <= 0) {
@@ -68,17 +114,44 @@ std::string balanceEquation(std::string source) {
     equationClass equationTable;
     int totalParts = 0;
     totalParts += makeParts(equationTable.reactants, reactants);
+    totalParts += makeParts(equationTable.products, products);
+    std::vector<int> multiplier;
+    const int multiplierLength = (equationTable.reactants.size() + equationTable.products.size());
+    for (int i = 0; i < multiplierLength; i++) {
+        multiplier.push_back(1);
+    };
+    int multiplierI = 1;
+    const std::int64_t maxLimit = (std::pow(9, totalParts))/2;
 
+    auto tryMultiplier = [multiplierI, multiplierLength, &multiplier, equationTable](bool reverse) {
+        multiplier = nextMultiplier(multiplierI, multiplierLength, reverse);
+        const bool solvedEquation = multiplyAndCalculate(equationTable, multiplierI, multiplier);
+        return solvedEquation;
+    };
 
-    // Output the reactants
-    std::cout << "AHHHHHHHHHHHHHHHHHHHHHHHh:" << std::endl;
-    for (const auto& map : equationTable.reactants) {
-        for (const auto& pair : map) {
-            std::cout << pair.first << ": " << pair.second << " " << std::endl;
-        }
-        std::cout << "NEXT SECTION!" << std::endl;
-    }
-    return source;
+    while (true) {
+        bool solvedEquation = tryMultiplier(false);
+        if (solvedEquation) {
+            return "Convert multiplier vector to string!";
+        };
+
+        solvedEquation = tryMultiplier(true);
+        if (solvedEquation) {
+            return "Convert multiplier vector to string!";
+        };
+
+        multiplierI += 1;
+        if (multiplierI >= maxLimit) {
+            throw std::invalid_argument("Equation Unsolvable/Too Big!");
+        };
+
+        if (!(multiplierI % 1000)) {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        };
+        break;
+    };
+
+    return "something went wrong!";
 }
 
 int main() {
