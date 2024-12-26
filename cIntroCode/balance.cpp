@@ -71,21 +71,21 @@ std::vector<int> nextMultiplier(int index, int length, bool reverse) {
 bool multiplyAndCalculate(equationClass equationTable, int multiplierI, std::vector<int> multiplier) {
     auto multiply = [multiplier] (std::vector<std::map<std::string, int>>& section, int sectionLength, int multiplierStart) {
         for (int i = 0; i < sectionLength; i++) {
-            std::map<std::string, int> portion = section[i];
-            for (auto pair = portion.begin(); pair != portion.end(); pair++) {
-                pair->second *= multiplier[i+multiplierStart];
+            std::map<std::string, int>& portion = section[i];
+            for (auto& pair : portion) {
+                pair.second *= multiplier[i+multiplierStart];
             };
         };
     };
 
     auto merge = [] (std::vector<std::map<std::string, int>>& section, int sectionLength) {
-        for (int i = 0; i < sectionLength; i++) {
-            std::map<std::string, int> portion = section[i];
-            for (auto pair = portion.begin(); pair != portion.end(); pair++) {
-                if (section[0].find(pair->first) != section[0].end()) {
-                    section[0][pair->first] += pair->second;
+        for (int i = 1; i < sectionLength; i++) {
+            std::map<std::string, int>& portion = section[i];
+            for (auto& pair : portion) {
+                if (section[0].find(pair.first) != section[0].end()) {
+                    section[0][pair.first] += pair.second;
                 } else {
-                    section[0][pair->first] = pair->second;
+                    section[0][pair.first] = pair.second;
                 };
             };
         };
@@ -95,10 +95,30 @@ bool multiplyAndCalculate(equationClass equationTable, int multiplierI, std::vec
     const int reactantsLength = equationTable.reactants.size();
     const int productsLength = equationTable.products.size(); 
 
+    /*//Debug
+    std::cout << "Multiplier: ";
+    for (int i = 0; i < multiplier.size(); i++) {
+        std::cout << multiplier[i];
+    };
+    std::cout << std::endl;*/
+
     multiply(equationTable.reactants, reactantsLength, 0);
     multiply(equationTable.products, productsLength, reactantsLength);
+
     merge(equationTable.reactants, reactantsLength);
     merge(equationTable.products, productsLength);
+
+    for (auto pair = equationTable.reactants[0].begin(); pair != equationTable.reactants[0].end(); pair++) {
+        if (equationTable.products[0].find(pair->first) != equationTable.products[0].end()) {
+            if (equationTable.products[0][pair->first] != equationTable.reactants[0][pair->first]) {
+                return false;
+            };
+        } else {
+            throw std::invalid_argument("Unclosed Equation!");
+        };
+    };
+
+    return true;
 };
 
 std::string balanceEquation(std::string source) {
@@ -123,20 +143,48 @@ std::string balanceEquation(std::string source) {
     int multiplierI = 1;
     const std::int64_t maxLimit = (std::pow(9, totalParts))/2;
 
-    auto tryMultiplier = [multiplierI, multiplierLength, &multiplier, equationTable](bool reverse) {
+    /*//Debug
+    for (int i = 0; i < equationTable.reactants.size(); i++) {
+        std::map<std::string, int>& portion = equationTable.reactants[i];
+        std::cout << "Pair: ";
+        for (auto& pair : portion) {
+            std::cout << pair.first << ":" << pair.second << ", ";
+        };
+        std::cout << "---------------";
+    };
+    std::cout << std::endl << "Products VVV" << std::endl;
+    for (int i = 0; i < equationTable.products.size(); i++) {
+        std::map<std::string, int>& portion = equationTable.products[i];
+        std::cout << "Pair: ";
+        for (auto& pair : portion) {
+            std::cout << pair.first << ":" << pair.second << ", ";
+        };
+        std::cout << "---------------";
+    };
+    std::cout << std::endl << std::endl;*/
+
+    auto tryMultiplier = [&multiplierI, multiplierLength, &multiplier, equationTable](bool reverse) {
         multiplier = nextMultiplier(multiplierI, multiplierLength, reverse);
         const bool solvedEquation = multiplyAndCalculate(equationTable, multiplierI, multiplier);
         return solvedEquation;
     };
 
     while (true) {
-        bool solvedEquation = tryMultiplier(false);
-        if (solvedEquation) {
+        if (tryMultiplier(false)) {
+            std::cout << "Multiplier: ";
+            for (int i = 0; i < multiplierLength; i++) {
+                std::cout << multiplier[i];
+            };
+            std::cout << std::endl;
             return "Convert multiplier vector to string!";
         };
 
-        solvedEquation = tryMultiplier(true);
-        if (solvedEquation) {
+        if (tryMultiplier(true)) {
+            std::cout << "Multiplier: ";
+            for (int i = 0; i < multiplierLength; i++) {
+                std::cout << multiplier[i];
+            };
+            std::cout << std::endl;
             return "Convert multiplier vector to string!";
         };
 
@@ -145,16 +193,15 @@ std::string balanceEquation(std::string source) {
             throw std::invalid_argument("Equation Unsolvable/Too Big!");
         };
 
-        if (!(multiplierI % 1000)) {
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+        if (!(multiplierI % 50000)) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
         };
-        break;
     };
 
     return "something went wrong!";
 }
 
 int main() {
-    std::string balancedEquation = balanceEquation("H2O1 + U2Z4T7 + C4 + F3 > H4O2 + F6");
+    std::string balancedEquation = balanceEquation("A1 + B2 + C3 + D2 + E1 > E9 + D8 + C7 + B8 + A9");
     std::cout << balancedEquation;
 };
