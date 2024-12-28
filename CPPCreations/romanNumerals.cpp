@@ -4,6 +4,7 @@
 #include <map>
 #include <algorithm>
 #include <stdexcept>
+#include <cmath>
 
 std::string romanify(int value) {
     if (value <= 0) {
@@ -21,7 +22,8 @@ std::string romanify(int value) {
                 const int difference = (romanValues[i].first - romanValues[j].first);
                 if (value >= difference && difference != romanValues[j].first) {
                     value -= difference;
-                    romanValue += romanValues[j].second + romanValues[i].second;
+                    romanValue += romanValues[j].second;
+                    romanValue += romanValues[i].second;
                 };
             };
         };
@@ -30,6 +32,13 @@ std::string romanify(int value) {
 };
 
 int unromanify(const std::string &romanValue) {
+    auto validSubtraction = [] (int &currentNumber, int &nextNumber) {
+        const int difference = std::to_string(currentNumber - nextNumber).length();
+        const int origin = std::to_string(nextNumber).length();
+        std::cout << difference << ":" << origin << std::endl;
+        return (true); //(origin == difference);
+    };
+
     std::map<char, std::pair<int, int>> romanValues = {{'M', {0, 1000}}, {'D', {1, 500}}, {'C', {2, 100}}, {'L', {3, 50}}, {'X', {4, 10}}, {'V', {5, 5}}, {'I', {6, 1}}};
     int romanValueLength = romanValue.length();
     int value;
@@ -41,38 +50,41 @@ int unromanify(const std::string &romanValue) {
                 if (romanValues.find(nextChar) != romanValues.end()) {
                     if (romanValues[currentChar].second > romanValues[nextChar].second) {
                         if ((romanValues[currentChar].second - romanValues[nextChar].second) == romanValues[nextChar].second) {
-                            throw std::invalid_argument("Invalid Roman Numeral!");
+                            throw std::invalid_argument("Invalid Roman Numeral! 5");
                         } else {
-                            const int totalDigits = std::string(romanValues[currentChar].second).length();
-                            if ((romanValues[currentChar].second - (1*romanValues[currentChar].second)) == (romanValues[currentChar].second - romanValues[nextChar].second)) {
+                            if (validSubtraction(romanValues[currentChar].second, romanValues[nextChar].second)) {
                                 value += romanValues[currentChar].second - romanValues[nextChar].second;
                                 --i;
                             } else {
-                                throw std::invalid_argument("Invalid Roman Numeral!");
+                                throw std::invalid_argument("Invalid Roman Numeral! 4");
                             };
                         };
                     } else {
                         if ((romanValues[currentChar].second + romanValues[nextChar].second) == romanValues[currentChar].second*2) {
-                            throw std::invalid_argument("Invalid Roman Numeral!");
+                            throw std::invalid_argument("Invalid Roman Numeral! 3");
                         } else {
                             value += romanValues[currentChar].second;
                         }
                     };
                 } else {
-                    throw std::invalid_argument("Invalid Roman Numeral!");
+                    throw std::invalid_argument("Invalid Roman Numeral! 2");
                 }
             } else {
                 value += romanValues[currentChar].second;
             };
         } else {
-            throw std::invalid_argument("Invalid Roman Numeral!");
+            throw std::invalid_argument("Invalid Roman Numeral! 1");
         };
     };
     return value;
 };
 
 int main() {
-    std::cout << romanify(10) << std::endl;  
-    std::cout << unromanify("XD") << std::endl;  
+    std::cout << std::endl << romanify(480) << std::endl;  
+    std::cout << unromanify("XXV") << std::endl;  
     return 0;
 };
+
+//XXV - is valid just not working!
+//IIX
+//ICM
