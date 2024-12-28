@@ -32,59 +32,67 @@ std::string romanify(int value) {
 };
 
 int unromanify(const std::string &romanValue) {
-    auto validSubtraction = [] (int &currentNumber, int &nextNumber) {
-        const int difference = std::to_string(currentNumber - nextNumber).length();
-        const int origin = std::to_string(nextNumber).length();
-        std::cout << difference << ":" << origin << std::endl;
-        return (true); //(origin == difference);
+    auto checkSubtraction = [] (char firstChar,char secondChar) {
+        if (firstChar == secondChar) {
+            return true;
+        };
+        if (secondChar == 'I' && (firstChar == 'V' || firstChar == 'X')) {
+            return true;
+        };
+        if (secondChar == 'X' && (firstChar == 'L' || firstChar == 'C')) {
+            return true;
+        };
+        if (secondChar == 'C' && (firstChar == 'D' || firstChar == 'M')) {
+            return true;
+        };
+        return false;
     };
 
     std::map<char, std::pair<int, int>> romanValues = {{'M', {0, 1000}}, {'D', {1, 500}}, {'C', {2, 100}}, {'L', {3, 50}}, {'X', {4, 10}}, {'V', {5, 5}}, {'I', {6, 1}}};
     int romanValueLength = romanValue.length();
     int value;
     for (int i = romanValueLength-1; i >= 0; i--) {
-        const char currentChar = romanValue[i];
-        if (romanValues.find(currentChar) != romanValues.end()) {
-            if (i-1 >= 0) {
-                const char nextChar = romanValue[i-1];
-                if (romanValues.find(nextChar) != romanValues.end()) {
-                    if (romanValues[currentChar].second > romanValues[nextChar].second) {
-                        if ((romanValues[currentChar].second - romanValues[nextChar].second) == romanValues[nextChar].second) {
-                            throw std::invalid_argument("Invalid Roman Numeral! 5");
+        char firstChar = romanValue[i];
+        char secondChar = (((i-1)>=0) ? romanValue[i-1] : '_');
+        char thirdChar = (((i-2)>=0) ? romanValue[i-2] : '_');
+        char fourthChar = (((i-3)>=0) ? romanValue[i-3] : '_');
+        if (firstChar == secondChar && secondChar == thirdChar && thirdChar == fourthChar) {
+            throw std::invalid_argument("Roman Numerals Cannot Repeat More Than 3 Times!");
+        };
+        if (romanValues.find(firstChar) != romanValues.end()) {
+            if (secondChar) {
+                if (romanValues.find(secondChar) != romanValues.end()) {
+                    if (romanValues[firstChar].second > romanValues[secondChar].second) {
+                        if (thirdChar && thirdChar == secondChar) {
+                            throw std::invalid_argument("Invalid Roman Numeral Arrangement!");
+                        };
+                        const bool validSubtraction = checkSubtraction(firstChar, secondChar);
+                        if (validSubtraction) {
+                            value += (romanValues[firstChar].second - romanValues[secondChar].second);
                         } else {
-                            if (validSubtraction(romanValues[currentChar].second, romanValues[nextChar].second)) {
-                                value += romanValues[currentChar].second - romanValues[nextChar].second;
-                                --i;
-                            } else {
-                                throw std::invalid_argument("Invalid Roman Numeral! 4");
-                            };
+                            throw std::invalid_argument("Invalid Subtraction Detected!");
+                            break;
                         };
                     } else {
-                        if ((romanValues[currentChar].second + romanValues[nextChar].second) == romanValues[currentChar].second*2) {
-                            throw std::invalid_argument("Invalid Roman Numeral! 3");
-                        } else {
-                            value += romanValues[currentChar].second;
-                        }
+                        value += romanValues[firstChar].second;
+                        --i;
                     };
-                } else {
-                    throw std::invalid_argument("Invalid Roman Numeral! 2");
-                }
+                } else if (secondChar != '_') {
+                    throw std::invalid_argument("Invalid Roman Numeral Character Detected!");
+                };
             } else {
-                value += romanValues[currentChar].second;
+                value += romanValues[firstChar].second;
             };
-        } else {
-            throw std::invalid_argument("Invalid Roman Numeral! 1");
+        } else { 
+           throw std::invalid_argument("Invalid Roman Numeral Character Detected!");
         };
     };
     return value;
 };
 
 int main() {
-    std::cout << std::endl << romanify(480) << std::endl;  
-    std::cout << unromanify("XXV") << std::endl;  
+    std::cout << unromanify("IIIV") << std::endl;  
     return 0;
 };
 
-//XXV - is valid just not working!
-//IIX
-//ICM
+//IIX - Invalid because it is equal to 10 and should thus be X
