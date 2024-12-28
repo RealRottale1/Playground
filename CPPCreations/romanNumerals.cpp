@@ -48,9 +48,9 @@ int unromanify(const std::string &romanValue) {
         return false;
     };
 
-    std::map<char, std::pair<int, int>> romanValues = {{'M', {0, 1000}}, {'D', {1, 500}}, {'C', {2, 100}}, {'L', {3, 50}}, {'X', {4, 10}}, {'V', {5, 5}}, {'I', {6, 1}}};
+    std::map<char, int> romanValues = {{'M', 1000}, {'D', 500}, {'C', 100}, {'L', 50}, {'X', 10}, {'V', 5}, {'I', 1}};
     int romanValueLength = romanValue.length();
-    int value;
+    int value = 0;
     for (int i = romanValueLength-1; i >= 0; i--) {
         char firstChar = romanValue[i];
         char secondChar = (((i-1)>=0) ? romanValue[i-1] : '_');
@@ -62,26 +62,26 @@ int unromanify(const std::string &romanValue) {
         if (romanValues.find(firstChar) != romanValues.end()) {
             if (secondChar) {
                 if (romanValues.find(secondChar) != romanValues.end()) {
-                    if (romanValues[firstChar].second > romanValues[secondChar].second) {
+                    if (romanValues[firstChar] > romanValues[secondChar]) {
                         if (thirdChar && thirdChar == secondChar) {
                             throw std::invalid_argument("Invalid Roman Numeral Arrangement!");
                         };
                         const bool validSubtraction = checkSubtraction(firstChar, secondChar);
                         if (validSubtraction) {
-                            value += (romanValues[firstChar].second - romanValues[secondChar].second);
+                            value += (romanValues[firstChar] - romanValues[secondChar]);
                         } else {
                             throw std::invalid_argument("Invalid Subtraction Detected!");
                             break;
                         };
                     } else {
-                        value += romanValues[firstChar].second;
+                        value += romanValues[firstChar];
                         --i;
                     };
                 } else if (secondChar != '_') {
                     throw std::invalid_argument("Invalid Roman Numeral Character Detected!");
                 };
             } else {
-                value += romanValues[firstChar].second;
+                value += romanValues[firstChar];
             };
         } else { 
            throw std::invalid_argument("Invalid Roman Numeral Character Detected!");
@@ -91,7 +91,7 @@ int unromanify(const std::string &romanValue) {
 };
 
 int main() {
-    std::cout << unromanify("IIIV") << std::endl;  
+    std::cout << unromanify("IV") << std::endl;  
     return 0;
 };
 
