@@ -25,13 +25,11 @@ int makeParts(std::vector<std::map<std::string, int>>& equationSection, std::str
         const int endIndex = (plusPos != std::string::npos) ? plusPos : part.length();
         const std::string portion = part.substr(startIndex, endIndex - startIndex);
         const int portionSize = portion.length();
-        std::cout << "Portion Size: " << portionSize << std::endl;
         std::map<std::string, int> portionMap;
         std::string element;
         std::string number; 
         for (int j = 0; j < portionSize; j++) {
             const char character = portion[j];
-            std::cout << "Character: " << character << std::endl;
             if (!isdigit(character)) {
                 if (number.length() > 0) {
                     portionMap[element] = std::stoi(number);
@@ -95,13 +93,6 @@ bool multiplyAndCalculate(equationClass equationTable, int multiplierI, std::vec
     const int reactantsLength = equationTable.reactants.size();
     const int productsLength = equationTable.products.size(); 
 
-    /*//Debug
-    std::cout << "Multiplier: ";
-    for (int i = 0; i < multiplier.size(); i++) {
-        std::cout << multiplier[i];
-    };
-    std::cout << std::endl;*/
-
     multiply(equationTable.reactants, reactantsLength, 0);
     multiply(equationTable.products, productsLength, reactantsLength);
 
@@ -121,7 +112,7 @@ bool multiplyAndCalculate(equationClass equationTable, int multiplierI, std::vec
     return true;
 };
 
-std::string balanceEquation(std::string source) {
+std::string balanceEquation(std::string &source) {
     source.erase(std::remove(source.begin(), source.end(), ' '), source.end());
     int midPoint = source.find('>', 0);
     if (midPoint <= 0) {
@@ -142,50 +133,28 @@ std::string balanceEquation(std::string source) {
     };
     int multiplierI = 1;
     const std::int64_t maxLimit = (std::pow(9, totalParts))/2;
-
-    /*//Debug
-    for (int i = 0; i < equationTable.reactants.size(); i++) {
-        std::map<std::string, int>& portion = equationTable.reactants[i];
-        std::cout << "Pair: ";
-        for (auto& pair : portion) {
-            std::cout << pair.first << ":" << pair.second << ", ";
-        };
-        std::cout << "---------------";
-    };
-    std::cout << std::endl << "Products VVV" << std::endl;
-    for (int i = 0; i < equationTable.products.size(); i++) {
-        std::map<std::string, int>& portion = equationTable.products[i];
-        std::cout << "Pair: ";
-        for (auto& pair : portion) {
-            std::cout << pair.first << ":" << pair.second << ", ";
-        };
-        std::cout << "---------------";
-    };
-    std::cout << std::endl << std::endl;*/
-
     auto tryMultiplier = [&multiplierI, multiplierLength, &multiplier, equationTable](bool reverse) {
         multiplier = nextMultiplier(multiplierI, multiplierLength, reverse);
         const bool solvedEquation = multiplyAndCalculate(equationTable, multiplierI, multiplier);
         return solvedEquation;
     };
 
+    auto vecString = [] (std::vector<int> &multiplier) {
+        std::string val;
+        const int multiplierSize = multiplier.size();
+        for (int i = 0; i < multiplierSize; i++) {
+            val += std::to_string(multiplier[i]);
+        };
+        return val;
+    };
+
     while (true) {
         if (tryMultiplier(false)) {
-            std::cout << "Multiplier: ";
-            for (int i = 0; i < multiplierLength; i++) {
-                std::cout << multiplier[i];
-            };
-            std::cout << std::endl;
-            return "Convert multiplier vector to string!";
+            return vecString(multiplier);
         };
 
         if (tryMultiplier(true)) {
-            std::cout << "Multiplier: ";
-            for (int i = 0; i < multiplierLength; i++) {
-                std::cout << multiplier[i];
-            };
-            std::cout << std::endl;
-            return "Convert multiplier vector to string!";
+            return vecString(multiplier);
         };
 
         multiplierI += 1;
@@ -202,6 +171,12 @@ std::string balanceEquation(std::string source) {
 }
 
 int main() {
-    std::string balancedEquation = balanceEquation("A1 + B2 + C3 + D2 + E1 > E9 + D8 + C7 + B8 + A9");
-    std::cout << balancedEquation;
+    while (true) {
+        std::cout << "Input an equation: ";
+        std::string equation;
+        std::getline(std::cin, equation);
+        std::cout << "Balancing equation! Please wait!" << std::endl;
+        std::string balancedEquation = balanceEquation(equation);
+        std::cout << "Multipliers: " << balancedEquation << std::endl;
+    };
 };
