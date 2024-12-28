@@ -4,37 +4,8 @@
 #include <map>
 #include <algorithm>
 
-void sortVector(std::vector<std::string> &wordVector, int wordVectorSize) {
-    if (wordVectorSize <= 1) {
-        return;
-    };
-    while (true) {
-        bool swapped = false;
-        for (int i = 0; i < wordVectorSize-1; i++) {
-            const std::string currentWord = wordVector[i];
-            const std::string nextWord = wordVector[i+1];
-            const int maxLength = std::max(currentWord.length(), nextWord.length());
-            for (int j = 0; j < maxLength; j++) {
-                const char currentChar = currentWord[j];
-                const char nextChar = nextWord[j];
-                if (int(currentChar) < int(nextChar)) {
-                    break;
-                } else if (int(currentChar) > int(nextChar)) {
-                    swapped = true;
-                    std::swap(wordVector[i], wordVector[i+1]);
-                    break;
-                };
-            };
-        };
-        if (!swapped) {
-            break;
-        }
-    };
-};
-
-std::vector<std::string> sortStrings(std::vector<std::string> &data) {
+std::vector<std::string> sortVector(std::vector<std::string> &data) {
     std::map<char, std::vector<std::string>> wordMap;
-
     const int dataSize = data.size();
     for (int i = 0; i < dataSize; i++) {
         const std::string word = data[i];
@@ -47,13 +18,38 @@ std::vector<std::string> sortStrings(std::vector<std::string> &data) {
             wordMap[int(firstChar)].push_back(word);
         };
     };
-
+    auto sortByASCIIValue = [] (std::vector<std::string> &wordVector, int wordVectorSize) {
+        if (wordVectorSize <= 1) {
+            return;
+        };
+        while (true) {
+            bool swapped = false;
+            for (int i = 0; i < wordVectorSize-1; i++) {
+                const std::string currentWord = wordVector[i];
+                const std::string nextWord = wordVector[i+1];
+                const int maxLength = std::max(currentWord.length(), nextWord.length());
+                for (int j = 0; j < maxLength; j++) {
+                    const char currentChar = currentWord[j];
+                    const char nextChar = nextWord[j];
+                    if (int(currentChar) < int(nextChar)) {
+                        break;
+                    } else if (int(currentChar) > int(nextChar)) {
+                        swapped = true;
+                        std::swap(wordVector[i], wordVector[i+1]);
+                        break;
+                    };
+                };
+            };
+            if (!swapped) {
+                break;
+            }
+        };
+    };
     for (auto &wordPair : wordMap) {
         std::vector<std::string> &wordVector = wordPair.second;
         const int wordVectorSize = wordVector.size();
-        sortVector(wordVector, wordVectorSize);
+        sortByASCIIValue(wordVector, wordVectorSize);
     };
-
     std::vector<std::string> sortedVector;
     for (auto &wordPair : wordMap) {
         std::vector<std::string> &wordVector = wordPair.second;
@@ -62,14 +58,12 @@ std::vector<std::string> sortStrings(std::vector<std::string> &data) {
             sortedVector.push_back(wordVector[i]);
         };
     };
-
     return sortedVector;
 };
 
-std::vector<float> sortNumbers(std::vector<float> &data) {
+std::vector<float> sortVector(std::vector<float> &data) {
     std::vector<float> negativeNumbers;
     std::vector<float> positiveNumbers;
-
     const int dataSize = data.size();
     for (int i = 0; i < dataSize; i++) {
         const float number = data[i];
@@ -79,8 +73,6 @@ std::vector<float> sortNumbers(std::vector<float> &data) {
             positiveNumbers.push_back(number);
         };
     };
-
-
     std::vector<float> allNumbers;
     for (int i = 0; i < 2; i++) {
         std::vector<float>& useVector = (i ? negativeNumbers : positiveNumbers);
@@ -101,20 +93,45 @@ std::vector<float> sortNumbers(std::vector<float> &data) {
         };
         allNumbers.insert(allNumbers.begin(), useVector.begin(), useVector.end());
     };
-
     return allNumbers;
 };
 
 int main() {
-    std::vector<std::string> stringData = {"orange", "apple", "ant", "america", "pear", "mango", "banana", "grape", "cherry", "kiwi", "lemon", "lime", "blueberry", "raspberry", "blackberry", "watermelon", "strawberry", "pineapple", "apricot", "avocado", "coconut", "cranberry", "date", "fig", "guava", "jackfruit", "lychee", "nectarine", "papaya", "peach", "plum", "pomegranate", "tangerine", "persimmon", "cantaloupe", "honeydew", "durian", "starfruit", "kumquat", "mulberry", "passionfruit", "olive", "tomato", "cucumber", "pumpkin", "zucchini", "carrot", "onion", "potato", "garlic", "spinach", "lettuce", "broccoli", "cauliflower", "celery", "beet", "radish", "turnip", "parsley", "basil", "oregano", "sage", "thyme", "mint", "ginger", "turmeric", "cinnamon", "nutmeg", "clove", "cardamom", "vanilla", "chocolate", "sugar", "honey", "jam", "butter", "bread", "pasta", "rice", "noodle", "egg", "chicken", "fish", "beef", "lamb", "pork", "shrimp", "lobster", "crab", "oyster", "clam", "scallop", "salmon", "trout", "cod", "tuna", "sardine", "mackerel", "anchovy"};
-    std::vector<std::string> sortedStringData = sortStrings(stringData);
+    std::vector<std::string> data = {
+    "45.6", "apple", "-23.4", "banana", "12.3", "carrot", "-67.8", "date",
+    "89.1", "elephant", "-45.3", "frog", "56.7", "grape", "-78.9", "honey",
+    "34.2", "igloo", "-9.8", "jungle", "23.4", "kiwi", "-90.1", "lemon",
+    "12.5", "mango", "-45.6", "nectarine", "67.8", "orange", "-89.0", "pear",
+    "45.1", "quokka", "-34.7", "raspberry", "78.2", "strawberry", "-56.3", "tomato",
+    "23.8", "umbrella", "-90.5", "violet", "67.4", "watermelon", "-78.1", "xylophone",
+    "34.6", "yacht", "-23.7", "zebra", "89.9", "alpha", "-45.5", "beta",
+    "12.2", "gamma", "-67.9", "delta", "23.1", "epsilon", "-78.3", "zeta",
+    "34.9", "eta", "-90.2", "theta", "45.3", "iota", "-23.5", "kappa",
+    "56.1", "lambda", "-34.4", "mu", "78.6", "nu", "-45.2", "xi",
+    "89.5", "omicron", "-67.3", "pi", "12.4", "rho", "-90.6", "sigma",
+    "34.8", "tau", "-78.7", "upsilon", "67.3", "phi", "-23.6", "chi",
+    "45.4", "psi", "-12.9", "omega", "56.9", "apple", "-89.7", "banana",
+    "12.7", "carrot", "-67.6", "date", "78.4", "elephant", "-23.8", "frog",
+    "34.5", "grape", "-45.1", "honey", "56.8", "igloo", "-90.7", "jungle",
+    "67.1", "kiwi", "-78.5", "lemon", "23.9", "mango", "-12.8", "nectarine",
+    "89.6", "orange", "-45.8", "pear", "34.7", "quokka", "-67.2", "raspberry",
+    "12.6", "strawberry", "-23.9", "tomato", "78.7", "umbrella", "-45.9", "violet",
+    "89.3", "watermelon", "-78.8", "xylophone", "56.5", "yacht", "-90.8", "zebra",
+    "34.3", "alpha", "-67.7", "beta", "12.8", "gamma", "-45.4", "delta",
+    "78.8", "epsilon", "-23.3", "zeta", "67.2", "eta", "-89.2", "theta",
+    "45.5", "iota", "-12.3", "kappa", "34.1", "lambda", "-78.4", "mu",
+    "56.2", "nu", "-45.6", "xi", "89.2", "omicron", "-67.1", "pi",
+    "23.7", "rho", "-90.4", "sigma", "78.1", "tau", "-12.6", "upsilon",
+    "45.7", "phi", "-23.2", "chi", "67.6", "psi", "-34.9", "omega",
+    "89.4", "apple", "-90.3", "banana", "34.4", "carrot", "-67.5", "date",
+    "45.8", "elephant", "-12.5", "frog", "56.4", "grape", "-45.7", "honey",
+    "78.3", "igloo", "-23.4", "jungle", "12.9", "kiwi", "-78.6", "lemon"
+};
+    std::vector<std::string> sortedData = sortVector(data);
 
-    std::vector<float> numberData = {-23.45, 45.67, -12.34, 34.21, -98.76,  56.78, -78.91, 12.56, -67.89, 89.01,  -45.32, 23.89, -9.87, 67.45, -56.32,  89.76, -34.56, 12.34, -78.54, 90.12,  -67.89, 34.21, -45.67, 78.91, -90.23,  56.43, -12.34, 34.56, -89.76, 67.32,  -45.98, 23.45, -78.23, 90.45, -56.89,  34.21, -67.89, 12.34, -89.45, 56.78,  -45.32, 67.89, -23.45, 34.56, -90.12,  12.34, -78.91, 89.01, -56.78, 34.21};
-    std::vector<float> sortedNumberData = sortNumbers(numberData);
-
-    const int sortedDataSize = sortedNumberData.size();
+    const int sortedDataSize = sortedData.size();
     for (int i = 0; i < sortedDataSize; i++) {
-        std::cout << sortedNumberData[i] << ", " << std::endl;
+        std::cout << sortedData[i] << ", " << std::endl;
     };
 
     return 0;
