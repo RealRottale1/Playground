@@ -32,6 +32,9 @@ std::string romanify(int value) {
 };
 
 int unromanify(const std::string &romanValue) {
+    if (romanValue.length() <= 0) {
+        throw std::invalid_argument("Cannot Convert Empty String Into Roman Numerals!");
+    };
     auto checkSubtraction = [] (char firstChar,char secondChar) {
         if (firstChar == secondChar) {
             return true;
@@ -47,7 +50,6 @@ int unromanify(const std::string &romanValue) {
         };
         return false;
     };
-
     std::map<char, int> romanValues = {{'M', 1000}, {'D', 500}, {'C', 100}, {'L', 50}, {'X', 10}, {'V', 5}, {'I', 1}};
     int romanValueLength = romanValue.length();
     int value = 0;
