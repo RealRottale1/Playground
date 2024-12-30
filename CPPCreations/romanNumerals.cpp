@@ -93,8 +93,6 @@ int unromanify(const std::string &romanValue) {
 };
 
 int main() {
-    std::cout << unromanify("IV") << std::endl;  
+    std::cout << unromanify("IX") << std::endl;  
     return 0;
 };
-
-//IIX - Invalid because it is equal to 10 and should thus be X

@@ -15,7 +15,6 @@ class equationClass {
         std::vector<std::map<std::string, int>> products;
 };
 
-
 int makeParts(std::vector<std::map<std::string, int>>& equationSection, std::string part) {
     const int sections = std::count(part.begin(), part.end(), '+')+1;
     int startIndex = 0;
