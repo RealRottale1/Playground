@@ -131,9 +131,30 @@ void handleGame() {
     };
 
     auto checkForWinner = [] (std::map<int, std::array<char, 3>> &gameBoard) {
-        for (int h = 0; h < 2; h++) {
-            
+        for (int i = 0; i < 3; i++) {
+            if (gameBoard[i][0] != '_' && gameBoard[i][0] == gameBoard[i][1] && gameBoard[i][1] == gameBoard[i][2]) {
+                return gameBoard[i][0];
+            };
         };
+        for (int i = 0; i < 3; i++) {
+            if (gameBoard[0][i] != '_' && gameBoard[0][i] == gameBoard[1][i] && gameBoard[1][i] == gameBoard[2][i]) {
+                return gameBoard[0][i];
+            };
+        };
+        if (gameBoard[0][0] != '_' && gameBoard[0][0] == gameBoard[1][1] && gameBoard[1][1] == gameBoard[2][2]) {
+            return gameBoard[0][0];
+        }; 
+        if (gameBoard[0][2] != '_' && gameBoard[0][2] == gameBoard[1][1] && gameBoard[1][1] == gameBoard[2][0]) {
+            return gameBoard[0][2];
+        };
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                if (gameBoard[i][j] == '_') {
+                    return 'P';
+                };
+            };
+        };
+        return 'D';
     };
 
     auto debugMoves = [] (std::map<int, std::vector<int>> &moves) {
@@ -161,38 +182,41 @@ void handleGame() {
         } while (invalidMove(playerMove, gameBoard));
         
         std::map<int, std::vector<int>> winMoves = getSelectSpots('O', gameBoard);
-        std::cout << "Win Moves:" << std::endl;
-        debugMoves(winMoves);
+        //std::cout << "Win Moves:" << std::endl;
+        //debugMoves(winMoves);
         bool handledWinMoves = handlePossibleMoves(winMoves, gameBoard); 
 
         if (!handledWinMoves) {
             std::map<int, std::vector<int>> blockMoves = getSelectSpots('X', gameBoard);
-            std::cout << "Block Moves:" << std::endl;
-            debugMoves(blockMoves);
+           // std::cout << "Block Moves:" << std::endl;
+           // debugMoves(blockMoves);
             bool handledBlockMoves = handlePossibleMoves(blockMoves, gameBoard);
             if (!handledBlockMoves) {
                 std::map<int, std::vector<int>> emptyMoves = getEmptySpots(gameBoard);
-                std::cout << "Empty Moves:" << std::endl;
-                debugMoves(emptyMoves);
+                //std::cout << "Empty Moves:" << std::endl;
+                //debugMoves(emptyMoves);
                 bool handledEmptyMoves = handlePossibleMoves(emptyMoves, gameBoard);
             };
         };
         
-        bool gameResults = checkForWinner(gameBoard);
-    };
-
-    /*std::map<int, std::vector<int>> moves = getBlockSpots(gameBoard);
-    for (int i = 0; i < 3; i++) {
-        std::cout << "Row: " << i << std::endl;
-        int vectorSize = moves[i].size();
-        for (int j = 0; j < vectorSize; j++) {
-            std::cout << moves[i][j];
+        char gameResults = checkForWinner(gameBoard);
+        if (gameResults != 'P') {
+            if (gameResults == 'D') {
+                std::cout << "Draw!" << std::endl;
+            } else {
+                std::cout << gameResults << " won the game!" << std::endl;
+            };
+            break;
         };
-        std::cout << std::endl;
-    };*/
+    };
 };
 
 int main() {
-    handleGame();
+    std::string playGame;
+    do {
+        handleGame();
+        std::cout << "Play Again? yes/no: ";
+        std::getline(std::cin, playGame);
+    } while (playGame == "yes");
     return 0;
 };
