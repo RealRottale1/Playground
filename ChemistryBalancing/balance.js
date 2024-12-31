@@ -6,7 +6,7 @@ async function waitTick() {
     return new Promise((results) => {
         setTimeout(() => {
             results();
-        },0.0025);
+        }, 0.0025);
     });
 };
 
