@@ -175,30 +175,7 @@ void handleGame() {
 
     while (true) {
         outputGameBoard(gameBoard);
-        std::string playerMove;
-        do {
-            std::cout << "Player Move: ";
-            std::getline(std::cin, playerMove);
-        } while (invalidMove(playerMove, gameBoard));
-        
-        std::map<int, std::vector<int>> winMoves = getSelectSpots('O', gameBoard);
-        //std::cout << "Win Moves:" << std::endl;
-        //debugMoves(winMoves);
-        bool handledWinMoves = handlePossibleMoves(winMoves, gameBoard); 
 
-        if (!handledWinMoves) {
-            std::map<int, std::vector<int>> blockMoves = getSelectSpots('X', gameBoard);
-           // std::cout << "Block Moves:" << std::endl;
-           // debugMoves(blockMoves);
-            bool handledBlockMoves = handlePossibleMoves(blockMoves, gameBoard);
-            if (!handledBlockMoves) {
-                std::map<int, std::vector<int>> emptyMoves = getEmptySpots(gameBoard);
-                //std::cout << "Empty Moves:" << std::endl;
-                //debugMoves(emptyMoves);
-                bool handledEmptyMoves = handlePossibleMoves(emptyMoves, gameBoard);
-            };
-        };
-        
         char gameResults = checkForWinner(gameBoard);
         if (gameResults != 'P') {
             if (gameResults == 'D') {
@@ -207,6 +184,30 @@ void handleGame() {
                 std::cout << gameResults << " won the game!" << std::endl;
             };
             break;
+        };
+
+        std::string playerMove;
+        do {
+            std::cout << "Player Move: ";
+            std::getline(std::cin, playerMove);
+        } while (invalidMove(playerMove, gameBoard));
+        
+        std::map<int, std::vector<int>> winMoves = getSelectSpots('O', gameBoard);
+        std::cout << "Win Moves:" << std::endl;
+        debugMoves(winMoves);
+        bool handledWinMoves = handlePossibleMoves(winMoves, gameBoard); 
+
+        if (!handledWinMoves) {
+            std::map<int, std::vector<int>> blockMoves = getSelectSpots('X', gameBoard);
+            std::cout << "Block Moves:" << std::endl;
+            debugMoves(blockMoves);
+            bool handledBlockMoves = handlePossibleMoves(blockMoves, gameBoard);
+            if (!handledBlockMoves) {
+                std::map<int, std::vector<int>> emptyMoves = getEmptySpots(gameBoard);
+                std::cout << "Empty Moves:" << std::endl;
+                debugMoves(emptyMoves);
+                bool handledEmptyMoves = handlePossibleMoves(emptyMoves, gameBoard);
+            };
         };
     };
 };
