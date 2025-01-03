@@ -16,12 +16,13 @@ void inputTime() {
     std::string addTime;
     std::cout << "Add time: ";
     std::getline(std::cin, addTime);
+    const int subtract = (addTime.find('-') == std::string::npos ? 1 : -1);
     const int delimiterIndex = addTime.find(':');
     if (delimiterIndex != std::string::npos) {
         std::string minutes = addTime.substr(0, delimiterIndex);
         std::string seconds = addTime.substr(delimiterIndex+1, addTime.length());
         totalTime += stoi(minutes) * 60;
-        totalTime += stoi(seconds);
+        totalTime += stoi(seconds) * subtract;
     }
     std::cout << std::endl;
 }
