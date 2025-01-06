@@ -5,17 +5,18 @@
 #include <algorithm>
 #include <cmath>
 #include <deque>
+#include <stdexcept>
 
 std::map<int, std::array<char, 10>> maze = {
     {0, {'1', '1', '1', '1', '1', '1', '1', '1', '1', '1'}},
-    {1, {'1', 'M', '0', '0', '0', '0', '0', '0', '0', '1'}},
-    {2, {'1', '0', '0', '0', '0', '0', '0', '0', '0', '1'}},
-    {3, {'1', '0', '0', '0', '0', '0', '0', '0', '0', '1'}},
-    {4, {'1', '0', '0', '0', '0', '0', '0', '0', '0', '1'}},
-    {5, {'1', '0', '0', '0', '0', '0', '0', '0', '0', '1'}},
-    {6, {'1', '0', '0', '0', '0', '0', '0', '0', '0', '1'}},
-    {7, {'1', '0', '0', '0', '0', '0', '0', '0', '0', '1'}},
-    {8, {'1', '0', '0', '0', '0', '0', '0', '0', 'C', '1'}},
+    {1, {'1', 'M', '1', '0', '1', '0', '0', '0', '0', '1'}},
+    {2, {'1', '0', '1', '0', '1', '0', '0', '0', '0', '1'}},
+    {3, {'1', '0', '1', '0', '1', '0', '0', '0', '0', '1'}},
+    {4, {'1', '0', '1', '0', '1', '1', '1', '0', '0', '1'}},
+    {5, {'1', '0', '1', '0', '0', '0', '1', '0', '0', '1'}},
+    {6, {'1', '0', '1', '0', '1', '0', '1', '0', '0', '1'}},
+    {7, {'1', '0', '1', '0', '1', '0', '1', '0', '0', '1'}},
+    {8, {'1', '0', '0', '0', '1', '1', '1', '0', 'C', '1'}},
     {9, {'1', '1', '1', '1', '1', '1', '1', '1', '1', '1'}},
 };
 
@@ -73,6 +74,15 @@ std::vector<tile*> getNeighbors(int x, int y, std::map<int, std::array<tile, 10>
             tile* neighbor = &tiledMaze[y][x+change];
             if (!neighbor->isWall) {
                 neighbors.push_back(neighbor);
+            }
+        }
+        for (int rep2 = 0; rep2 < 2; rep2++) {
+            const int change2 = (!rep2 ? -1 : 1);
+            if (y+change2 > -1 && y+change2 < 11 && x+change > -1 && x+change < 11) {
+                tile* neighbor = &tiledMaze[y+change2][x+change];
+                if (!neighbor->isWall) {
+                    neighbors.push_back(neighbor);
+                }
             }
         }
     }
@@ -153,10 +163,27 @@ int main() {
     auto [endX, endY] = getPositionOfChar('C');
     
     std::deque<std::array<int, 2>> pathRoute = findPath(startX, startY, endX, endY);
+    
+    maze[startY][startX] = '0';
+
     const int pathRouteSize = pathRoute.size();
     for (int i = 0; i < pathRouteSize; i++) {
-        std::cout << pathRoute[i][0] << pathRoute[i][1] << std::endl;
+        for (int y = 0; y < 10; y++) {
+            for (int x = 0; x < 10; x++) {
+                if (y == pathRoute[i][1] && x == pathRoute[i][0]) {
+                    std::cout << ' ' << ' ' << 'M';
+                } else {
+                    std::cout << ' ' << ' ' << maze[y][x];
+                }
+            }
+            std::cout << std::endl;
+        }
+        std::cin.get();
     }
     
+    if (pathRoute[0][0] == -1 && pathRoute[0][1] == -1) {
+        throw std::invalid_argument();
+    }
+
     return 0;
 }
