@@ -4,38 +4,54 @@
 #include <string>
 #include <thread>
 #include <cctype>
+#include <cmath>
 #include <mutex>
 
+std::mutex conversionMapMutex;
 std::map<std::string, std::string> decBinConversionMap;
 std::map<std::string, std::string> binDecConversionMap;
 
-std::vector<std::string> convertBases(std::string &rawData, int toBase) {
+std::vector<std::string> convertBases(std::string &rawData, int fromBase, int toBase) {
     auto split = [] (std::string &rawData) {
         std::vector<std::string> textVector;
-        while (text.find(' ') != std::string::npos) {
-            const int endPos = text.find(' ');
-            textVector.push_back(text.substr(0, endPos));
-            text.erase(0, endPos+1);
+        while (rawData.find(' ') != std::string::npos) {
+            const int endPos = rawData.find(' ');
+            textVector.push_back(rawData.substr(0, endPos));
+            rawData.erase(0, endPos+1);
         }
-        textVector.push_back(text);
+        textVector.push_back(rawData);
         return textVector;
     };
 
-    auto handleThreadConversion = [toBase] (std::vector<std::string> &splitDataVector, int startAt, int endAt) {
-        auto convertDecBin = [&splitDataVector] (int i) {
-            std::string data = splitDataVector[i];
-            if (decBinConversionMap.find(data) != decBinConversionMap.end()) {
-                splitDataVector[i] = decBinConversionMap[data];
-                return;
-            } else {
-                
-            }
-        };
-
+    auto handleDecBinConversionThread = [] (std::vector<std::string> &splitDataVector, int startAt, int endAt) {
         for (int i = startAt; i < endAt; i++) {
-            switch(toBase) {
-                case 0:
-                    convertDecBin(i);
+            if (decBinConversionMap.find(splitDataVector[i]) != decBinConversionMap.end()) {
+                splitDataVector[i] = decBinConversionMap[splitDataVector[i]];
+            } else {
+                unsigned int decimalValue = std::stoi(splitDataVector[i]);
+                unsigned int byteAmount = 1;
+                do {
+                    unsigned int maxByteAmount = std::pow(2, byteAmount);
+                    if (decimalValue <= maxByteAmount) {
+                        std::string binaryString;
+                        for (int j = byteAmount*4; j >= 0; j--) {
+                            unsigned int value = std::pow(2, j);
+                            if (value >= decimalValue) {
+                                binaryString = '1' + binaryString;
+                                decimalValue -= value;
+                            } else {
+                                binaryString = '0' + binaryString;
+                            }
+                        }
+                        std::lock_guard<std::mutex> lock(conversionMapMutex);
+                        decBinConversionMap.insert({splitDataVector[i], binaryString});
+                        binDecConversionMap.insert({binaryString, splitDataVector[i]});
+                        std::lock_guard<std::mutex> unlock(conversionMapMutex);
+                        splitDataVector[i] = binaryString;
+                        break;
+                    }
+                    byteAmount += 1;
+                } while (true);
             }
         }
     };
@@ -53,11 +69,11 @@ std::vector<std::string> convertBases(std::string &rawData, int toBase) {
         if (i < extraLength) {
             const int startAt = i*(normalLength+1);
             const int endAt = startAt+normalLength+1;
-            threads.push_back(std::thread(handleThreadConversion, std::ref(splitDataVector), startAt, endAt));
+            threads.push_back(std::thread(handleDecBinConversionThread, std::ref(splitDataVector), startAt, endAt));
         } else {
             const int startAt = extraLength*(normalLength+1) + (i-extraLength)*normalLength;
             const int endAt = startAt+normalLength;
-            threads.push_back(std::thread(handleThreadConversion, std::ref(splitDataVector), startAt, endAt));
+            threads.push_back(std::thread(handleDecBinConversionThread, std::ref(splitDataVector), startAt, endAt));
         }
     }
 
@@ -67,8 +83,11 @@ std::vector<std::string> convertBases(std::string &rawData, int toBase) {
 
 }
 
+// 0=dec, 1=bin, 2=hex
 int main() {
-    std::vector<std::string> convertedData = convertBases("128 20 38", 0);
+    std::string numbers = "128";
+    std::vector<std::string> convertedData = convertBases(numbers, 0, 1);
+    k
 
     return 0;
 }
