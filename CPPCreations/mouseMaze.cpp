@@ -5,22 +5,23 @@
 #include <algorithm>
 #include <cmath>
 #include <deque>
-#include <stdexcept>
 
-std::map<int, std::array<char, 10>> maze = {
-    {0, {'1', '1', '1', '1', '1', '1', '1', '1', '1', '1'}},
-    {1, {'1', 'M', '1', '0', '1', '0', '0', '0', '0', '1'}},
-    {2, {'1', '0', '1', '0', '1', '0', '0', '0', '0', '1'}},
-    {3, {'1', '0', '1', '0', '1', '0', '0', '0', '0', '1'}},
-    {4, {'1', '0', '1', '0', '1', '1', '1', '0', '0', '1'}},
-    {5, {'1', '0', '1', '0', '0', '0', '1', '0', '0', '1'}},
-    {6, {'1', '0', '1', '0', '1', '0', '1', '0', '0', '1'}},
-    {7, {'1', '0', '1', '0', '1', '0', '1', '0', '0', '1'}},
-    {8, {'1', '0', '0', '0', '1', '1', '1', '0', 'C', '1'}},
-    {9, {'1', '1', '1', '1', '1', '1', '1', '1', '1', '1'}},
+#include <string>
+
+std::map<int, std::array<std::string, 10>> maze = {
+    {0, {"⬛", "⬛", "⬛", "⬛", "⬛", "⬛", "⬛", "⬛", "⬛", "⬛"}},
+    {1, {"⬛", "🐭", "⬛", "⬜", "⬛", "⬜", "⬜", "⬜", "⬜", "⬛"}},
+    {2, {"⬛", "⬜", "⬛", "⬜", "⬜", "⬜", "⬜", "⬜", "⬜", "⬛"}},
+    {3, {"⬛", "⬜", "⬛", "⬜", "⬛", "⬜", "⬜", "⬜", "⬜", "⬛"}},
+    {4, {"⬛", "⬜", "⬛", "⬜", "⬛", "⬛", "⬛", "⬜", "⬜", "⬛"}},
+    {5, {"⬛", "⬜", "⬛", "⬜", "⬜", "⬜", "⬛", "⬜", "⬜", "⬛"}},
+    {6, {"⬛", "⬜", "⬛", "⬜", "⬛", "⬜", "⬛", "⬜", "⬜", "⬛"}},
+    {7, {"⬛", "⬜", "⬛", "⬜", "⬛", "⬜", "⬛", "⬜", "⬜", "⬛"}},
+    {8, {"⬛", "⬜", "⬜", "⬜", "⬛", "⬛", "⬛", "⬜", "🧀", "⬛"}},
+    {9, {"⬛", "⬛", "⬛", "⬛", "⬛", "⬛", "⬛", "⬛", "⬛", "⬛"}},
 };
 
-std::array<int, 2> getPositionOfChar(char findChar) {
+std::array<int, 2> getPositionOfChar(std::string findChar) {
     for (int y = 0; y < 10; y++) {
         for (int x = 0; x < 10; x++) {
             if (maze[y][x] == findChar) {
@@ -52,7 +53,7 @@ std::map<int, std::array<tile, 10>> makeTiledMaze() {
             tile newTile;
             newTile.x = x;
             newTile.y = y;
-            newTile.isWall = (maze[y][x] == '1' ? true : false);
+            newTile.isWall = (maze[y][x] == "⬛" ? true : false);
             row[x] = newTile;
         }
         tiledMaze.insert({y, row});
@@ -159,19 +160,19 @@ std::deque<std::array<int, 2>> findPath(int sX, int sY, int eX, int eY) {
 }
 
 int main() {
-    auto [startX, startY] = getPositionOfChar('M');
-    auto [endX, endY] = getPositionOfChar('C');
+    auto [startX, startY] = getPositionOfChar("🐭");
+    auto [endX, endY] = getPositionOfChar("🧀");
     
     std::deque<std::array<int, 2>> pathRoute = findPath(startX, startY, endX, endY);
     
-    maze[startY][startX] = '0';
+    maze[startY][startX] = "⬜";
 
     const int pathRouteSize = pathRoute.size();
     for (int i = 0; i < pathRouteSize; i++) {
         for (int y = 0; y < 10; y++) {
             for (int x = 0; x < 10; x++) {
                 if (y == pathRoute[i][1] && x == pathRoute[i][0]) {
-                    std::cout << ' ' << ' ' << 'M';
+                    std::cout << ' ' << ' ' << "🐭";
                 } else {
                     std::cout << ' ' << ' ' << maze[y][x];
                 }
@@ -180,9 +181,11 @@ int main() {
         }
         std::cin.get();
     }
-    
+
     if (pathRoute[0][0] == -1 && pathRoute[0][1] == -1) {
-        throw std::invalid_argument();
+        std::cout << "Mouse could not get the cheese!" << std::endl;
+    } else {
+        std::cout << "Mouse got the cheese!" << std::endl;
     }
 
     return 0;
