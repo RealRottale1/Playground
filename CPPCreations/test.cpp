@@ -6,6 +6,7 @@
 #include <cctype>
 #include <cmath>
 #include <mutex>
+#include <chrono>
 
 std::mutex conversionMapMutex;
 std::map<std::string, std::string> decBinConversionMap;
@@ -36,7 +37,6 @@ std::vector<std::string> convertBases(std::string &rawData, int fromBase, int to
                         std::string binaryString;
                         for (int j = byteAmount; j >= 0; j--) {
                             unsigned int value = std::pow(2, j);
-                            std::cout << "Value: " << value << ", decValue: " << decimalValue << std::endl;
                             if (decimalValue >= value) {
                                 binaryString += '1';
                                 decimalValue -= value;
@@ -65,7 +65,6 @@ std::vector<std::string> convertBases(std::string &rawData, int fromBase, int to
     const int extraLength = (splitDataVectorSize > optimalThreadCount ? splitDataVectorSize % optimalThreadCount : 0);
     const int normalLength = (splitDataVectorSize - extraLength)/useThreadCount;
 
-    std::cout << "EHHHHHH!" << std::endl;
     for (int i = 0; i < useThreadCount; i++) {
         if (i < extraLength) {
             const int startAt = i*(normalLength+1);
@@ -79,17 +78,26 @@ std::vector<std::string> convertBases(std::string &rawData, int fromBase, int to
     }
 
     for (auto &thread : threads) {
-        thread.join();
+        thread.join(); 
     }
-    std::cout << "AHHHHH!";
-    std::cout << "VALUE: " << splitDataVector[0];
+
     return splitDataVector;
 }
 
 // 0=dec, 1=bin, 2=hex
 int main() {
-    std::string numbers = "128";
+    std::string numbers = "";
+    
+    auto startTime = std::chrono::high_resolution_clock::now();
     std::vector<std::string> convertedData = convertBases(numbers, 0, 1);
+    auto endTime = std::chrono::high_resolution_clock::now();
+
+    /*int convertedDataSize = convertedData.size();
+    for (int i = 0; i < convertedDataSize; i++) {
+        std::cout << convertedData[i] << ", ";
+    }*/
+
+    std::cout << std::endl << "Data Converted in " << std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count() << " milliseconds!" << std::endl;
     return 0;
 }
 
