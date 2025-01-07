@@ -4,10 +4,12 @@
 #include <string>
 #include <thread>
 #include <cctype>
+#include <mutex>
 
-std::map<std::string, std::string> numBinConversionMap;
+std::map<std::string, std::string> decBinConversionMap;
+std::map<std::string, std::string> binDecConversionMap;
 
-std::vector<std::string> convertNumBin(std::string &rawData) {
+std::vector<std::string> convertBases(std::string &rawData, int toBase) {
     auto split = [] (std::string &rawData) {
         std::vector<std::string> textVector;
         while (text.find(' ') != std::string::npos) {
@@ -19,9 +21,22 @@ std::vector<std::string> convertNumBin(std::string &rawData) {
         return textVector;
     };
 
-    auto handleNumBinConversion = [] (std::vector<std::string> &splitDataVector, int startAt, int endAt) {
+    auto handleThreadConversion = [toBase] (std::vector<std::string> &splitDataVector, int startAt, int endAt) {
+        auto convertDecBin = [&splitDataVector] (int i) {
+            std::string data = splitDataVector[i];
+            if (decBinConversionMap.find(data) != decBinConversionMap.end()) {
+                splitDataVector[i] = decBinConversionMap[data];
+                return;
+            } else {
+                
+            }
+        };
+
         for (int i = startAt; i < endAt; i++) {
-            
+            switch(toBase) {
+                case 0:
+                    convertDecBin(i);
+            }
         }
     };
 
@@ -38,11 +53,11 @@ std::vector<std::string> convertNumBin(std::string &rawData) {
         if (i < extraLength) {
             const int startAt = i*(normalLength+1);
             const int endAt = startAt+normalLength+1;
-            threads.push_back(std::thread(handleNumBinConversion, std::ref(splitDataVector), startAt, endAt));
+            threads.push_back(std::thread(handleThreadConversion, std::ref(splitDataVector), startAt, endAt));
         } else {
             const int startAt = extraLength*(normalLength+1) + (i-extraLength)*normalLength;
             const int endAt = startAt+normalLength;
-            threads.push_back(std::thread(handleNumBinConversion, std::ref(splitDataVector), startAt, endAt));
+            threads.push_back(std::thread(handleThreadConversion, std::ref(splitDataVector), startAt, endAt));
         }
     }
 
@@ -53,7 +68,7 @@ std::vector<std::string> convertNumBin(std::string &rawData) {
 }
 
 int main() {
-    std::vector<std::string> convertedData = convertNumBin("128 20 38");
+    std::vector<std::string> convertedData = convertBases("128 20 38", 0);
 
     return 0;
 }
