@@ -29,28 +29,28 @@ std::vector<std::string> convertBases(std::string &rawData, int fromBase, int to
                 splitDataVector[i] = decBinConversionMap[splitDataVector[i]];
             } else {
                 unsigned int decimalValue = std::stoi(splitDataVector[i]);
-                unsigned int byteAmount = 1;
+                unsigned int byteAmount = 7;
                 do {
                     unsigned int maxByteAmount = std::pow(2, byteAmount);
                     if (decimalValue <= maxByteAmount) {
                         std::string binaryString;
-                        for (int j = byteAmount*4; j >= 0; j--) {
+                        for (int j = byteAmount; j >= 0; j--) {
                             unsigned int value = std::pow(2, j);
-                            if (value >= decimalValue) {
-                                binaryString = '1' + binaryString;
+                            std::cout << "Value: " << value << ", decValue: " << decimalValue << std::endl;
+                            if (decimalValue >= value) {
+                                binaryString += '1';
                                 decimalValue -= value;
                             } else {
-                                binaryString = '0' + binaryString;
+                                binaryString += '0';
                             }
                         }
                         std::lock_guard<std::mutex> lock(conversionMapMutex);
                         decBinConversionMap.insert({splitDataVector[i], binaryString});
                         binDecConversionMap.insert({binaryString, splitDataVector[i]});
-                        std::lock_guard<std::mutex> unlock(conversionMapMutex);
                         splitDataVector[i] = binaryString;
                         break;
                     }
-                    byteAmount += 1;
+                    byteAmount += 8;
                 } while (true);
             }
         }
@@ -65,6 +65,7 @@ std::vector<std::string> convertBases(std::string &rawData, int fromBase, int to
     const int extraLength = (splitDataVectorSize > optimalThreadCount ? splitDataVectorSize % optimalThreadCount : 0);
     const int normalLength = (splitDataVectorSize - extraLength)/useThreadCount;
 
+    std::cout << "EHHHHHH!" << std::endl;
     for (int i = 0; i < useThreadCount; i++) {
         if (i < extraLength) {
             const int startAt = i*(normalLength+1);
@@ -80,15 +81,15 @@ std::vector<std::string> convertBases(std::string &rawData, int fromBase, int to
     for (auto &thread : threads) {
         thread.join();
     }
-
+    std::cout << "AHHHHH!";
+    std::cout << "VALUE: " << splitDataVector[0];
+    return splitDataVector;
 }
 
 // 0=dec, 1=bin, 2=hex
 int main() {
     std::string numbers = "128";
     std::vector<std::string> convertedData = convertBases(numbers, 0, 1);
-    k
-
     return 0;
 }
 
