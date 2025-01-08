@@ -137,7 +137,7 @@ std::vector<std::string> convertBases(std::string &rawData, int fromBase, int to
 
 // 0=dec, 1=bin, 2=hex
 int main() {
-    std::string numbers = "0011 111111";
+    std::string numbers = "11111111111111111111111";
     
     auto startTime = std::chrono::high_resolution_clock::now();
     std::vector<std::string> convertedData = convertBases(numbers, 1, 0);
