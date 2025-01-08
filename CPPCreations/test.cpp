@@ -7,26 +7,9 @@
 #include <cmath>
 #include <chrono>
 
-std::string maxUnsignedLongLong = std::to_string(std::numeric_limits<unsigned long long>::max());
-
-bool stringToBig(std::string &text) {
-    return false;
-    if (text.length() > maxUnsignedLongLong.length()) {
-        return true;
-    }
-    if (text.length() == maxUnsignedLongLong.length() && text > maxUnsignedLongLong) {
-        return true;
-    }
-    return false;
-}
-
 void handleDecBinConversionThread(std::vector<std::string> &splitDataVector, int startAt, int endAt) {
     std::map<std::string, std::string> decBinConversionMap;
     for (int i = startAt; i < endAt; i++) {
-        if (stringToBig(splitDataVector[i])) {
-            splitDataVector[i] = "TB";
-            continue;
-        }
         if (decBinConversionMap.find(splitDataVector[i]) != decBinConversionMap.end()) {
             splitDataVector[i] = decBinConversionMap[splitDataVector[i]];
         } else {
@@ -58,10 +41,6 @@ void handleDecBinConversionThread(std::vector<std::string> &splitDataVector, int
 void handleBinDecConversionThread(std::vector<std::string> &splitDataVector, int startAt, int endAt) {
     std::map<std::string, std::string> binDecConversionMap;
     for (int i = startAt; i < endAt; i++) {
-        if (stringToBig(splitDataVector[i])) {
-            splitDataVector[i] = "TB";
-            continue;
-        }
         if (binDecConversionMap.find(splitDataVector[i]) != binDecConversionMap.end()) {
             splitDataVector[i] = binDecConversionMap[splitDataVector[i]];
         } else {
