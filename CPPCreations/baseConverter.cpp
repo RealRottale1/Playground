@@ -6,6 +6,7 @@
 #include <cctype>
 #include <cmath>
 #include <chrono>
+#include <array>
 
 std::array<char, 16> hexCharArray = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
@@ -62,7 +63,22 @@ void handleBinDecConversionThread(std::vector<std::string> &splitDataVector, int
 
 void handleDecHexConversionThread(std::vector<std::string> &splitDataVector, int startAt, int endAt) {
     std::map<std::string, std::string> decHexConversionMap;
-
+    for (int i = startAt; i < endAt; i++) {
+         if (decHexConversionMap.find(splitDataVector[i]) != decHexConversionMap.end()) {
+            splitDataVector[i] = decHexConversionMap[splitDataVector[i]];
+        } else {
+            unsigned long long decimalValue = std::stoi(splitDataVector[i]);
+            std::string hexValue = (decimalValue != 0 ? "" : "0");
+            while (decimalValue > 0) {
+                const int whole = decimalValue / 16;
+                const int remainder = decimalValue % 16;
+                hexValue = hexCharArray[remainder] + hexValue;
+                decimalValue = whole;
+            }
+            decHexConversionMap.insert({splitDataVector[i], hexValue});
+            splitDataVector[i] = hexValue;
+        }    
+    }
 }
 
 std::vector<std::string> convertBases(std::string &rawData, int fromBase, int toBase) {
@@ -87,8 +103,8 @@ std::vector<std::string> convertBases(std::string &rawData, int fromBase, int to
                         handleDecBinConversionThread(splitDataVector, startAt, endAt);
                         break;
                     case 2:
+                        handleDecHexConversionThread(splitDataVector, startAt, endAt);
                         break;
-                        //decHex
                 }
                 break;
             case 1:
@@ -144,10 +160,10 @@ std::vector<std::string> convertBases(std::string &rawData, int fromBase, int to
 
 // 0=dec, 1=bin, 2=hex
 int main() {
-    std::string numbers = "";
+    std::string numbers = "2543";
     
     auto startTime = std::chrono::high_resolution_clock::now();
-    std::vector<std::string> convertedData = convertBases(numbers, 0, 1);
+    std::vector<std::string> convertedData = convertBases(numbers, 0, 2);
     auto endTime = std::chrono::high_resolution_clock::now();
 
     int convertedDataSize = convertedData.size();
