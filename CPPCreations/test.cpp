@@ -2,13 +2,30 @@
 #include <string>
 #include <array>
 
-int main() {
-    int numbers[10] = {3, 5, 7, 4, 6, 0, 2, 1, 9, 8};
-    int *ptr = numbers;
-    for (int i = 0; i < 10; i++) {
-        std::cout << "Index: " << i << ", Value: " << *(ptr + i) << std::endl;
-    }
+class star {
+    public:
+        std::array<int, 3> color;
+        std::string name;
+        int size;
+        int x;
+        int y;
+        star(std::array<int, 3> color, std::string name, int size, int x, int y) {
+            this->color = color;
+            this->size = size;
+            this->name = name;
+            this->x = x;
+            this->y = y;
+        }
+};
 
+bool objectsIntersect(star &object1, star &object2) {
+    return false;
+}
+
+int main() {
+    star Sun({255, 255, 0}, "sun", 100, 5, 5);
+    star Sun2({255, 0, 255}, "sun 2", 200, 5, 5);
+    bool doesItersect = objectsIntersect(Sun, Sun2);
     return 0;
 }
 
