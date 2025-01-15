@@ -1,50 +1,31 @@
 #include <iostream>
 #include <array>
-#include <stdlib.h>
-#include <ctime>
+#include <string>
 
-void printPntrArray(std::array<int, 3> *pntrArray)
+struct gameSettings
 {
-    for (int i = 0; i < 3; i++)
-    {
-        std::cout << (*pntrArray)[i] << ", ";
-    }
-    std::cout << std::endl;
-}
+    static constexpr int refreshRate = 64;
+    static constexpr unsigned int screenX = 1200;
+    static const unsigned int screenY = 1000;
+};
+
+struct player
+{
+    double health = 100.0d;
+    std::array<float, 2> position = {0.0f, 0.0f};
+};
 
 int main()
 {
-    std::srand(std::time(0));
-    std::array<int, 3> *pntrArray = new std::array<int, 3>;
+    std::cout << "Refresh Rate: " << gameSettings::refreshRate << std::endl;
+    std::cout << "Screen Size X: " << gameSettings::screenX << std::endl;
+    std::cout << "Screen Size Y: " << gameSettings::screenY << std::endl;
 
-    for (int i = 0; i < 3; i++)
-    {
-        (*pntrArray)[i] = std::rand() % 10;
-    }
+    player rottale1;
+    player *pntr = &rottale1;
 
-    printPntrArray(pntrArray);
-
-    delete pntrArray;
-    pntrArray = nullptr;
-
-    int number = 7;
-    int number2 = 8;
-    int *numberPntr = new int;
-    int *numberPntr2 = new int;
-    numberPntr = &number; // This links the pointer to the refrence of number
-    *numberPntr2 = number2; // This sets the pointer to the value of number2
-    
-    std::cout << "1: " << *numberPntr << std::endl;
-    std::cout << "2: " << *numberPntr2 << std::endl;
-    
-    *numberPntr = 5;
-    *numberPntr2 = 6;
-    
-    std::cout << "1: " << *numberPntr << std::endl;
-    std::cout << "2: " << *numberPntr2 << std::endl;
-    
-    std::cout << "1: " << number << std::endl;
-    std::cout << "2: " << number2 << std::endl;
+    std::cout << "Player Health: " << (*pntr).health << std::endl;
+    std::cout << "Player Position: " << pntr->position[0] << ", " << pntr->position[1];
 
     return 0;
 }
