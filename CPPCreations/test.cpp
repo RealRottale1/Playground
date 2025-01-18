@@ -95,12 +95,12 @@ std::string solveEquation(std::string &equation)
             const int difference = sections[i][j][1] - sections[i][j][0];
             if (priorityParentheses.find(difference) != priorityParentheses.end())
             {
-                priorityParentheses[difference].push_back({sections[i][j][0], sections[i][j][1]});
+                priorityParentheses[difference].push_back({sections[i][j][0], difference});
             }
             else
             {
                 std::vector<std::array<int, 2>> initialVector;
-                initialVector.push_back({sections[i][j][0], sections[i][j][1]});
+                initialVector.push_back({sections[i][j][0], difference});
                 priorityParentheses[difference] = initialVector;
             }
         }
@@ -113,7 +113,7 @@ std::string solveEquation(std::string &equation)
         const int pairSize = pair.second.size();
         for (int i = 0; i < pairSize; i++)
         {
-            std::cout << pair.second[i][0] << " to " << pair.second[i][1] << std::endl;
+            std::cout << pair.second[i][0] << ", length: " << pair.second[i][1] << std::endl;
         }    
     }
 
