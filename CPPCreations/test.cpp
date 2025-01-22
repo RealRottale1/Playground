@@ -96,12 +96,12 @@ std::string solveEquation(std::string &equation)
             const int difference = sections[i][j][1] - sections[i][j][0];
             if (priorityParentheses.find(difference) != priorityParentheses.end())
             {
-                priorityParentheses[difference].push_back({sections[i][j][0], difference});
+                priorityParentheses[difference].push_back({sections[i][j][0], sections[i][j][1]});
             }
             else
             {
                 std::vector<std::array<int, 2>> initialVector;
-                initialVector.push_back({sections[i][j][0], difference});
+                initialVector.push_back({sections[i][j][0], sections[i][j][1]});
                 priorityParentheses[difference] = initialVector;
             }
         }
@@ -114,7 +114,7 @@ std::string solveEquation(std::string &equation)
         const int pairSize = pair.second.size();
         for (int i = 0; i < pairSize; i++)
         {
-            std::cout << pair.second[i][0] << ", length: " << pair.second[i][1] << std::endl;
+            std::cout << pair.second[i][0] << ", end: " << pair.second[i][1] << std::endl;
         }    
     }
 
@@ -157,14 +157,37 @@ std::string solveEquation(std::string &equation)
                 equationIterator = std::find(equation.begin(), equation.end(), EMDASOperators[i]); 
             }
         }
-
         return equation[1];
     };
 
-    std::vector<std::string> tV = {"(","4","^","2",")"};
-    std::string answer = EMDAS(tV);
+    auto adjustPriorityParenthesesSize = [&priorityParentheses] (int start, int end)
+    {
+        for (auto &pair : priorityParentheses)
+        {
+            const int pairSize = pair.second.size();
+            for (int i = 0; i < pairSize; i++)
+            {
+             if ()   
+            }
+        }
+    };
 
-    std::cout << "Answer: " << answer << std::endl;
+    std::cout << std::endl << std::endl << std::endl;
+
+    for (auto &pair : priorityParentheses)
+    {
+        const int pairSize = pair.second.size();
+        for (int i = 0; i < pairSize; i++)
+        {
+            const int start = pair.second[i][0];
+            const int end = pair.second[i][1];
+            std::vector<std::string> tempVector = {tokenedEquation.begin() + start, tokenedEquation.begin() + end};
+            tokenedEquation[start] = EMDAS(tempVector);
+            tokenedEquation.erase(tokenedEquation.begin() + start + 1, tokenedEquation.begin() + end);
+            //pair.second.erase(pair.second.begin() + i);
+            adjustPriorityParenthesesSize(start, end);
+        }
+    }
 
     // std::cout << equation;
     return "  ";
