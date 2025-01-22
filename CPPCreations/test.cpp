@@ -5,6 +5,7 @@
 #include <deque>
 #include <map>
 #include <algorithm>
+#include <cmath>
 
 std::string solveEquation(std::string &equation)
 {
@@ -117,6 +118,53 @@ std::string solveEquation(std::string &equation)
         }    
     }
 
+    const std::array<std::string, 5> EMDASOperators= {"^", "*", "/", "+", "-"};
+    auto EMDAS = [&EMDASOperators] (std::vector<std::string> &equation)
+    {
+        auto solveEMDAS = [] (int i, std::string &previous, std::string &following)
+        {
+            std::string solvedEquation;
+            switch (i) {
+                case (0):
+                    solvedEquation = std::to_string(std::pow(std::stod(previous), std::stod(following)));
+                    break;
+                case (1):
+                    solvedEquation = std::to_string(std::stod(previous) * std::stod(following));
+                    break;
+                case (2):
+                    solvedEquation = std::to_string(std::stod(previous) / std::stod(following));
+                    break;
+                case (3):
+                    solvedEquation = std::to_string(std::stod(previous) + std::stod(following));
+                    break;
+                case (4):
+                    solvedEquation = std::to_string(std::stod(previous) - std::stod(following));
+                    break;
+            }
+            return solvedEquation;
+        };
+        
+        for (int i = 0; i < 5; i++)
+        {
+            auto equationIterator = std::find(equation.begin(), equation.end(), EMDASOperators[i]); 
+            while (equationIterator != equation.end())
+            {
+                const int operatorPosition = std::distance(equation.begin(), equationIterator);
+                std::cout << "Position: " << operatorPosition << std::endl;
+                std::cout << equation[operatorPosition-1] << "," << equation[operatorPosition+1] << std::endl;
+                equation[operatorPosition-1] = solveEMDAS(i, equation[operatorPosition-1], equation[operatorPosition+1]);
+                equation.erase(equation.begin() + operatorPosition, equation.begin() + operatorPosition + 1);
+                equationIterator = std::find(equation.begin(), equation.end(), EMDASOperators[i]); 
+            }
+        }
+
+        return equation[1];
+    };
+
+    std::vector<std::string> tV = {"(","4","^","2",")"};
+    std::string answer = EMDAS(tV);
+
+    std::cout << "Answer: " << answer << std::endl;
 
     // std::cout << equation;
     return "  ";
