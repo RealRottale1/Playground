@@ -22,7 +22,7 @@ std::string solveEquation(std::string &equation)
         {
             if (std::isdigit(equation[i]) || equation[i] == '.')
             {
-                tempString += equation[i];
+                tempString = equation[i] + tempString;
             }
             else
             {
@@ -107,7 +107,7 @@ std::string solveEquation(std::string &equation)
         }
     }
 
-    std::cout << "Priority Data: " << std::endl;
+    /*std::cout << "Priority Data: " << std::endl;
     for (auto &pair : priorityParentheses)
     {
         std::cout << "Difference: " << pair.first << std::endl;
@@ -116,10 +116,10 @@ std::string solveEquation(std::string &equation)
         {
             std::cout << pair.second[i][0] << ", end: " << pair.second[i][1] << std::endl;
         }    
-    }
+    }*/
 
     const std::array<std::string, 5> EMDASOperators= {"^", "*", "/", "+", "-"};
-    auto EMDAS = [&EMDASOperators] (std::vector<std::string> &equation)
+    auto EMDAS = [&EMDASOperators] (std::vector<std::string> &equation, int returnIndex)
     {
         auto solveEMDAS = [] (int i, std::string &previous, std::string &following)
         {
@@ -141,6 +141,7 @@ std::string solveEquation(std::string &equation)
                     solvedEquation = std::to_string(std::stod(previous) - std::stod(following));
                     break;
             }
+            //std::cout << solvedEquation << std::endl;
             return solvedEquation;
         };
         
@@ -149,15 +150,21 @@ std::string solveEquation(std::string &equation)
             auto equationIterator = std::find(equation.begin(), equation.end(), EMDASOperators[i]); 
             while (equationIterator != equation.end())
             {
+                /*std::cout << "Info ";
+                for (int a = 0; a < equation.size(); a++)
+                {
+                    std::cout << equation[a];
+                }
+                std::cout << std::endl;*/
                 const int operatorPosition = std::distance(equation.begin(), equationIterator);
-                std::cout << "Position: " << operatorPosition << std::endl;
-                std::cout << equation[operatorPosition-1] << "," << equation[operatorPosition+1] << std::endl;
+                //std::cout << "Position: " << operatorPosition << std::endl;
+                //std::cout << equation[operatorPosition-1] << "," << equation[operatorPosition+1] << std::endl;
                 equation[operatorPosition-1] = solveEMDAS(i, equation[operatorPosition-1], equation[operatorPosition+1]);
-                equation.erase(equation.begin() + operatorPosition, equation.begin() + operatorPosition + 1);
+                equation.erase(equation.begin() + operatorPosition, equation.begin() + operatorPosition + 2);
                 equationIterator = std::find(equation.begin(), equation.end(), EMDASOperators[i]); 
             }
         }
-        return equation[1];
+        return equation[returnIndex];
     };
 
     auto adjustPriorityParenthesesSize = [&priorityParentheses] (int start, int end)
@@ -167,12 +174,20 @@ std::string solveEquation(std::string &equation)
             const int pairSize = pair.second.size();
             for (int i = 0; i < pairSize; i++)
             {
-             if ()   
+                const int difference = end - start;
+                if (pair.second[i][0] <= start && pair.second[i][1] >= end)
+                {
+                    pair.second[i][1] -= difference;
+                } 
+                else if (start <= pair.second[i][0]) {
+                    pair.second[i][0] -= difference;
+                    pair.second[i][1] -= difference;
+                }
             }
         }
     };
 
-    std::cout << std::endl << std::endl << std::endl;
+    //std::cout << std::endl << std::endl << std::endl;
 
     for (auto &pair : priorityParentheses)
     {
@@ -181,21 +196,29 @@ std::string solveEquation(std::string &equation)
         {
             const int start = pair.second[i][0];
             const int end = pair.second[i][1];
-            std::vector<std::string> tempVector = {tokenedEquation.begin() + start, tokenedEquation.begin() + end};
-            tokenedEquation[start] = EMDAS(tempVector);
-            tokenedEquation.erase(tokenedEquation.begin() + start + 1, tokenedEquation.begin() + end);
-            //pair.second.erase(pair.second.begin() + i);
+            std::vector<std::string> tempVector = {tokenedEquation.begin() + start, tokenedEquation.begin() + end + 1};
+            tokenedEquation[start] = EMDAS(tempVector, 1);
+            tokenedEquation.erase(tokenedEquation.begin() + start + 1, tokenedEquation.begin() + end + 1);
             adjustPriorityParenthesesSize(start, end);
+            for (int j = 0; j < tokenedEquation.size(); j++)
+            {
+                std::cout << tokenedEquation[j];
+            }
+            std::cout << std::endl;
         }
     }
 
-    // std::cout << equation;
-    return "  ";
+    std::vector<std::string> finalTempVector = {tokenedEquation.begin(), tokenedEquation.end()};
+    std::string finalAnswer = EMDAS(finalTempVector, 0);
+
+    return finalAnswer;
 }
 
 int main()
 {
-    std::string equation = "((3+2)*(3+5-7))^2-5/6+(2-5)";
-    std::cout << solveEquation(equation) << std::endl;
+    //((2-3)*4-(7^3)/4)+90/2+(5^2)^2
+    std::string equation = "2+(2+2)-(3+4)+((2/6)+((2+5)))+(9+2)+2";
+    std::string answer = solveEquation(equation);
+    std::cout << "Answer: " << answer << std::endl;
     return 0;
 }
