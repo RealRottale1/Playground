@@ -6,10 +6,16 @@
 #include <map>
 #include <algorithm>
 #include <cmath>
+#include <chrono>
 
 std::string solveEquation(std::string &equation)
 {
-    //std::cout << "Raw Data: " << equation <<std::endl;
+    // Debug!
+    /*
+    std::cout << "Raw Data: " << equation <<std::endl;
+    */
+
+    /*-------------------- Step 1: Chunking----------------------*/
     std::deque<std::string> tokenedEquation;
     std::string tempString = "";
     for (int i = equation.length() - 1; i >= 0; i--)
@@ -36,17 +42,79 @@ std::string solveEquation(std::string &equation)
             }
         }
     }
+    if (tempString.length())
+    {
+        tokenedEquation.push_front(tempString);
+    }
 
-    /*std::cout << "Tokened Data: ";
+    // Debug!
+    /*
+    std::cout << "Tokended Data: ";
+    for (int i = 0; i <= tokenedEquation.size() ; i++)
+    {
+        std::cout << tokenedEquation[i] << ", ";
+    }
+    std::cout << std::endl;
+
+    std::cout << "Step 1 Complete!" << std::endl;
+    */
+
+    /*-------------------- Step 2: Negative Handling----------------------*/
+    for (int i = tokenedEquation.size() - 1; i >= 0; i--)
+    {
+        if (tokenedEquation[i] == "-")
+        {
+            const bool hasNext = (i-1 >= 0);
+            if (!hasNext)
+            {
+                tokenedEquation[i+1] = "-" + tokenedEquation[i+1];
+                tokenedEquation.erase(tokenedEquation.begin() + i); // -22+2
+            }
+            else
+            {
+                if (tokenedEquation[i+1] == "(" || tokenedEquation[i+1] == ")")
+                {
+                    continue;
+                }
+
+                const bool nextIsDigit = std::isdigit(tokenedEquation[i-1][0]);
+                if (nextIsDigit)
+                {
+                    tokenedEquation[i] = "+";
+                    tokenedEquation[i+1] = "-" + tokenedEquation[i+1]; // 2-22+2
+                }
+                else
+                {
+                    const bool nextIsSubtraction = (tokenedEquation[i-1] == "-");
+                    if (nextIsSubtraction)
+                    {
+                        tokenedEquation[i-1] = "+";
+                        tokenedEquation.erase(tokenedEquation.begin() + i); // 2--22+2
+                    }
+                    else
+                    {
+                        tokenedEquation[i+1] = "-" + tokenedEquation[i+1];
+                        tokenedEquation.erase(tokenedEquation.begin() + i); // 2+-22+2
+                    }
+                }
+            }
+        }
+    }
+
+    // Debug!
+    /*
+    std::cout << "Negative Handled Data: ";
     for (int i = 0; i < tokenedEquation.size(); i++)
     {
         std::cout << tokenedEquation[i];
     }
-    std::cout << std::endl;*/
+    std::cout << std::endl;
+    */
 
+    std::cout << "Step 2 Complete!" << std::endl;
+    /*-------------------- Step 3: Getting Parentheses ----------------------*/
     std::vector<std::vector<std::array<int, 2>>> sections;
     const int tokenedEquationSize = tokenedEquation.size();
-
     std::vector<std::array<int, 2>> tempVector;
     int counter = 0;
     int totalCounted = -1;
@@ -75,7 +143,9 @@ std::string solveEquation(std::string &equation)
         }
     }
 
-    /*std::cout << "Sectioned Data: ";
+    // Debug!
+    /*
+    std::cout << "Sectioned Data: ";
     for (int i = 0; i < sections.size(); i++)
     {
         for (int j = 0; j < sections[i].size(); j++)
@@ -84,8 +154,11 @@ std::string solveEquation(std::string &equation)
         }
         std::cout << " | ";
     }
-    std::cout << std::endl;*/
+    std::cout << std::endl;
+    */
 
+    std::cout << "Step 3 Complete!" << std::endl;
+    /*-------------------- Step 4: Prioritizing Parentheses Sets----------------------*/
     std::map<int, std::vector<std::array<int, 2>>> priorityParentheses;
     const int sectionsSize = sections.size();
     for (int i = 0; i < sectionsSize; i++)
@@ -107,7 +180,9 @@ std::string solveEquation(std::string &equation)
         }
     }
 
-    /*std::cout << "Priority Data: " << std::endl;
+    // Debug!
+    /*
+    std::cout << "Priority Data: " << std::endl;
     for (auto &pair : priorityParentheses)
     {
         std::cout << "Difference: " << pair.first << std::endl;
@@ -116,8 +191,11 @@ std::string solveEquation(std::string &equation)
         {
             std::cout << pair.second[i][0] << ", end: " << pair.second[i][1] << std::endl;
         }    
-    }*/
+    }
+    */
 
+    std::cout << "Step 4 Complete!" << std::endl;
+    /*-------------------- Step 5: Calculating Equation ----------------------*/
     const std::array<std::string, 5> EMDASOperators= {"^", "*", "/", "+", "-"};
     auto EMDAS = [&EMDASOperators] (std::vector<std::string> &equation, int returnIndex)
     {
@@ -150,18 +228,16 @@ std::string solveEquation(std::string &equation)
             auto equationIterator = std::find(equation.begin(), equation.end(), EMDASOperators[i]); 
             while (equationIterator != equation.end())
             {
-                /*std::cout << "Info ";
-                for (int a = 0; a < equation.size(); a++)
-                {
-                    std::cout << equation[a];
-                }
-                std::cout << std::endl;*/
                 const int operatorPosition = std::distance(equation.begin(), equationIterator);
-                //std::cout << "Position: " << operatorPosition << std::endl;
-                //std::cout << equation[operatorPosition-1] << "," << equation[operatorPosition+1] << std::endl;
                 equation[operatorPosition-1] = solveEMDAS(i, equation[operatorPosition-1], equation[operatorPosition+1]);
                 equation.erase(equation.begin() + operatorPosition, equation.begin() + operatorPosition + 2);
                 equationIterator = std::find(equation.begin(), equation.end(), EMDASOperators[i]); 
+                std::cout << "Math In Action!" << std::endl;
+                for (int a = 0; a <= equation.size(); a++)
+                {
+                    std::cout << equation[a];
+                }
+                std::cout << std::endl;
             }
         }
         return equation[returnIndex];
@@ -187,8 +263,6 @@ std::string solveEquation(std::string &equation)
         }
     };
 
-    //std::cout << std::endl << std::endl << std::endl;
-
     for (auto &pair : priorityParentheses)
     {
         const int pairSize = pair.second.size();
@@ -200,24 +274,26 @@ std::string solveEquation(std::string &equation)
             tokenedEquation[start] = EMDAS(tempVector, 1);
             tokenedEquation.erase(tokenedEquation.begin() + start + 1, tokenedEquation.begin() + end + 1);
             adjustPriorityParenthesesSize(start, end);
-            for (int j = 0; j < tokenedEquation.size(); j++)
-            {
-                std::cout << tokenedEquation[j];
-            }
-            std::cout << std::endl;
         }
     }
 
-    std::vector<std::string> finalTempVector = {tokenedEquation.begin(), tokenedEquation.end()};
-    std::string finalAnswer = EMDAS(finalTempVector, 0);
-
-    return finalAnswer;
+    if (tokenedEquation.size() != 1)
+    {
+        std::vector<std::string> finalTempVector = {tokenedEquation.begin(), tokenedEquation.end()};
+        std::string finalAnswer = EMDAS(finalTempVector, 0);
+        return finalAnswer;
+    }
+    else
+    {
+        return tokenedEquation[0];
+    }
 }
 
 int main()
 {
-    //((2-3)*4-(7^3)/4)+90/2+(5^2)^2
-    std::string equation = "2+(2+2)-(3+4)+((2/6)+((2+5)))+(9+2)+2";
+    // Equation is a Level >2 (probably 4) issue. (1+2)^3-4*5+6/2+(7-8)*9+10-(11+12)/13+14*15-16+17-18/3+(19+20)*21
+    // Make able to handle 10+-(5+2)
+    std::string equation = "(1+2)^3-4*5+6/2+(7-8)*9+10-(11+12)/13+14*15-16+17-18/3+(19+20)*21";
     std::string answer = solveEquation(equation);
     std::cout << "Answer: " << answer << std::endl;
     return 0;
