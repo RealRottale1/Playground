@@ -55,9 +55,8 @@ std::string solveEquation(std::string &equation)
         std::cout << tokenedEquation[i] << ", ";
     }
     std::cout << std::endl;
-
-    std::cout << "Step 1 Complete!" << std::endl;
     */
+    //std::cout << "Step 1 Complete!" << std::endl;
 
     /*-------------------- Step 2: Negative Handling----------------------*/
     for (int i = tokenedEquation.size() - 1; i >= 0; i--)
@@ -74,6 +73,9 @@ std::string solveEquation(std::string &equation)
             {
                 if (tokenedEquation[i+1] == "(" || tokenedEquation[i+1] == ")")
                 {
+                    tokenedEquation.insert(tokenedEquation.begin() + i + 1, "1");
+                    tokenedEquation.insert(tokenedEquation.begin() + i + 2, "*");
+                    i += 2;
                     continue;
                 }
 
@@ -110,8 +112,8 @@ std::string solveEquation(std::string &equation)
     }
     std::cout << std::endl;
     */
+    //std::cout << "Step 2 Complete!" << std::endl;
 
-    std::cout << "Step 2 Complete!" << std::endl;
     /*-------------------- Step 3: Getting Parentheses ----------------------*/
     std::vector<std::vector<std::array<int, 2>>> sections;
     const int tokenedEquationSize = tokenedEquation.size();
@@ -156,8 +158,8 @@ std::string solveEquation(std::string &equation)
     }
     std::cout << std::endl;
     */
+    //std::cout << "Step 3 Complete!" << std::endl;
 
-    std::cout << "Step 3 Complete!" << std::endl;
     /*-------------------- Step 4: Prioritizing Parentheses Sets----------------------*/
     std::map<int, std::vector<std::array<int, 2>>> priorityParentheses;
     const int sectionsSize = sections.size();
@@ -193,8 +195,8 @@ std::string solveEquation(std::string &equation)
         }    
     }
     */
-
-    std::cout << "Step 4 Complete!" << std::endl;
+    //std::cout << "Step 4 Complete!" << std::endl;
+    
     /*-------------------- Step 5: Calculating Equation ----------------------*/
     const std::array<std::string, 5> EMDASOperators= {"^", "*", "/", "+", "-"};
     auto EMDAS = [&EMDASOperators] (std::vector<std::string> &equation, int returnIndex)
@@ -232,12 +234,15 @@ std::string solveEquation(std::string &equation)
                 equation[operatorPosition-1] = solveEMDAS(i, equation[operatorPosition-1], equation[operatorPosition+1]);
                 equation.erase(equation.begin() + operatorPosition, equation.begin() + operatorPosition + 2);
                 equationIterator = std::find(equation.begin(), equation.end(), EMDASOperators[i]); 
-                std::cout << "Math In Action!" << std::endl;
+                // Debug!
+                /*
+                std::cout << "Next Math Step" << std::endl;
                 for (int a = 0; a <= equation.size(); a++)
                 {
                     std::cout << equation[a];
                 }
                 std::cout << std::endl;
+                */
             }
         }
         return equation[returnIndex];
@@ -291,8 +296,6 @@ std::string solveEquation(std::string &equation)
 
 int main()
 {
-    // Equation is a Level >2 (probably 4) issue. (1+2)^3-4*5+6/2+(7-8)*9+10-(11+12)/13+14*15-16+17-18/3+(19+20)*21
-    // Make able to handle 10+-(5+2)
     std::string equation = "(1+2)^3-4*5+6/2+(7-8)*9+10-(11+12)/13+14*15-16+17-18/3+(19+20)*21";
     std::string answer = solveEquation(equation);
     std::cout << "Answer: " << answer << std::endl;
