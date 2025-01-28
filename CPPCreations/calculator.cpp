@@ -56,22 +56,22 @@ std::string solveEquation(std::string &equation)
     }
     std::cout << std::endl;
     */
-    //std::cout << "Step 1 Complete!" << std::endl;
+    // std::cout << "Step 1 Complete!" << std::endl;
 
     /*-------------------- Step 2: Negative Handling----------------------*/
     for (int i = tokenedEquation.size() - 1; i >= 0; i--)
     {
         if (tokenedEquation[i] == "-")
         {
-            const bool hasNext = (i-1 >= 0);
+            const bool hasNext = (i - 1 >= 0);
             if (!hasNext)
             {
-                tokenedEquation[i+1] = "-" + tokenedEquation[i+1];
+                tokenedEquation[i + 1] = "-" + tokenedEquation[i + 1];
                 tokenedEquation.erase(tokenedEquation.begin() + i); // -22+2
             }
             else
             {
-                if (tokenedEquation[i+1] == "(" || tokenedEquation[i+1] == ")")
+                if (tokenedEquation[i + 1] == "(" || tokenedEquation[i + 1] == ")")
                 {
                     tokenedEquation.insert(tokenedEquation.begin() + i + 1, "1");
                     tokenedEquation.insert(tokenedEquation.begin() + i + 2, "*");
@@ -79,23 +79,23 @@ std::string solveEquation(std::string &equation)
                     continue;
                 }
 
-                const bool nextIsDigit = std::isdigit(tokenedEquation[i-1][0]);
+                const bool nextIsDigit = std::isdigit(tokenedEquation[i - 1][0]);
                 if (nextIsDigit)
                 {
                     tokenedEquation[i] = "+";
-                    tokenedEquation[i+1] = "-" + tokenedEquation[i+1]; // 2-22+2
+                    tokenedEquation[i + 1] = "-" + tokenedEquation[i + 1]; // 2-22+2
                 }
                 else
                 {
-                    const bool nextIsSubtraction = (tokenedEquation[i-1] == "-");
+                    const bool nextIsSubtraction = (tokenedEquation[i - 1] == "-");
                     if (nextIsSubtraction)
                     {
-                        tokenedEquation[i-1] = "+";
+                        tokenedEquation[i - 1] = "+";
                         tokenedEquation.erase(tokenedEquation.begin() + i); // 2--22+2
                     }
                     else
                     {
-                        tokenedEquation[i+1] = "-" + tokenedEquation[i+1];
+                        tokenedEquation[i + 1] = "-" + tokenedEquation[i + 1];
                         tokenedEquation.erase(tokenedEquation.begin() + i); // 2+-22+2
                     }
                 }
@@ -112,7 +112,7 @@ std::string solveEquation(std::string &equation)
     }
     std::cout << std::endl;
     */
-    //std::cout << "Step 2 Complete!" << std::endl;
+    // std::cout << "Step 2 Complete!" << std::endl;
 
     /*-------------------- Step 3: Getting Parentheses ----------------------*/
     std::vector<std::vector<std::array<int, 2>>> sections;
@@ -158,7 +158,7 @@ std::string solveEquation(std::string &equation)
     }
     std::cout << std::endl;
     */
-    //std::cout << "Step 3 Complete!" << std::endl;
+    // std::cout << "Step 3 Complete!" << std::endl;
 
     /*-------------------- Step 4: Prioritizing Parentheses Sets----------------------*/
     std::map<int, std::vector<std::array<int, 2>>> priorityParentheses;
@@ -192,48 +192,49 @@ std::string solveEquation(std::string &equation)
         for (int i = 0; i < pairSize; i++)
         {
             std::cout << pair.second[i][0] << ", end: " << pair.second[i][1] << std::endl;
-        }    
+        }
     }
     */
-    //std::cout << "Step 4 Complete!" << std::endl;
-    
+    // std::cout << "Step 4 Complete!" << std::endl;
+
     /*-------------------- Step 5: Calculating Equation ----------------------*/
-    const std::array<std::string, 5> EMDASOperators= {"^", "*", "/", "+", "-"};
-    auto EMDAS = [&EMDASOperators] (std::vector<std::string> &equation, int returnIndex)
+    const std::array<std::string, 5> EMDASOperators = {"^", "*", "/", "+", "-"};
+    auto EMDAS = [&EMDASOperators](std::vector<std::string> &equation, int returnIndex)
     {
-        auto solveEMDAS = [] (int i, std::string &previous, std::string &following)
+        auto solveEMDAS = [](int i, std::string &previous, std::string &following)
         {
             std::string solvedEquation;
-            switch (i) {
-                case (0):
-                    solvedEquation = std::to_string(std::pow(std::stod(previous), std::stod(following)));
-                    break;
-                case (1):
-                    solvedEquation = std::to_string(std::stod(previous) * std::stod(following));
-                    break;
-                case (2):
-                    solvedEquation = std::to_string(std::stod(previous) / std::stod(following));
-                    break;
-                case (3):
-                    solvedEquation = std::to_string(std::stod(previous) + std::stod(following));
-                    break;
-                case (4):
-                    solvedEquation = std::to_string(std::stod(previous) - std::stod(following));
-                    break;
+            switch (i)
+            {
+            case (0):
+                solvedEquation = std::to_string(std::pow(std::stod(previous), std::stod(following)));
+                break;
+            case (1):
+                solvedEquation = std::to_string(std::stod(previous) * std::stod(following));
+                break;
+            case (2):
+                solvedEquation = std::to_string(std::stod(previous) / std::stod(following));
+                break;
+            case (3):
+                solvedEquation = std::to_string(std::stod(previous) + std::stod(following));
+                break;
+            case (4):
+                solvedEquation = std::to_string(std::stod(previous) - std::stod(following));
+                break;
             }
-            //std::cout << solvedEquation << std::endl;
+            // std::cout << solvedEquation << std::endl;
             return solvedEquation;
         };
-        
+
         for (int i = 0; i < 5; i++)
         {
-            auto equationIterator = std::find(equation.begin(), equation.end(), EMDASOperators[i]); 
+            auto equationIterator = std::find(equation.begin(), equation.end(), EMDASOperators[i]);
             while (equationIterator != equation.end())
             {
                 const int operatorPosition = std::distance(equation.begin(), equationIterator);
-                equation[operatorPosition-1] = solveEMDAS(i, equation[operatorPosition-1], equation[operatorPosition+1]);
+                equation[operatorPosition - 1] = solveEMDAS(i, equation[operatorPosition - 1], equation[operatorPosition + 1]);
                 equation.erase(equation.begin() + operatorPosition, equation.begin() + operatorPosition + 2);
-                equationIterator = std::find(equation.begin(), equation.end(), EMDASOperators[i]); 
+                equationIterator = std::find(equation.begin(), equation.end(), EMDASOperators[i]);
                 // Debug!
                 /*
                 std::cout << "Next Math Step" << std::endl;
@@ -248,7 +249,7 @@ std::string solveEquation(std::string &equation)
         return equation[returnIndex];
     };
 
-    auto adjustPriorityParenthesesSize = [&priorityParentheses] (int start, int end)
+    auto adjustPriorityParenthesesSize = [&priorityParentheses](int start, int end)
     {
         for (auto &pair : priorityParentheses)
         {
@@ -259,8 +260,9 @@ std::string solveEquation(std::string &equation)
                 if (pair.second[i][0] <= start && pair.second[i][1] >= end)
                 {
                     pair.second[i][1] -= difference;
-                } 
-                else if (start <= pair.second[i][0]) {
+                }
+                else if (start <= pair.second[i][0])
+                {
                     pair.second[i][0] -= difference;
                     pair.second[i][1] -= difference;
                 }
@@ -296,8 +298,13 @@ std::string solveEquation(std::string &equation)
 
 int main()
 {
-    std::string equation = "(1+2)^3-4*5+6/2+(7-8)*9+10-(11+12)/13+14*15-16+17-18/3+(19+20)*21";
-    std::string answer = solveEquation(equation);
-    std::cout << "Answer: " << answer << std::endl;
+    std::cout << "Calculator Ready!" << std::endl;
+    while (true)
+    {
+        std::string equation = "";
+        std::cout << "Equation: ";
+        std::cin >> equation;
+        std::cout << "Answer: " << solveEquation(equation) << std::endl;
+    }
     return 0;
 }
