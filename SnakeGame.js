@@ -2,7 +2,7 @@
 const MainDiv = document.createElement("div")
 MainDiv.classList.add("MainSnakeGameDiv")
 MainDiv.style.backgroundColor = "rgba(187.5, 187.5, 187.5, 1)"
-MainDiv.style.zIndex = "999"
+MainDiv.style.zIndex = "99999"
 MainDiv.style.height = "500px"
 MainDiv.style.width = "500px"
 MainDiv.style.position = "fixed"
