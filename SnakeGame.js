@@ -259,5 +259,11 @@ async function StartGame() {
     }
 }
 
+document.addEventListener("keypress", function(event) {
+    if (event.key == " ") {
+        MainDiv.style.zIndex = "0"
+    }
+});
+
 SpawnFood()
 StartGame()
