@@ -4,6 +4,7 @@ MainDiv.classList.add("MainSnakeGameDiv")
 MainDiv.style.backgroundColor = "rgba(187.5, 187.5, 187.5, 1)"
 MainDiv.style.zIndex = "99999"
 MainDiv.style.height = "500px"
+MainDiv.style.display = "flex"
 MainDiv.style.width = "500px"
 MainDiv.style.position = "fixed"
 MainDiv.style.top = "50%"
@@ -237,6 +238,9 @@ function ShowScoreBoard() {
 async function StartGame() {
     while (true) {
         await TickWait()
+        if (MainDiv.style.display == "none") {
+            continue
+        }
 
         if (DirUp[0]) {
             const SnakeLength = SnakePositions.length
@@ -261,9 +265,9 @@ async function StartGame() {
 
 document.addEventListener("keypress", function(event) {
     if (event.key == " ") {
-        MainDiv.style.zIndex = "0"
+        MainDiv.style.display = (MainDiv.style.display == "flex" ? "none" : "flex")
     }
-});
+})
 
 SpawnFood()
 StartGame()
