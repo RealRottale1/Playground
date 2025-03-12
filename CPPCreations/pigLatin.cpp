@@ -3,6 +3,7 @@
 #include <vector>
 #include <thread>
 #include <cctype>
+#include <array>
 
 std::string pigify(std::string text) {
     if (text.empty()) {
