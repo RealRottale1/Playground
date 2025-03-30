@@ -5,6 +5,7 @@
 #include <vector>
 #include <cmath>
 #include <utility>
+#include <random>
 
 std::array<std::array<char, 7>, 6> makeGameBoard() {
     std::array<std::array<char, 7>, 6> gameBoard;
@@ -28,12 +29,13 @@ void displayBoard(std::array<std::array<char, 7>, 6> &gameBoard) {
 
 bool isValidPlayerMove(std::array<std::array<char, 7>, 6> &gameBoard, std::string &playerMove) {
     if (playerMove.length() != 2) {
+        std::cout << "Invalid Position" << std::endl;
         return false;
     }
-    int column = (int)playerMove[0] - 65;
-    int row = (int)playerMove[1] - 48;
+    int row = (int)playerMove[0] - 48;
+    int column = (int)playerMove[1] - 65;
     if (column < 0 || column > 6 || row < 0 || row > 5) {
-        std::cout << "Invalid Location" << std::endl;
+        std::cout << "Invalid Position" << std::endl;
         return false; 
     }
 
@@ -54,7 +56,6 @@ bool isValidPlayerMove(std::array<std::array<char, 7>, 6> &gameBoard, std::strin
     }
 
     *userPosition = 'P';
-    std::cout << "Executed" << std::endl;
 
     return true;
 }
@@ -92,44 +93,46 @@ void botMove(std::array<std::array<char, 7>, 6> &gameBoard) {
             char currentPieceType = getPiece(row, column);
             if (currentPieceType != 'N') {
                 if (currentPieceType != '_') {
-                    // bool leftInGrid = (column - 1 != -1);
-                    // bool rightInGrid = (column + 1 != 7);
+                    bool leftInGrid = (column - 1 != -1);
+                    bool rightInGrid = (column + 1 != 7);
     
-                    // if (!leftInGrid || !rightInGrid) { // No pair
-                    //     int useDif = (leftInGrid ? -1 : 1);
-                    //     if (getPiece(row, column + useDif) == '_') {
-                    //         assignPointsToPosition(row, column + useDif, 1);
-                    //     }
-                    // } else {
-                    //     char leftPiece = getPiece(row, column - 1);
-                    //     char rightPiece = getPiece(row, column + 1);
-                    //     if (leftPiece == rightPiece && leftPiece == currentPieceType) { // 3 pair connected
-                    //         bool farLeftInGrid = (column - 2 > -1);
-                    //         bool farRightInGrid = (column + 2 < 7);
+                    if (!leftInGrid || !rightInGrid) { // No pair
+                        int useDif = (leftInGrid ? -1 : 1);
+                        if (getPiece(row, column + useDif) == '_') {
+                            assignPointsToPosition(row, column + useDif, 1);
+                        }
+                    } else {
+                        char leftPiece = getPiece(row, column - 1);
+                        char rightPiece = getPiece(row, column + 1);
+                        if (leftPiece == rightPiece && leftPiece == currentPieceType) { // 3 pair connected
+                            bool farLeftInGrid = (column - 2 > -1);
+                            bool farRightInGrid = (column + 2 < 7);
                             
-                    //         char farLeftPiece = (farLeftInGrid ? getPiece(row, column - 2) : 'N');
-                    //         char farRightPiece = (farRightInGrid ? getPiece(row, column + 2) : 'N');
+                            char farLeftPiece = (farLeftInGrid ? getPiece(row, column - 2) : 'N');
+                            char farRightPiece = (farRightInGrid ? getPiece(row, column + 2) : 'N');
+
+                            if (farLeftPiece == farRightPiece && farLeftPiece == '_') { // 3 pair connected with 2 openings
+                                std::cout << "IREGULAR!" << row << " , " << column << std::endl;
+                                assignPointsToPosition(row, column - 2, 100 * (currentPieceType == 'C' ? 10 : 1) - 10);
+                                assignPointsToPosition(row, column + 2, 100 * (currentPieceType == 'C' ? 10 : 1)  - 10);
+                            } else if (farLeftPiece == '_' || farRightPiece == '_') { // 3 pair connected with 1 opening
+                                std::cout << "IREGULAR!2" << row << " , " << column << std::endl;
+                                int useDif = (farLeftInGrid ? -2 : 2);
+                                assignPointsToPosition(row, column + useDif, 100 * (currentPieceType == 'C' ? 10 : 1)  - 10);
+                            }
     
-                    //         if (farLeftPiece == farRightPiece && farLeftPiece == '_') { // 3 pair connected with 2 openings
-                    //             assignPointsToPosition(row, column - 2, 100 * (currentPieceType == 'C' ? 10 : 1) - 10);
-                    //             assignPointsToPosition(row, column + 2, 100 * (currentPieceType == 'C' ? 10 : 1)  - 10);
-                    //         } else if (farLeftPiece == '_' || farRightPiece == '_') { // 3 pair connected with 1 opening
-                    //             int useDif = (farLeftInGrid ? -2 : 2);
-                    //             assignPointsToPosition(row, column + useDif, 100 * (currentPieceType == 'C' ? 10 : 1)  - 10);
-                    //         }
-    
-                    //     } else if (leftPiece == currentPieceType || rightPiece == currentPieceType) { // 2 pair connected
-                    //         assignPointsToPosition(row, column + (leftPiece == currentPieceType ? 1 : -1), 10);
-                    //     } else if (leftPiece == '_' || rightPiece == '_') {
-                    //         if (leftPiece == rightPiece) { // Both sides empty
-                    //             assignPointsToPosition(row, column - 1, 1);
-                    //             assignPointsToPosition(row, column + 1, 1);
-                    //         } else { // 1 side empty
-                    //             int useDif = (leftPiece == '_' ? -1 : 1);
-                    //             assignPointsToPosition(row, column + useDif, 1);
-                    //         }
-                    //     }
-                    // }
+                        } else if ((leftPiece == currentPieceType && rightPiece == '_') || (rightPiece == currentPieceType && leftPiece == '_')) { // 2 pair connected
+                            assignPointsToPosition(row, column + (leftPiece == currentPieceType ? 1 : -1), 10);
+                        } else if (leftPiece == '_' || rightPiece == '_') {
+                            if (leftPiece == rightPiece) { // Both sides empty
+                                assignPointsToPosition(row, column - 1, 1);
+                                assignPointsToPosition(row, column + 1, 1);
+                            } else { // 1 side empty
+                                int useDif = (leftPiece == '_' ? -1 : 1);
+                                assignPointsToPosition(row, column + useDif, 1);
+                            }
+                        }
+                    }
 
                     // Diagonals
                     std::map<int, std::pair<char, std::array<int, 2>>> TLBRLine;
@@ -168,7 +171,6 @@ void botMove(std::array<std::array<char, 7>, 6> &gameBoard) {
                             int useDif = (!leftDiagonalInGrid ? 1 : -1);
                             std::array<int, 2> &position = diagonals[i][useDif].second;
                             if (getPiece(position[0], position[1]) == '_') {
-                                std::cout << row << " , " << column << std::endl;
                                 assignPointsToPosition(position[0], position[1], 1);
                             }
                         } else {
@@ -180,11 +182,13 @@ void botMove(std::array<std::array<char, 7>, 6> &gameBoard) {
                                     continue;
                                 } else {
                                     if ((!farLeftDiagonalInGrid && farRightDiagonalInGrid && diagonals[i][2].first == '_') || (farLeftDiagonalInGrid && diagonals[i][-2].first == '_' && !farRightDiagonalInGrid)) { // 3 pair connected with 1 opening
+                                        std::cout << "IREGULAR!3" << row << " , " << column << std::endl;
                                         int useDif = (!farLeftDiagonalInGrid ? 2 : -2);
                                         std::array<int, 2> &position = diagonals[i][useDif].second;
                                         assignPointsToPosition(position[0], position[1], 100 * (currentPieceType == 'C' ? 10 : 1)  - 10);
                                     
                                     } else if (farLeftDiagonalInGrid && farRightDiagonalInGrid && diagonals[i][-2].first == diagonals[i][2].first && diagonals[i][-2].first == '_') { // 3 pair connected with 2 openings
+                                        std::cout << "IREGULAR!4" << row << " , " << column << std::endl;
                                         std::array<int, 2> &farLeftPosition = diagonals[i][-2].second;
                                         std::array<int, 2> &farRightPosition = diagonals[i][2].second;
                                         assignPointsToPosition(farLeftPosition[0], farLeftPosition[1], 100 * (currentPieceType == 'C' ? 10 : 1) - 10);
@@ -202,11 +206,6 @@ void botMove(std::array<std::array<char, 7>, 6> &gameBoard) {
                                     std::array<int, 2> &position = diagonals[i][useDif/2].second;
                                     assignPointsToPosition(position[0], position[1], 1);
                                 }
-                                /*
-                                int useDif = (diagonals[i][-1].first == currentPieceType ? 1 : -1);
-                                std::array<int, 2> &position = diagonals[i][useDif].second;
-                                assignPointsToPosition(position[0], position[1], 10);
-                                */
                             } else if (diagonals[i][-1].first == '_' || diagonals[i][1].first == '_') {
                                 if (diagonals[i][-1].first == diagonals[i][1].first) { // Both sides empty
                                     std::array<int, 2> &leftPosition = diagonals[i][-1].second;
@@ -221,88 +220,154 @@ void botMove(std::array<std::array<char, 7>, 6> &gameBoard) {
                             }
                         }
                     }
-
-                    std::cout << "ROW=" << row << ", COLUMN=" << column << std::endl;
-                    // Other
-                    std::cout << "TLBR LINE" << std::endl;
-                        for (const auto& entry : TLBRLine) {
-                            int key = entry.first;
-                            char character = entry.second.first;
-                            const std::array<int, 2>& arr = entry.second.second;
                     
-                            std::cout << "Key: " << key
-                                      << ", Char: " << character
-                                      << ", Array: {" << arr[0] << ", " << arr[1] << "}"
-                                      << std::endl;
-                        }
-
-                    std::cout << "BLTR LINE" << std::endl;
-                        for (const auto& entry : BLTRLine) {
-                            int key = entry.first;
-                            char character = entry.second.first;
-                            const std::array<int, 2>& arr = entry.second.second;
-                    
-                            std::cout << "Key: " << key
-                                      << ", Char: " << character
-                                      << ", Array: {" << arr[0] << ", " << arr[1] << "}"
-                                      << std::endl;
-                        }
-    
-                    // if (column < 4) {
-                    //     char endPiece = getPiece(row, column + 3);
-                    //     if (endPiece == currentPieceType) {
-                    //         char secondPiece = getPiece(row, column + 1);
-                    //         char thirdPiece = getPiece(row, column + 2);
-                    //         if (secondPiece == thirdPiece && secondPiece == '_') {
-                    //             assignPointsToPosition(row, column + 1, 10);
-                    //             assignPointsToPosition(row, column + 2, 10);
-                    //         } else if (secondPiece == '_' || thirdPiece == '_') {
-                    //             int useDif = (secondPiece == '_' ? 1 : 2);
-                    //             assignPointsToPosition(row, column + useDif, 10);
-                    //         }
-                    //     }
+                    // // Debug!
+                    // std::cout << "ROW=" << row << ", COLUMN=" << column << std::endl;
+                    // std::cout << "TLBR LINE" << std::endl;
+                    // for (const auto& entry : TLBRLine) {
+                    //     int key = entry.first;
+                    //     char character = entry.second.first;
+                    //     const std::array<int, 2>& arr = entry.second.second;
+                    //     std::cout << "Key: " << key << ", Char: " << character << ", Array: {" << arr[0] << ", " << arr[1] << "}" << std::endl;
                     // }
+                    // std::cout << "BLTR LINE" << std::endl;
+                    // for (const auto& entry : BLTRLine) {
+                    //     int key = entry.first;
+                    //     char character = entry.second.first;
+                    //     const std::array<int, 2>& arr = entry.second.second;
+                    //     std::cout << "Key: " << key << ", Char: " << character << ", Array: {" << arr[0] << ", " << arr[1] << "}" << std::endl;
+                    // }
+    
+                    if (column < 4) {
+                        char endPiece = getPiece(row, column + 3);
+                        if (endPiece == currentPieceType) {
+                            char secondPiece = getPiece(row, column + 1);
+                            char thirdPiece = getPiece(row, column + 2);
+                            if (secondPiece == thirdPiece && secondPiece == '_') {
+                                assignPointsToPosition(row, column + 1, 10);
+                                assignPointsToPosition(row, column + 2, 10);
+                            } else if (secondPiece == '_' || thirdPiece == '_') {
+                                int useDif = (secondPiece == '_' ? 1 : 2);
+                                assignPointsToPosition(row, column + useDif, 10);
+                            }
+                        }
+                    }
                 } else {
-                    // bool leftInGrid = (column - 1 != -1);
-                    // bool rightInGrid = (column + 1 != 8);
+                    bool leftInGrid = (column - 1 != -1);
+                    bool rightInGrid = (column + 1 != 7);
     
-                    // if (leftInGrid && rightInGrid) {
-                    //     char leftPiece = getPiece(row, column - 1);
-                    //     char rightPiece = getPiece(row, column + 1);
+                    if (leftInGrid && rightInGrid) {
+                        char leftPiece = getPiece(row, column - 1);
+                        char rightPiece = getPiece(row, column + 1);
     
-                    //     if (leftPiece == rightPiece && leftPiece != '_') {
-                    //         assignPointsToPosition(row, column, 9);
-                    //     }
-                    // }
+                        if (leftPiece == rightPiece && leftPiece != '_' && leftPiece != 'N') {
+                            assignPointsToPosition(row, column, 9);
+                        }
+                    }
                 }
             }
         }
     }
 
-    // for (int column = 0; column < 7; column++) {
-    //     int sameTypeCounter = 0;
-    //     char previousPieceType = 'N';
-    //     for (int row = 5; row >= 0; row--) {
-    //         char currentPieceType = gameBoard[row][column];
-    //         if (currentPieceType != '_') {
-    //             if (previousPieceType == 'N' || previousPieceType == currentPieceType) {
-    //                 sameTypeCounter += 1;
-    //             } else {
-    //                 sameTypeCounter = 0;
-    //                 previousPieceType = currentPieceType;
-    //             }
-    //         } else {
-    //             if (sameTypeCounter != 0) {
-    //                 assignPointsToPosition(row, column, std::pow(10, -1+sameTypeCounter) * ((currentPieceType == 'C' && sameTypeCounter == 3)  ? 10 : 1));
-    //             }
-    //             break;
-    //         }
-    //     }
-    // }
-
-    for (auto &pair : allMoves) {
-        std::cout << pair.first << " , " << pair.second << std::endl;
+    for (int column = 0; column < 7; column++) {
+        int sameTypeCounter = 0;
+        char previousPieceType = 'N';
+        for (int row = 5; row >= 0; row--) {
+            char currentPieceType = gameBoard[row][column];
+            if (currentPieceType != '_') {
+                if (previousPieceType == 'N' || previousPieceType == currentPieceType) {
+                    sameTypeCounter += 1;
+                } else {
+                    sameTypeCounter = 0;
+                }
+                previousPieceType = currentPieceType;
+            } else {
+                if (sameTypeCounter != 0) {
+                    assignPointsToPosition(row, column, std::pow(10, -1+sameTypeCounter) * ((currentPieceType == 'C' && sameTypeCounter == 3)  ? 10 : 1));
+                }
+                break;
+            }
+        }
     }
+
+    std::vector<std::string> bestPossibleMoves;
+    int bestPointScore = 0;
+    for (auto &pair : allMoves) {
+        // // Debug!
+        //std::cout << pair.first << " , " << pair.second << std::endl;
+        if (pair.second > bestPointScore) {
+            bestPointScore = pair.second;
+            bestPossibleMoves.clear();
+            bestPossibleMoves.push_back(pair.first);
+        } else if (pair.second == bestPointScore) {
+            bestPossibleMoves.push_back(pair.first);
+        }
+    }
+
+    std::random_device rd;
+    std::mt19937 mt(rd());
+    std::uniform_real_distribution<double> randomMove(0, bestPossibleMoves.size() - 1);
+    int randomMoveIndex = std::round(randomMove(mt));
+
+    std::string selectedMove = bestPossibleMoves[randomMoveIndex];
+    std::cout << "Bot played at " << selectedMove << std::endl;
+    int row = (int)selectedMove[0] - 48;
+    int column = (int)selectedMove[1] - 65;
+    gameBoard[row][column] = 'C';
+}
+
+bool checkForWin(std::array<std::array<char, 7>, 6> &gameBoard, char currentPieceType) {
+    for (int row = 0; row < 6; row++) {
+        int matches = 0;
+        for (int column = 0; column < 7; column++) {
+            matches += (gameBoard[row][column] == currentPieceType);
+            if (matches == 4) {
+                return true;
+            }
+        }
+    }
+
+    for (int column = 0; column < 6; column++) {
+        int matches = 0;
+        for (int row = 5; row >= 0; row--) {
+            matches += (gameBoard[row][column] == currentPieceType);
+            if (matches == 4) {
+                return true;
+            }
+        }
+    }
+
+    for (int p = 0; p < 6; p++) {
+        int rightRow = ((p + 3) > 5 ? 5 : p + 3);
+        int rightColumn = ((p - 2) < 0 ? 0 : p - 2);
+        int leftRow = ((p - 3) > 0 ? 8 - p : 5);
+        int leftColumn = ((p + 3) < 6 ? p + 3 : 6);
+        int duration = ((p + 4) < 7 ? p + 4 : 9 - p);
+
+        int rightMatches = 0;
+        int leftMatches = 0;
+        for (int i = 0; i < duration; i++) {
+            if (gameBoard[rightRow - i][rightColumn + i] == currentPieceType) {
+                if (rightMatches == 3) {
+                    return true;
+                }
+                rightMatches += 1;
+            } else {
+                rightMatches = 0;
+            }
+
+            if (gameBoard[leftRow - i][leftColumn - i] == currentPieceType) {
+                if (leftMatches == 3) {
+                    return true;
+                }
+                leftMatches += 1;
+            } else {
+                leftMatches = 0;
+            }
+        }
+    }
+
+    return false;
 }
 
 int main() {
@@ -317,8 +382,19 @@ int main() {
             std::getline(std::cin, playerMove);
             validPlayerMove = isValidPlayerMove(gameBoard, playerMove);
         } while (!validPlayerMove);
-        // Check if player won
+        bool playerWon = checkForWin(gameBoard, 'P');
+        if (playerWon) {
+            std::cout << "Player won!" << std::endl;
+            break;
+        }
         botMove(gameBoard);
+        bool botWon = checkForWin(gameBoard, 'C');
+        if (botWon) {
+            std::cout << "Bot won!" << std::endl;
+            break;
+        }
     }
+
+    displayBoard(gameBoard);
     return 0;
 }
