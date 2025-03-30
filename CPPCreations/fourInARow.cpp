@@ -112,11 +112,9 @@ void botMove(std::array<std::array<char, 7>, 6> &gameBoard) {
                             char farRightPiece = (farRightInGrid ? getPiece(row, column + 2) : 'N');
 
                             if (farLeftPiece == farRightPiece && farLeftPiece == '_') { // 3 pair connected with 2 openings
-                                std::cout << "IREGULAR!" << row << " , " << column << std::endl;
                                 assignPointsToPosition(row, column - 2, 100 * (currentPieceType == 'C' ? 10 : 1) - 10);
                                 assignPointsToPosition(row, column + 2, 100 * (currentPieceType == 'C' ? 10 : 1)  - 10);
                             } else if (farLeftPiece == '_' || farRightPiece == '_') { // 3 pair connected with 1 opening
-                                std::cout << "IREGULAR!2" << row << " , " << column << std::endl;
                                 int useDif = (farLeftInGrid ? -2 : 2);
                                 assignPointsToPosition(row, column + useDif, 100 * (currentPieceType == 'C' ? 10 : 1)  - 10);
                             }
@@ -182,13 +180,11 @@ void botMove(std::array<std::array<char, 7>, 6> &gameBoard) {
                                     continue;
                                 } else {
                                     if ((!farLeftDiagonalInGrid && farRightDiagonalInGrid && diagonals[i][2].first == '_') || (farLeftDiagonalInGrid && diagonals[i][-2].first == '_' && !farRightDiagonalInGrid)) { // 3 pair connected with 1 opening
-                                        std::cout << "IREGULAR!3" << row << " , " << column << std::endl;
                                         int useDif = (!farLeftDiagonalInGrid ? 2 : -2);
                                         std::array<int, 2> &position = diagonals[i][useDif].second;
                                         assignPointsToPosition(position[0], position[1], 100 * (currentPieceType == 'C' ? 10 : 1)  - 10);
                                     
                                     } else if (farLeftDiagonalInGrid && farRightDiagonalInGrid && diagonals[i][-2].first == diagonals[i][2].first && diagonals[i][-2].first == '_') { // 3 pair connected with 2 openings
-                                        std::cout << "IREGULAR!4" << row << " , " << column << std::endl;
                                         std::array<int, 2> &farLeftPosition = diagonals[i][-2].second;
                                         std::array<int, 2> &farRightPosition = diagonals[i][2].second;
                                         assignPointsToPosition(farLeftPosition[0], farLeftPosition[1], 100 * (currentPieceType == 'C' ? 10 : 1) - 10);
@@ -269,6 +265,7 @@ void botMove(std::array<std::array<char, 7>, 6> &gameBoard) {
         }
     }
 
+    Something is wrong with this section of the code VVVVV
     for (int column = 0; column < 7; column++) {
         int sameTypeCounter = 0;
         char previousPieceType = 'N';
@@ -283,7 +280,8 @@ void botMove(std::array<std::array<char, 7>, 6> &gameBoard) {
                 previousPieceType = currentPieceType;
             } else {
                 if (sameTypeCounter != 0) {
-                    assignPointsToPosition(row, column, std::pow(10, -1+sameTypeCounter) * ((currentPieceType == 'C' && sameTypeCounter == 3)  ? 10 : 1));
+                    std::cout << sameTypeCounter << std::endl;
+                    assignPointsToPosition(row, column, std::pow(10, -1+sameTypeCounter) * ((currentPieceType == 'C' && sameTypeCounter == 3)  ? 10 : 1) );
                 }
                 break;
             }
@@ -294,7 +292,7 @@ void botMove(std::array<std::array<char, 7>, 6> &gameBoard) {
     int bestPointScore = 0;
     for (auto &pair : allMoves) {
         // // Debug!
-        //std::cout << pair.first << " , " << pair.second << std::endl;
+        std::cout << pair.first << " , " << pair.second << std::endl;
         if (pair.second > bestPointScore) {
             bestPointScore = pair.second;
             bestPossibleMoves.clear();
@@ -320,7 +318,7 @@ bool checkForWin(std::array<std::array<char, 7>, 6> &gameBoard, char currentPiec
     for (int row = 0; row < 6; row++) {
         int matches = 0;
         for (int column = 0; column < 7; column++) {
-            matches += (gameBoard[row][column] == currentPieceType);
+            matches = (gameBoard[row][column] == currentPieceType ? matches + 1 : 0);
             if (matches == 4) {
                 return true;
             }
@@ -330,7 +328,7 @@ bool checkForWin(std::array<std::array<char, 7>, 6> &gameBoard, char currentPiec
     for (int column = 0; column < 6; column++) {
         int matches = 0;
         for (int row = 5; row >= 0; row--) {
-            matches += (gameBoard[row][column] == currentPieceType);
+            matches = (gameBoard[row][column] == currentPieceType ? matches + 1 : 0);
             if (matches == 4) {
                 return true;
             }
