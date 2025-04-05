@@ -13,6 +13,11 @@ std::array<std::array<char, 7>, 6> makeGameBoard() {
         std::array<char, 7> column = {'_', '_', '_', '_', '_', '_', '_'};
         gameBoard[i] = column;
     }
+    std::random_device rd;
+    std::mt19937 mt(rd());
+    std::uniform_real_distribution<double> randomPosition(0, 6);
+    int randomPositionIndex = std::round(randomPosition(mt));
+    gameBoard[5][randomPositionIndex] = 'C';
     return gameBoard;
 }
 
@@ -215,10 +220,10 @@ std::map<std::string, int> getNextMoves(std::array<std::array<char, 7>, 6> &game
                                         std::array<int, 2> &position = diagonals[i][useDif].second;
                                         assignPointsToPosition(position[0], position[1], 10);
                                     } else {
-                                        std::array<int, 2> &position = diagonals[i][useDif/2].second;
+                                        std::array<int, 2> &position = diagonals[i][useDif/2].second;             
                                         assignPointsToPosition(position[0], position[1], 1);
                                     }
-                                }                    
+                                }
                             } else if (diagonals[i][-1].first == '_' || diagonals[i][1].first == '_') {
                                 if (diagonals[i][-1].first == diagonals[i][1].first) { // Both sides empty
                                     std::array<int, 2> &leftPosition = diagonals[i][-1].second;
@@ -318,7 +323,7 @@ std::map<std::string, int> getNextMoves(std::array<std::array<char, 7>, 6> &game
     return allMoves;
 }
 
-void botMove(std::array<std::array<char, 7>, 6> &gameBoard) {
+void botMove(std::array<std::array<char, 7>, 6> &gameBoard, char thisPieceType) {
 
     auto makeGameBoardCopy = [](std::array<std::array<char, 7>, 6> &gameBoard) {
         std::array<std::array<char, 7>, 6> gameBoardCopy;
@@ -332,11 +337,11 @@ void botMove(std::array<std::array<char, 7>, 6> &gameBoard) {
         return gameBoardCopy;
     };
 
-    std::map<std::string, int> allMoves = getNextMoves(gameBoard, 'C');
+    std::map<std::string, int> allMoves = getNextMoves(gameBoard, thisPieceType);
 
     std::map<int, std::vector<std::string>> sortedMovesByPoints;
     for (auto &pair : allMoves) {
-        //std::cout << pair.first << " , " << pair.second << std::endl;
+        std::cout << pair.first << " , " << pair.second << std::endl;
         if (sortedMovesByPoints.find(pair.second) != sortedMovesByPoints.end()) {
             sortedMovesByPoints[pair.second].push_back(pair.first);
         } else {
@@ -367,9 +372,9 @@ void botMove(std::array<std::array<char, 7>, 6> &gameBoard) {
             int column = (int)selectedMove[1] - 65;
 
             std::array<std::array<char, 7>, 6> gameBoardCopy = makeGameBoardCopy(gameBoard);
-            gameBoardCopy[row][column] = 'C';
+            gameBoardCopy[row][column] = thisPieceType;
 
-            std::map<std::string, int> allNextMoves = getNextMoves(gameBoardCopy, 'P');
+            std::map<std::string, int> allNextMoves = getNextMoves(gameBoardCopy, (thisPieceType == 'P' ? 'C' : 'P'));
             bool safeMove = true; 
             for (auto &pair : allNextMoves) {
                 if (pair.second >= 250) {
@@ -379,7 +384,7 @@ void botMove(std::array<std::array<char, 7>, 6> &gameBoard) {
             }
 
             if (safeMove) {
-                gameBoard[row][column] = 'C';
+                gameBoard[row][column] = thisPieceType;
                 foundSafeMove = true;
                 break;
             } else {
@@ -461,20 +466,17 @@ bool checkForWin(std::array<std::array<char, 7>, 6> &gameBoard, char currentPiec
 }
 
 int main() {
+    int continues = 0;
     std::array<std::array<char, 7>, 6> gameBoard = makeGameBoard();
 
     while (true) {
         displayBoard(gameBoard);
-        std::cout << "Player Move: ";
-        bool validPlayerMove = false;
-        do {
-            std::string playerMove = "";
-            std::getline(std::cin, playerMove);
-            validPlayerMove = isValidPlayerMove(gameBoard, playerMove);
-        } while (!validPlayerMove);
-        bool playerWon = checkForWin(gameBoard, 'P');
-        if (playerWon) {
-            std::cout << "Player won!" << std::endl;
+
+        std::cout << "Bot1's Turn!" << std::endl;
+        botMove(gameBoard, 'P');
+        bool bot1Won = checkForWin(gameBoard, 'P');
+        if (bot1Won) {
+            std::cout << "Bot1 won!" << std::endl;
             break;
         } else {
             bool boardFull = checkForFull(gameBoard);
@@ -484,10 +486,13 @@ int main() {
             }
         }
 
-        botMove(gameBoard);
-        bool botWon = checkForWin(gameBoard, 'C');
-        if (botWon) {
-            std::cout << "Bot won!" << std::endl;
+        displayBoard(gameBoard);
+
+        std::cout << "Bot2's Turn!" << std::endl;
+        botMove(gameBoard, 'C');
+        bool bot2Won = checkForWin(gameBoard, 'C');
+        if (bot2Won) {
+            std::cout << "Bot2 won!" << std::endl;
             break;
         } else {
             bool boardFull = checkForFull(gameBoard);
@@ -495,6 +500,15 @@ int main() {
                 std::cout << "Tie!" << std::endl;
                 break;
             }
+        }
+
+        if (continues == 5) {
+            continues = 0;
+            std::cout << "Continue: ";
+            std::string temp;
+            std::getline(std::cin, temp);
+        } else {
+            continues++;
         }
     }
 
