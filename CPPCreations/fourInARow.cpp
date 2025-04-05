@@ -104,6 +104,12 @@ std::map<std::string, int> getNextMoves(std::array<std::array<char, 7>, 6> &game
         return piece;
     };
 
+    for (int column = 0; column < 7; column++) {
+        if (gameBoard[5][column] == '_') {
+            assignPointsToPosition(5, column, 1);
+        }
+    }
+
     for (int row = 0; row < 6; row++) {
         for (int column = 0; column < 7; column++) {
             char currentPieceType = getPiece(row, column);
@@ -195,8 +201,8 @@ std::map<std::string, int> getNextMoves(std::array<std::array<char, 7>, 6> &game
                                 if (!farLeftDiagonalInGrid && !farRightDiagonalInGrid) {
                                     continue;
                                 } else {
-                                    if ((!farLeftDiagonalInGrid && farRightDiagonalInGrid && diagonals[i][2].first == '_') || (farLeftDiagonalInGrid && diagonals[i][-2].first == '_' && !farRightDiagonalInGrid)) { // 3 pair connected with 1 opening
-                                        int useDif = (!farLeftDiagonalInGrid ? 2 : -2);
+                                    if (((!farLeftDiagonalInGrid || farLeftDiagonalInGrid && diagonals[i][-2].first != currentPieceType) && farRightDiagonalInGrid && diagonals[i][2].first == '_') || (farLeftDiagonalInGrid && diagonals[i][-2].first == '_' && (!farRightDiagonalInGrid || farRightDiagonalInGrid && diagonals[i][2].first != currentPieceType))) { // 3 pair connected with 1 opening
+                                        int useDif = ((!farLeftDiagonalInGrid || farLeftDiagonalInGrid && (diagonals[i][-2].first == 'N' || diagonals[i][-2].first == (currentPieceType == 'P' ? 'C' : 'P'))) ? 2 : -2);
                                         std::array<int, 2> &position = diagonals[i][useDif].second;
                                         assignPointsToPosition(position[0], position[1], 100 * (currentPieceType == thisPieceType ? 10 : 1)  - 10);
                                     
