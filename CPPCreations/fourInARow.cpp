@@ -65,7 +65,7 @@ std::string getPositionName(int row, int column) {
     return positionName;
 }
 
-void botMove(std::array<std::array<char, 7>, 6> &gameBoard) {
+std::map<std::string, int> getNextMoves(std::array<std::array<char, 7>, 6> &gameBoard, char thisPieceType) {
     std::map<std::string, int> allMoves = {};
 
     auto assignPointsToPosition = [&allMoves](int row, int column, int points) {
@@ -112,11 +112,11 @@ void botMove(std::array<std::array<char, 7>, 6> &gameBoard) {
                             char farRightPiece = (farRightInGrid ? getPiece(row, column + 2) : 'N');
 
                             if (farLeftPiece == farRightPiece && farLeftPiece == '_') { // 3 pair connected with 2 openings
-                                assignPointsToPosition(row, column - 2, 100 * (currentPieceType == 'C' ? 10 : 1) - 10);
-                                assignPointsToPosition(row, column + 2, 100 * (currentPieceType == 'C' ? 10 : 1)  - 10);
+                                assignPointsToPosition(row, column - 2, 100 * (currentPieceType == thisPieceType ? 10 : 1) - 10);
+                                assignPointsToPosition(row, column + 2, 100 * (currentPieceType == thisPieceType ? 10 : 1)  - 10);
                             } else if (farLeftPiece == '_' || farRightPiece == '_') { // 3 pair connected with 1 opening
                                 int useDif = (farLeftInGrid ? -2 : 2);
-                                assignPointsToPosition(row, column + useDif, 100 * (currentPieceType == 'C' ? 10 : 1)  - 10);
+                                assignPointsToPosition(row, column + useDif, 100 * (currentPieceType == thisPieceType ? 10 : 1)  - 10);
                             }
     
                         } else if ((leftPiece == currentPieceType && rightPiece == '_') || (rightPiece == currentPieceType && leftPiece == '_')) { // 2 pair connected
@@ -182,13 +182,13 @@ void botMove(std::array<std::array<char, 7>, 6> &gameBoard) {
                                     if ((!farLeftDiagonalInGrid && farRightDiagonalInGrid && diagonals[i][2].first == '_') || (farLeftDiagonalInGrid && diagonals[i][-2].first == '_' && !farRightDiagonalInGrid)) { // 3 pair connected with 1 opening
                                         int useDif = (!farLeftDiagonalInGrid ? 2 : -2);
                                         std::array<int, 2> &position = diagonals[i][useDif].second;
-                                        assignPointsToPosition(position[0], position[1], 100 * (currentPieceType == 'C' ? 10 : 1)  - 10);
+                                        assignPointsToPosition(position[0], position[1], 100 * (currentPieceType == thisPieceType ? 10 : 1)  - 10);
                                     
                                     } else if (farLeftDiagonalInGrid && farRightDiagonalInGrid && diagonals[i][-2].first == diagonals[i][2].first && diagonals[i][-2].first == '_') { // 3 pair connected with 2 openings
                                         std::array<int, 2> &farLeftPosition = diagonals[i][-2].second;
                                         std::array<int, 2> &farRightPosition = diagonals[i][2].second;
-                                        assignPointsToPosition(farLeftPosition[0], farLeftPosition[1], 100 * (currentPieceType == 'C' ? 10 : 1) - 10);
-                                        assignPointsToPosition(farRightPosition[0], farRightPosition[1], 100 * (currentPieceType == 'C' ? 10 : 1)  - 10);
+                                        assignPointsToPosition(farLeftPosition[0], farLeftPosition[1], 100 * (currentPieceType == thisPieceType ? 10 : 1) - 10);
+                                        assignPointsToPosition(farRightPosition[0], farRightPosition[1], 100 * (currentPieceType == thisPieceType ? 10 : 1)  - 10);
                                     }
                                 }
                             } else if (diagonals[i][-1].first == currentPieceType || diagonals[i][1].first == currentPieceType) { // 2 pair connected
@@ -271,21 +271,28 @@ void botMove(std::array<std::array<char, 7>, 6> &gameBoard) {
         for (int row = 5; row >= 0; row--) {
             char currentPieceType = gameBoard[row][column];
             if (currentPieceType != '_') {
-                if (previousPieceType == currentPieceType) { //previousPieceType == 'N' || 
-                    sameTypeCounter += 1;
+                if (previousPieceType != currentPieceType) {
+                    sameTypeCounter = 1;
                 } else {
-                    sameTypeCounter = 0;
+                    sameTypeCounter += 1;
                 }
                 previousPieceType = currentPieceType;
             } else {
                 if (sameTypeCounter != 0) {
                     std::cout << "Row: " << row << ", Column: " <<  column << ", " << sameTypeCounter << std::endl;
-                    assignPointsToPosition(row, column, std::pow(10, sameTypeCounter) * ((currentPieceType == 'C' && sameTypeCounter == 3)  ? 10 : 1) );
+                    assignPointsToPosition(row, column, std::pow(10, -1+sameTypeCounter) * ((currentPieceType == thisPieceType && sameTypeCounter == 3)  ? 10 : 1) );
                 }
                 break;
             }
         }
     }
+
+    return allMoves;
+}
+
+void botMove(std::array<std::array<char, 7>, 6> &gameBoard) {
+
+    std::map<std::string, int> allMoves = getNextMoves(gameBoard, 'C');
 
     std::vector<std::string> bestPossibleMoves;
     int bestPointScore = 0;
