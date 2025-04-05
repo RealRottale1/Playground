@@ -222,7 +222,8 @@ std::map<std::string, int> getNextMoves(std::array<std::array<char, 7>, 6> &game
                                 if (diagonals[i][useDif/2].first == '_') {
                                     bool farDiagonalInGrid = (diagonals[i].find(useDif) != diagonals[i].end() && diagonals[i][useDif].first != 'N');
                                     if (farDiagonalInGrid && (diagonals[i][useDif].first == '_' || diagonals[i][useDif].first == currentPieceType)) {
-                                        std::array<int, 2> &position = diagonals[i][useDif].second;
+                                        std::array<int, 2> &position = diagonals[i][useDif/2].second; // the /2 was added!!!!!!!!!!!
+                                        std::cout << "E1 Row: " << position[0] << ", Column: " << position[1] << ", CurrentRow: " << row << ", CurrentColumn: " << column << std::endl;
                                         assignPointsToPosition(position[0], position[1], 10);
                                     } else {
                                         std::array<int, 2> &position = diagonals[i][useDif/2].second;             
@@ -318,7 +319,7 @@ std::map<std::string, int> getNextMoves(std::array<std::array<char, 7>, 6> &game
         int row = (int)key[0] - 48;
         int column = (int)key[1] - 65;
         if ((row == 5 ? (gameBoard[row][column] != '_') : (getPiece(row, column) != '_') )) {
-            std::cout << "Purging Move At Row: " << row << ", Column: " << column << ", Points: " << it->second << std::endl;
+            std::cout << "Purging Move At Row: " << row << ", Column: " << column << ", Points: " << it->second << ", Type: " << gameBoard[row][column] << ", getType: " << getPiece(row, column) << std::endl;
             it = allMoves.erase(it);
         } else {
             it++;
@@ -343,6 +344,8 @@ void botMove(std::array<std::array<char, 7>, 6> &gameBoard, char thisPieceType) 
     };
 
     std::map<std::string, int> allMoves = getNextMoves(gameBoard, thisPieceType);
+
+    std::cout << " ----- END OF REAL ----- " << std::endl;
 
     std::map<int, std::vector<std::string>> sortedMovesByPoints;
     for (auto &pair : allMoves) {
@@ -403,7 +406,7 @@ void botMove(std::array<std::array<char, 7>, 6> &gameBoard, char thisPieceType) 
     if (!foundSafeMove) {
         int row = (int)firstBestMove[0] - 48;
         int column = (int)firstBestMove[1] - 65;
-        gameBoard[row][column] = 'C';
+        gameBoard[row][column] = thisPieceType;
     }
 }
 
