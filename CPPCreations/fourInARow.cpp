@@ -265,14 +265,13 @@ void botMove(std::array<std::array<char, 7>, 6> &gameBoard) {
         }
     }
 
-    Something is wrong with this section of the code VVVVV
     for (int column = 0; column < 7; column++) {
         int sameTypeCounter = 0;
         char previousPieceType = 'N';
         for (int row = 5; row >= 0; row--) {
             char currentPieceType = gameBoard[row][column];
             if (currentPieceType != '_') {
-                if (previousPieceType == 'N' || previousPieceType == currentPieceType) {
+                if (previousPieceType == currentPieceType) { //previousPieceType == 'N' || 
                     sameTypeCounter += 1;
                 } else {
                     sameTypeCounter = 0;
@@ -280,8 +279,8 @@ void botMove(std::array<std::array<char, 7>, 6> &gameBoard) {
                 previousPieceType = currentPieceType;
             } else {
                 if (sameTypeCounter != 0) {
-                    std::cout << sameTypeCounter << std::endl;
-                    assignPointsToPosition(row, column, std::pow(10, -1+sameTypeCounter) * ((currentPieceType == 'C' && sameTypeCounter == 3)  ? 10 : 1) );
+                    std::cout << "Row: " << row << ", Column: " <<  column << ", " << sameTypeCounter << std::endl;
+                    assignPointsToPosition(row, column, std::pow(10, sameTypeCounter) * ((currentPieceType == 'C' && sameTypeCounter == 3)  ? 10 : 1) );
                 }
                 break;
             }
