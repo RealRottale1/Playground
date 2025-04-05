@@ -28,16 +28,32 @@ void displayBoard(std::array<std::array<char, 7>, 6> &gameBoard) {
 }
 
 bool isValidPlayerMove(std::array<std::array<char, 7>, 6> &gameBoard, std::string &playerMove) {
-    if (playerMove.length() != 2) {
+    if (playerMove.length() != 1) {
         std::cout << "Invalid Position" << std::endl;
         return false;
     }
-    int row = (int)playerMove[0] - 48;
-    int column = (int)playerMove[1] - 65;
-    if (column < 0 || column > 6 || row < 0 || row > 5) {
-        std::cout << "Invalid Position" << std::endl;
+
+    int column = (int)playerMove[0] - 65;
+    if (column < 0 || column > 6) {
+        std::cout << "Column is Invalid" << std::endl;
         return false; 
     }
+
+    int row = 0;
+    do {
+        char pieceAtPosition = gameBoard[row][column];
+        if (pieceAtPosition == '_') {
+            row++;
+        } else {
+            row--;
+            break;
+        }
+    } while (true);
+    if (row == -1) {
+        std::cout << "Column is Full" << std::endl;
+        return false; 
+    }
+
 
     auto* userRow = &gameBoard[row];
     auto* userPosition = &(*userRow)[column];
@@ -279,7 +295,6 @@ std::map<std::string, int> getNextMoves(std::array<std::array<char, 7>, 6> &game
                 previousPieceType = currentPieceType;
             } else {
                 if (sameTypeCounter != 0) {
-                    std::cout << "Row: " << row << ", Column: " <<  column << ", " << sameTypeCounter << std::endl;
                     assignPointsToPosition(row, column, std::pow(10, -1+sameTypeCounter) * ((currentPieceType == thisPieceType && sameTypeCounter == 3)  ? 10 : 1) );
                 }
                 break;
@@ -292,32 +307,79 @@ std::map<std::string, int> getNextMoves(std::array<std::array<char, 7>, 6> &game
 
 void botMove(std::array<std::array<char, 7>, 6> &gameBoard) {
 
+    auto makeGameBoardCopy = [] (std::array<std::array<char, 7>, 6> &gameBoard) {
+        std::array<std::array<char, 7>, 6> gameBoardCopy;
+        for (int row = 0; row < 6; row++) {
+            std::array<char, 7> tempArray;
+            for (int column = 0; column < 7; column++) {
+                tempArray[column] = gameBoard[row][column];
+            }
+            gameBoardCopy[row] = tempArray;
+        }
+        return gameBoardCopy;
+    };
+
     std::map<std::string, int> allMoves = getNextMoves(gameBoard, 'C');
 
-    std::vector<std::string> bestPossibleMoves;
-    int bestPointScore = 0;
+    std::map<int, std::vector<std::string>> sortedMovesByPoints;
     for (auto &pair : allMoves) {
-        // // Debug!
-        std::cout << pair.first << " , " << pair.second << std::endl;
-        if (pair.second > bestPointScore) {
-            bestPointScore = pair.second;
-            bestPossibleMoves.clear();
-            bestPossibleMoves.push_back(pair.first);
-        } else if (pair.second == bestPointScore) {
-            bestPossibleMoves.push_back(pair.first);
+        //std::cout << pair.first << " , " << pair.second << std::endl;
+        if (sortedMovesByPoints.find(pair.second) != sortedMovesByPoints.end()) {
+            sortedMovesByPoints[pair.second].push_back(pair.first);
+        } else {
+            std::vector<std::string> tempVector = {pair.first};
+            sortedMovesByPoints.insert({pair.second, tempVector});
         }
     }
 
-    std::random_device rd;
-    std::mt19937 mt(rd());
-    std::uniform_real_distribution<double> randomMove(0, bestPossibleMoves.size() - 1);
-    int randomMoveIndex = std::round(randomMove(mt));
+    bool foundSafeMove = false;
+    std::string firstBestMove = "";
+    for (auto it = sortedMovesByPoints.rbegin(); it != sortedMovesByPoints.rend(); it++) {
+        if (foundSafeMove) {
+            break;
+        }
+        std::vector<std::string> samePointMoves = sortedMovesByPoints[it->first];
+        while (samePointMoves.size() > 0) {
+            std::random_device rd;
+            std::mt19937 mt(rd());
+            std::uniform_real_distribution<double> randomMove(0, samePointMoves.size() - 1);
+            int randomMoveIndex = std::round(randomMove(mt));
 
-    std::string selectedMove = bestPossibleMoves[randomMoveIndex];
-    std::cout << "Bot played at " << selectedMove << std::endl;
-    int row = (int)selectedMove[0] - 48;
-    int column = (int)selectedMove[1] - 65;
-    gameBoard[row][column] = 'C';
+            std::string selectedMove = samePointMoves[randomMoveIndex];
+            if (firstBestMove == "") {
+                firstBestMove = selectedMove;
+            }
+
+            int row = (int)selectedMove[0] - 48;
+            int column = (int)selectedMove[1] - 65;
+
+            std::array<std::array<char, 7>, 6> gameBoardCopy = makeGameBoardCopy(gameBoard);
+            gameBoardCopy[row][column] = 'C';
+
+            std::map<std::string, int> allNextMoves = getNextMoves(gameBoardCopy, 'P');
+            bool safeMove = true; 
+            for (auto &pair : allNextMoves) {
+                if (pair.second >= 250) {
+                    safeMove = false;
+                    break;
+                }
+            }
+
+            if (safeMove) {
+                gameBoard[row][column] = 'C';
+                foundSafeMove = true;
+                break;
+            } else {
+                samePointMoves.erase(samePointMoves.begin() + randomMoveIndex);
+            }
+        }
+    }
+
+    if (!foundSafeMove) {
+        int row = (int)firstBestMove[0] - 48;
+        int column = (int)firstBestMove[1] - 65;
+        gameBoard[row][column] = 'C';
+    }
 }
 
 bool checkForWin(std::array<std::array<char, 7>, 6> &gameBoard, char currentPieceType) {
