@@ -134,14 +134,17 @@ std::map<std::string, int> getNextMoves(std::array<std::array<char, 7>, 6> &game
                             char farRightPiece = (farRightInGrid ? getPiece(row, column + 2) : 'N');
 
                             if (farLeftPiece == farRightPiece && farLeftPiece == '_') { // 3 pair connected with 2 openings
+                                std::cout << "E1 Row: " << row << ", Column: " << column - 2 << " and " << column + 2 << std::endl;
                                 assignPointsToPosition(row, column - 2, 100 * (currentPieceType == thisPieceType ? 10 : 1) - 10);
                                 assignPointsToPosition(row, column + 2, 100 * (currentPieceType == thisPieceType ? 10 : 1)  - 10);
                             } else if (farLeftPiece == '_' || farRightPiece == '_') { // 3 pair connected with 1 opening
-                                int useDif = (farLeftInGrid ? -2 : 2);
+                                int useDif = (farLeftPiece == '_' ? -2 : 2);
+                                std::cout << "E2 Row: " << row << ", Column: " << column + useDif << std::endl;
                                 assignPointsToPosition(row, column + useDif, 100 * (currentPieceType == thisPieceType ? 10 : 1)  - 10);
                             }
     
                         } else if ((leftPiece == currentPieceType && rightPiece == '_') || (rightPiece == currentPieceType && leftPiece == '_')) { // 2 pair connected
+                            std::cout << "S1 Row: " << row << ", Column: " << column + (leftPiece == currentPieceType ? 1 : -1) << ", OriginalRow: " << row << ", OriginalColumn: " << column << std::endl;
                             assignPointsToPosition(row, column + (leftPiece == currentPieceType ? 1 : -1), 10);
                         } else if (leftPiece == '_' || rightPiece == '_') {
                             if (leftPiece == rightPiece) { // Both sides empty
@@ -204,11 +207,13 @@ std::map<std::string, int> getNextMoves(std::array<std::array<char, 7>, 6> &game
                                     if (((!farLeftDiagonalInGrid || farLeftDiagonalInGrid && diagonals[i][-2].first != currentPieceType) && farRightDiagonalInGrid && diagonals[i][2].first == '_') || (farLeftDiagonalInGrid && diagonals[i][-2].first == '_' && (!farRightDiagonalInGrid || farRightDiagonalInGrid && diagonals[i][2].first != currentPieceType))) { // 3 pair connected with 1 opening
                                         int useDif = ((!farLeftDiagonalInGrid || farLeftDiagonalInGrid && (diagonals[i][-2].first == 'N' || diagonals[i][-2].first == (currentPieceType == 'P' ? 'C' : 'P'))) ? 2 : -2);
                                         std::array<int, 2> &position = diagonals[i][useDif].second;
+                                        std::cout << "E3 Row: " << position[0] << ", Column: " << position[1] << ", OriginalRow: " << row << ", OriginalColumn: " << column << std::endl;
                                         assignPointsToPosition(position[0], position[1], 100 * (currentPieceType == thisPieceType ? 10 : 1)  - 10);
                                     
                                     } else if (farLeftDiagonalInGrid && farRightDiagonalInGrid && diagonals[i][-2].first == diagonals[i][2].first && diagonals[i][-2].first == '_') { // 3 pair connected with 2 openings
                                         std::array<int, 2> &farLeftPosition = diagonals[i][-2].second;
                                         std::array<int, 2> &farRightPosition = diagonals[i][2].second;
+                                        std::cout << "E4 Row: " << farLeftPosition[0] << ", Column: " << farLeftPosition[1] << ", Row: " << farRightPosition[0] << ", Column: " << farRightPosition[1] << std::endl;
                                         assignPointsToPosition(farLeftPosition[0], farLeftPosition[1], 100 * (currentPieceType == thisPieceType ? 10 : 1) - 10);
                                         assignPointsToPosition(farRightPosition[0], farRightPosition[1], 100 * (currentPieceType == thisPieceType ? 10 : 1)  - 10);
                                     }
@@ -218,8 +223,9 @@ std::map<std::string, int> getNextMoves(std::array<std::array<char, 7>, 6> &game
                                 if (diagonals[i][useDif/2].first == '_') {
                                     bool farDiagonalInGrid = (diagonals[i].find(useDif) != diagonals[i].end() && diagonals[i][useDif].first != 'N');
                                     if (farDiagonalInGrid && (diagonals[i][useDif].first == '_' || diagonals[i][useDif].first == currentPieceType)) {
-                                        std::array<int, 2> &position = diagonals[i][useDif].second;
-                                        assignPointsToPosition(position[0], position[1], 10);
+                                        std::array<int, 2> &position = diagonals[i][useDif/2].second;
+                                        std::cout << "S2 Row: " << position[0] << ", Column: " << position[1] << ", OriginalRow: " << row << ", OriginalColumn: " << column << std::endl;
+                                        assignPointsToPosition(position[0], position[1], 100 * (currentPieceType == thisPieceType ? 10 : 1) - 10);
                                     } else {
                                         std::array<int, 2> &position = diagonals[i][useDif/2].second;
                                         assignPointsToPosition(position[0], position[1], 1);
@@ -263,10 +269,13 @@ std::map<std::string, int> getNextMoves(std::array<std::array<char, 7>, 6> &game
                             char secondPiece = getPiece(row, column + 1);
                             char thirdPiece = getPiece(row, column + 2);
                             if (secondPiece == thirdPiece && secondPiece == '_') {
+                                std::cout << "S3 Part 1 Row: " << row << ", Column: " << column + 1 << ", OriginalRow: " << row << ", OriginalColumn: " << column << std::endl;
+                                std::cout << "S3 Part 2 Row: " << row << ", Column: " << column + 2 << ", OriginalRow: " << row << ", OriginalColumn: " << column << std::endl;
                                 assignPointsToPosition(row, column + 1, 10);
                                 assignPointsToPosition(row, column + 2, 10);
                             } else if (secondPiece == '_' || thirdPiece == '_') {
                                 int useDif = (secondPiece == '_' ? 1 : 2);
+                                std::cout << "S4 Row: " << row << ", Column: " << column + useDif << ", OriginalRow: " << row << ", OriginalColumn: " << column << std::endl;
                                 assignPointsToPosition(row, column + useDif, 10);
                             }
                         }
@@ -309,17 +318,17 @@ std::map<std::string, int> getNextMoves(std::array<std::array<char, 7>, 6> &game
         }
     }
 
-    // for (auto it = allMoves.begin(); it != allMoves.end();) {
-    //     std::string key = it->first;
-    //     int row = (int)key[0] - 48;
-    //     int column = (int)key[1] - 65;
-    //     if ((row == 5 ? (gameBoard[row][column] != '_') : (getPiece(row, column) != '_') )) {
-    //         std::cout << "Purging Move At Row: " << row << ", Column: " << column << ", Points: " << it->second << std::endl;
-    //         it = allMoves.erase(it);
-    //     } else {
-    //         it++;
-    //     }
-    // }
+    for (auto it = allMoves.begin(); it != allMoves.end();) {
+        std::string key = it->first;
+        int row = (int)key[0] - 48;
+        int column = (int)key[1] - 65;
+        if ((row == 5 ? (gameBoard[row][column] != '_') : (getPiece(row, column) != '_') )) {
+            std::cout << "Purging Move At Row: " << row << ", Column: " << column << ", Points: " << it->second << std::endl;
+            it = allMoves.erase(it);
+        } else {
+            it++;
+        }
+    }
 
     return allMoves;
 }
@@ -377,14 +386,18 @@ void botMove(std::array<std::array<char, 7>, 6> &gameBoard) {
 
             std::map<std::string, int> allNextMoves = getNextMoves(gameBoardCopy, 'P');
             bool safeMove = true; 
+            std::cout << "Risk Moves" << std::endl;
             for (auto &pair : allNextMoves) {
-                if (pair.second >= 250) {
+                std::cout << pair.first << " , " << pair.second << std::endl;
+                if (pair.second >= 90) {
+                    std::cout << "To Risky To Use!" << std::endl;
                     safeMove = false;
                     break;
                 }
             }
 
             if (safeMove) {
+                std::cout << "Safe To Use!" << std::endl;
                 gameBoard[row][column] = 'C';
                 foundSafeMove = true;
                 break;

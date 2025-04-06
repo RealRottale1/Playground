@@ -142,7 +142,8 @@ std::map<std::string, int> getNextMoves(std::array<std::array<char, 7>, 6> &game
                                 assignPointsToPosition(row, column - 2, 100 * (currentPieceType == thisPieceType ? 10 : 1) - 10);
                                 assignPointsToPosition(row, column + 2, 100 * (currentPieceType == thisPieceType ? 10 : 1)  - 10);
                             } else if (farLeftPiece == '_' || farRightPiece == '_') { // 3 pair connected with 1 opening
-                                int useDif = (farLeftInGrid ? -2 : 2);
+                                int useDif = (farLeftPiece == '_' ? -2 : 2);
+                                std::cout << "E2 CurrentRow: " << row << ", CurrentColumn: " << column << std::endl;
                                 assignPointsToPosition(row, column + useDif, 100 * (currentPieceType == thisPieceType ? 10 : 1)  - 10);
                             }
     
@@ -222,9 +223,8 @@ std::map<std::string, int> getNextMoves(std::array<std::array<char, 7>, 6> &game
                                 if (diagonals[i][useDif/2].first == '_') {
                                     bool farDiagonalInGrid = (diagonals[i].find(useDif) != diagonals[i].end() && diagonals[i][useDif].first != 'N');
                                     if (farDiagonalInGrid && (diagonals[i][useDif].first == '_' || diagonals[i][useDif].first == currentPieceType)) {
-                                        std::array<int, 2> &position = diagonals[i][useDif/2].second; // the /2 was added!!!!!!!!!!!
-                                        std::cout << "E1 Row: " << position[0] << ", Column: " << position[1] << ", CurrentRow: " << row << ", CurrentColumn: " << column << std::endl;
-                                        assignPointsToPosition(position[0], position[1], 10);
+                                        std::array<int, 2> &position = diagonals[i][useDif/2].second;
+                                        assignPointsToPosition(position[0], position[1], 100 * (currentPieceType == thisPieceType ? 10 : 1) - 10);
                                     } else {
                                         std::array<int, 2> &position = diagonals[i][useDif/2].second;             
                                         assignPointsToPosition(position[0], position[1], 1);
@@ -345,8 +345,6 @@ void botMove(std::array<std::array<char, 7>, 6> &gameBoard, char thisPieceType) 
 
     std::map<std::string, int> allMoves = getNextMoves(gameBoard, thisPieceType);
 
-    std::cout << " ----- END OF REAL ----- " << std::endl;
-
     std::map<int, std::vector<std::string>> sortedMovesByPoints;
     for (auto &pair : allMoves) {
         std::cout << pair.first << " , " << pair.second << std::endl;
@@ -357,6 +355,8 @@ void botMove(std::array<std::array<char, 7>, 6> &gameBoard, char thisPieceType) 
             sortedMovesByPoints.insert({pair.second, tempVector});
         }
     }
+
+    std::cout << " ----- END OF REAL ----- " << std::endl;
 
     bool foundSafeMove = false;
     std::string firstBestMove = "";
