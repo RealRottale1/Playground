@@ -157,16 +157,16 @@ void handleGame() {
         return 'D';
     };
 
-    auto debugMoves = [] (std::map<int, std::vector<int>> &moves) {
-        for (int i = 0; i < 3; i++) {
-            std::cout << "Row: " << i << std::endl;
-            int vectorSize = moves[i].size();
-            for (int j = 0; j < vectorSize; j++) {
-                std::cout << moves[i][j];
-            };
-            std::cout << std::endl;
-        };
-    };
+    // auto debugMoves = [] (std::map<int, std::vector<int>> &moves) {
+    //     for (int i = 0; i < 3; i++) {
+    //         std::cout << "Row: " << i << std::endl;
+    //         int vectorSize = moves[i].size();
+    //         for (int j = 0; j < vectorSize; j++) {
+    //             std::cout << moves[i][j];
+    //         };
+    //         std::cout << std::endl;
+    //     };
+    // };
 
     std::map<int, std::array<char, 3>> gameBoard;
     gameBoard.insert({0, {'_', '_', '_'}});
