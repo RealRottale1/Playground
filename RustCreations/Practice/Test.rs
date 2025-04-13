@@ -1,10 +1,9 @@
+#![allow(non_snake_case)]
 extern crate rand;
-use std::collections::HashMap;
 use rand::Rng;
-
+use std::collections::HashMap;
 
 fn handleGame() {
-
     fn outputGameBoard(gameBoard: &HashMap<u8, [char; 3]>) {
         println!("  0 1 2");
         for i in 0u8..3 {
@@ -12,8 +11,8 @@ fn handleGame() {
             for j in 0u8..3 {
                 print!("{} ", gameBoard[&i][j as usize]);
             }
+          println!(" ");
         }
-        println!(" ");
     }
 
     fn getEmptySpots(gameBoard: &HashMap<u8, [char; 3]>) -> HashMap<u8, Vec<u8>> {
@@ -36,7 +35,10 @@ fn handleGame() {
         return moves;
     }
 
-    fn getSelectSpots(character: char, gameBoard: &mut HashMap<u8, [char; 3]>) -> HashMap<u8, Vec<u8>> {
+    fn getSelectSpots(
+        character: char,
+        gameBoard: &mut HashMap<u8, [char; 3]>,
+    ) -> HashMap<u8, Vec<u8>> {
         let mut moves: HashMap<u8, Vec<u8>> = HashMap::new();
         for h in 0u8..2 {
             for i in 0u8..3 {
@@ -76,10 +78,10 @@ fn handleGame() {
             let mut emptyColumn: u8 = 3;
             let mut xCounter: u8 = 0;
             for i in 0u8..3 {
-                let useIndex: u8 = if h == 0 {i} else {2-i};
+                let useIndex: u8 = if h == 0 { i } else { 2 - i };
                 if gameBoard[&i][useIndex as usize] == character {
                     xCounter += 1;
-                } else if gameBoard[&i][useIndex  as usize] == '_' {
+                } else if gameBoard[&i][useIndex as usize] == '_' {
                     emptyRow = i;
                     emptyColumn = useIndex;
                 }
@@ -117,8 +119,11 @@ fn handleGame() {
         return true;
     }
 
-    fn handlePossibleMoves(moves: &HashMap<u8, Vec<u8>>, gameBoard: &HashMap<u8, [char; 3]>) -> bool {
-        let mut allRows: Vec<u8>;
+    fn handlePossibleMoves(
+        moves: &HashMap<u8, Vec<u8>>,
+        gameBoard: &mut HashMap<u8, [char; 3]>,
+    ) -> bool {
+        let mut allRows: Vec<u8> = Vec::new();
         let mut index: u8 = 0;
         for (key, value) in moves {
             if (value.is_empty()) && (value[0] >= 0) {
@@ -129,31 +134,45 @@ fn handleGame() {
 
         if allRows.len() > 0 {
             let mut rng = rand::thread_rng();
-            let randomRow: u8 = rng.gen_range(0..allRows.len());
-            if moves[allRows[randomRow]].len() > 0 {
-                let randomColumn: u8 = rng.gen_range(0..moves[allRows[randomRow]].len());
-                gameBoard[allRows[randomRow]][moves[allRows[randomRow]][randomColumn]] = 'O';
+            let randomRow: u8 = rng.gen_range(0..allRows.len() as u8);
+            if moves[&allRows[randomRow as usize]].len() > 0 {
+                let randomColumn: u8 =
+                rng.gen_range(0..moves[&allRows[randomRow as usize]].len() as u8);
+                let row = allRows[randomRow as usize];
+                let col = moves[&row][randomColumn as usize];
+                gameBoard.get_mut(&row).unwrap()[col as usize] = 'O';
                 return true;
             }
         }
         return false;
     }
 
-    
     fn checkForWinner(gameBoard: &HashMap<u8, [char; 3]>) -> char {
         for i in 0u8..3 {
-            if (gameBoard[&i][0] != '_') && (gameBoard[&i][0] == gameBoard[&i][1]) && (gameBoard[&i][1] == gameBoard[&i][2]) {
+            if (gameBoard[&i][0] != '_')
+                && (gameBoard[&i][0] == gameBoard[&i][1])
+                && (gameBoard[&i][1] == gameBoard[&i][2])
+            {
                 return gameBoard[&i][0];
             }
-            if (gameBoard[&0][i as usize] != '_') && (gameBoard[&0][i as usize] == gameBoard[&1][i as usize]) && (gameBoard[&1][i as usize] == gameBoard[&2][i as usize]) {
+            if (gameBoard[&0][i as usize] != '_')
+                && (gameBoard[&0][i as usize] == gameBoard[&1][i as usize])
+                && (gameBoard[&1][i as usize] == gameBoard[&2][i as usize])
+            {
                 return gameBoard[&0][i as usize];
             }
         }
 
-        if (gameBoard[&0][0] != '_') && (gameBoard[&0][0] == gameBoard[&1][1]) && (gameBoard[&1][1] == gameBoard[&2][2]) {
+        if (gameBoard[&0][0] != '_')
+            && (gameBoard[&0][0] == gameBoard[&1][1])
+            && (gameBoard[&1][1] == gameBoard[&2][2])
+        {
             return gameBoard[&0][0];
         }
-        if (gameBoard[&0][2] != '_') && (gameBoard[&0][2] == gameBoard[&1][1]) && (gameBoard[&1][1] == gameBoard[&2][0]) {
+        if (gameBoard[&0][2] != '_')
+            && (gameBoard[&0][2] == gameBoard[&1][1])
+            && (gameBoard[&1][1] == gameBoard[&2][0])
+        {
             return gameBoard[&0][2];
         }
 
@@ -199,13 +218,13 @@ fn handleGame() {
         let handledWinMoves: bool = handlePossibleMoves(&mut winMoves, &mut gameBoard);
 
         if !handledWinMoves {
-            let mut blockMoves: HashMap<u8, Vec<u8>> = getSelectSpots('X',&mut gameBoard);
-            
-            let handledBlockMoves: bool = handlePossibleMoves(&mut blockMoves,&mut gameBoard);
-            
+            let mut blockMoves: HashMap<u8, Vec<u8>> = getSelectSpots('X', &mut gameBoard);
+
+            let handledBlockMoves: bool = handlePossibleMoves(&mut blockMoves, &mut gameBoard);
+
             if !handledBlockMoves {
                 let mut emptyMoves: HashMap<u8, Vec<u8>> = getEmptySpots(&mut gameBoard);
-                let handledEmptyMoves: bool = handlePossibleMoves(&mut emptyMoves,&mut gameBoard);
+                let handledEmptyMoves: bool = handlePossibleMoves(&mut emptyMoves, &mut gameBoard);
             }
         }
     }
@@ -222,4 +241,5 @@ fn main() {
             break;
         }
     }
+    println!("Done!");
 }
