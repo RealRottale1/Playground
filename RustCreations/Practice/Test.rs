@@ -214,7 +214,7 @@ fn handleGame() {
 fn main() {
     let mut playGame: String = String::new();
     loop {
-        //handleGame();
+        handleGame();
         print!("Play Again? yes/no: ");
         std::io::stdin().read_line(&mut playGame);
 
