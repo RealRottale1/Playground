@@ -293,10 +293,6 @@ fn handleGame() -> () {
     let mut winner: usize = 0;
     let mut fireAt: String = String::new();
     while winner == 0 {
-        println!("-<>-[Bot Board]-<>-");
-        displayBoard(&botShipBoard);
-        println!("-<>-[Bot Shoot]-<>-");
-        displayBoard(&botShootBoard);
         println!("-<>-[Enemy Board]-<>-");
         displayBoard(&playerShootBoard);
         println!("-<>-[Player Board]-<>-");
