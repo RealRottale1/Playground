@@ -1,3 +1,6 @@
+/*
+   No external packages needed =)
+*/
 #[derive(Copy, Clone, Debug)]
 struct PieceStruct {
     color: bool,
@@ -7,18 +10,18 @@ struct PieceStruct {
 fn playGame() -> () {
     fn matchPiece(color: bool, pieceType: i8) -> char {
         match (color, pieceType) {
-            (false, 1) => '♙',
-            (true, 1) => '♟',
-            (false, 2) => '♘',
-            (true, 2) => '♞',
-            (false, 3) => '♗',
-            (true, 3) => '♝',
-            (false, 4) => '♖',
-            (true, 4) => '♜',
-            (false, 5) => '♕',
-            (true, 5) => '♛',
-            (false, 6) => '♔',
-            (true, 6) => '♚',
+            (true, 1) => '♙',
+            (false, 1) => '♟',
+            (true, 2) => '♘',
+            (false, 2) => '♞',
+            (true, 3) => '♗',
+            (false, 3) => '♝',
+            (true, 4) => '♖',
+            (false, 4) => '♜',
+            (true, 5) => '♕',
+            (false, 5) => '♛',
+            (true, 6) => '♔',
+            (false, 6) => '♚',
             _ => '_',
         }
     }
