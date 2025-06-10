@@ -61,7 +61,9 @@ fn handleSimulation() -> () {
       if newY > -1 && newY < 10 && newX > -1 && newX < 10 {
         unsafe {
           let neighboringTile: *mut Tile = &mut tiledMaze[newY as usize][newX as usize];
-          allNeighbors.push(neighboringTile);
+          if !(*neighboringTile).isWall {
+            allNeighbors.push(neighboringTile);
+          }
         }
       }
     }
