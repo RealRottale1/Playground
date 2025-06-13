@@ -74,8 +74,6 @@ func getShortestPath() -> [Point]? {
                 pathWays.append([startPoint, connection]);
             }
 
-//---
-            var iterations: Int = 0;
             while true {
                 for path in pathWays {
                     let pathLen: Int = path.count;
@@ -97,9 +95,7 @@ func getShortestPath() -> [Point]? {
                 }
                 pathWays = nextPathWays;
                 nextPathWays.removeAll();
-                iterations += 1;
             }
-//---
         }
     }
     print("Maze lacks a mouse and/or cheese!");
