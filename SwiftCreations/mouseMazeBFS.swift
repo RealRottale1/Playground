@@ -20,7 +20,7 @@ var maze: [[Character]] = [
 let height: (min: Int, max: Int) = (0, 9);
 let width: (min: Int, max: Int)  = (0, 9);
 var allConnections: [Point: [Point]] = [:];
-var allDirections: [(Int, Int)] = [(0,1),(1,1),(1,0),(1,-1),(0,-1),(-1,-1),(-1,0),(-1,1)];
+let allDirections: [(Int, Int)] = [(0,1),(1,1),(1,0),(1,-1),(0,-1),(-1,-1),(-1,0),(-1,1)];
 
 for y in 0...height.max {
     for x in 0...width.max {
