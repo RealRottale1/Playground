@@ -1,15 +1,15 @@
 struct Point: Hashable {
-    let y: Int
-    let x: Int
-    var r: Int = 0
+    let y: Int;
+    let x: Int;
+    var r: Int = 0;
 
     func hash(into hasher: inout Hasher) {
-        hasher.combine(y)
-        hasher.combine(x)
+        hasher.combine(y);
+        hasher.combine(x);
     }
 
     static func == (lhs: Point, rhs: Point) -> Bool {
-        return lhs.y == rhs.y && lhs.x == rhs.x
+        return lhs.y == rhs.y && lhs.x == rhs.x;
     }
 }
 
@@ -81,7 +81,6 @@ func getShortestPath() -> [Point]? {
         return unusedConnections;
     }
 
-
     if let startPoint = getPositionOfChar(char: "M") {
         if let endPoint = getPositionOfChar(char: "C") {
             var finishedPaths: [(path: [Point], risk: Int)] = [];
@@ -99,42 +98,42 @@ func getShortestPath() -> [Point]? {
 
             func goBack(index: Int) -> Void {
                 if index - 1 >= 0 {
-                    currentRisk -= currentPaths[index - 1][currentIndexs[index - 1]].r
-                    currentIndexs[index - 1] += 1
+                    currentRisk -= currentPaths[index - 1][currentIndexs[index - 1]].r;
+                    currentIndexs[index - 1] += 1;
                 }
-                currentPaths.remove(at: index)
-                currentIndexs.remove(at: index)
+                currentPaths.remove(at: index);
+                currentIndexs.remove(at: index);
             }
 
             while !currentPaths.isEmpty {
-                let lastI: Int = currentPaths.count - 1
+                let lastI: Int = currentPaths.count - 1;
                 if currentIndexs[lastI] >= currentPaths[lastI].count || currentRisk > lowestRisk {
-                    goBack(index: lastI)
-                    continue
+                    goBack(index: lastI);
+                    continue;
                 }
 
-                let currentPoint: Point = currentPaths[lastI][currentIndexs[lastI]]
-                let nextNeighbors: [Point] = getNextPoints(currentPoint: currentPoint, usedConnections: currentPaths)
+                let currentPoint: Point = currentPaths[lastI][currentIndexs[lastI]];
+                let nextNeighbors: [Point] = getNextPoints(currentPoint: currentPoint, usedConnections: currentPaths);
                 if nextNeighbors.isEmpty {
-                    currentIndexs[lastI] += 1
+                    currentIndexs[lastI] += 1;
                     if currentIndexs[lastI] >= currentPaths[lastI].count {
-                        goBack(index: lastI)
+                        goBack(index: lastI);
                     }
                 } else {
                     if nextNeighbors.contains(endPoint) {
                         lowestRisk = currentRisk;
-                        var temp: [Point] = []
-                        temp.append(startPoint)
+                        var temp: [Point] = [];
+                        temp.append(startPoint);
                         for i in 0...lastI {
-                            temp.append(currentPaths[i][currentIndexs[i]])
+                            temp.append(currentPaths[i][currentIndexs[i]]);
                         }
-                        temp.append(endPoint)
+                        temp.append(endPoint);
                         finishedPaths.append((path: temp, risk: currentRisk + currentPoint.r));
-                        currentIndexs[lastI] += 1
+                        currentIndexs[lastI] += 1;
                     } else {
                         currentRisk += currentPoint.r;
-                        currentPaths.append(nextNeighbors)
-                        currentIndexs.append(0)
+                        currentPaths.append(nextNeighbors);
+                        currentIndexs.append(0);
                     }
                 }
             }
@@ -145,10 +144,10 @@ func getShortestPath() -> [Point]? {
                 } else {
                     return $0.risk < $1.risk;
                 }
-            })
+            });
 
-            print(finishedPaths.count)
-            print("The mouse reached the cheese!")
+            print(finishedPaths.count);
+            print("The mouse reached the cheese!");
             maze[startPoint.y][startPoint.x] = " ";
             return finishedPaths[0].path;
         }
@@ -171,6 +170,6 @@ if let results = getShortestPath() {
             }
             print("");
         }
-        print("")
+        print("");
     }
 }
