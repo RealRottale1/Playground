@@ -22,20 +22,43 @@ connectNode("F", "C", 3);
 let startingNode: String = "A";
 nodes[startingNode]!.d = 0;
 
-var pathMap: [String: (d: Int, p: String)] = [:];
-func fillPathMap() -> Void {
+func makeQuickestConnections() -> Void {
     var searchedNodes: Set<String> = [];
     var unsearchedNodes: [String] = [startingNode];
-    do {
-        let currentNode: String = unsearchedNodes[0];
-        let currentDistance: Int = nodes[currentNode]!.d;
-        for neighboringNode in connections[currentNode]!.keys {
-            if nodes[currentNode]!.d + connections[currentNode]![neighboringNode]! < nodes[neighboringNode]!.d {
-                
-            }
+    repeat {
+        let cNode: String = unsearchedNodes[0];
+        if searchedNodes.contains(cNode) {
+            unsearchedNodes.removeFirst()
+            continue;    
         }
+        let cDistance: Int = nodes[cNode]!.d;
+        for nNode in connections[cNode]!.keys {
+            let distanceBetween: Int = connections[cNode]![nNode]!;
+            if cDistance + distanceBetween < nodes[nNode]!.d {
+                nodes[nNode]!.d = cDistance + distanceBetween;
+                nodes[nNode]!.p = cNode;
+            }
+            if !searchedNodes.contains(nNode) {unsearchedNodes.append(nNode)};
+        }
+        searchedNodes.insert(cNode);
+        unsearchedNodes.removeFirst();
     } while !unsearchedNodes.isEmpty;
 }
 
-fillPathMap();
-print(pathMap);
+makeQuickestConnections();
+
+func getQuickestPathTo(to endNode: String) -> [String] {
+    var path: [String] = [];
+    var currentNode: String = endNode;
+    repeat {
+        path.append(currentNode);
+        if let nextNode = nodes[currentNode]!.p {
+            currentNode = nextNode;
+        } else {
+            return path.reversed();
+        }
+    } while true;
+}
+
+let path: [String] = getQuickestPathTo(to: "C");
+print(path);
