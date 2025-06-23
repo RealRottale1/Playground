@@ -31,7 +31,6 @@ let width: (min: Int, max: Int)  = (0, 9);
 var allConnections: [Point: [Point]] = [:];
 let allDirections: [(Int, Int)] = [(0,1),(1,1),(1,0),(1,-1),(0,-1),(-1,-1),(-1,0),(-1,1)];
 
-print("Creating connections ...");
 for y in 0...height.max {
     for x in 0...width.max {
         let currentPoint: Point = Point(y: y, x: x);
@@ -146,7 +145,6 @@ func getShortestPath() -> [Point]? {
                 }
             });
 
-            print(finishedPaths.count);
             print("The mouse reached the cheese!");
             maze[startPoint.y][startPoint.x] = " ";
             return finishedPaths[0].path;
@@ -157,7 +155,6 @@ func getShortestPath() -> [Point]? {
     return nil;
 }
 
-print("Computing ...");
 if let results = getShortestPath() {
     for move in results {
         for y in 0...height.max {
