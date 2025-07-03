@@ -24,17 +24,17 @@ for connectWord in allWords {
     }
 }
 
-func getShortestPath(sWord: String, eWord: String) -> [String] {
-    func getUnusedConnections(word: String, usedConnections: Set<String>) -> [String] {
-        var unusedConnections: [String] = [];
-        for connection in allConnections[word]! {
-            if !usedConnections.contains(connection) {
-                unusedConnections.append(connection);
-            }
+func getUnusedConnections(word: String, usedConnections: Set<String>) -> [String] {
+    var unusedConnections: [String] = [];
+    for connection in allConnections[word]! {
+        if !usedConnections.contains(connection) {
+            unusedConnections.append(connection);
         }
-        return unusedConnections;
     }
+    return unusedConnections;
+}
 
+func getShortestPath(sWord: String, eWord: String) -> [String] {
     var usedConnections: Set<String> = [sWord];
     var nextPathWays: [[String]] = [];
     var pathWays: [[String]] = [];
@@ -67,5 +67,69 @@ func getShortestPath(sWord: String, eWord: String) -> [String] {
     }
 }
 
-let results: [String] = getShortestPath(sWord: "cat", eWord: "fin");
-print(results);
+func getAllPaths(sWord: String, eWord: String, maxIterations: Int, maxSize: Int) -> Set<[String]> {
+    var allPaths: Set<[String]> = [];
+    var neighboringNodes: [[String]] = [];
+    var currentPath: [String] = [sWord];
+    var currentPathNodes: Set<String> = [sWord];
+
+    var initialConnections: [String] = getUnusedConnections(word: sWord, usedConnections: currentPathNodes);
+    if initialConnections.isEmpty {return allPaths};
+    let addTo: String = initialConnections[initialConnections.count-1];
+    currentPath.append(addTo);
+    currentPathNodes.insert(addTo);
+    initialConnections.removeLast();
+    neighboringNodes.append(initialConnections);
+
+    func goBack() -> Bool {
+        let firstRemoved: String = currentPath.removeLast();
+        currentPathNodes.remove(firstRemoved); 
+
+        while neighboringNodes.count > 1 && neighboringNodes[neighboringNodes.indices.last!].isEmpty {
+            if neighboringNodes.isEmpty {return true};
+            neighboringNodes.removeLast();
+            let nthRemoved: String = currentPath.removeLast();
+            currentPathNodes.remove(nthRemoved);
+        }
+        if neighboringNodes.count == 1 && neighboringNodes[0].isEmpty {return true};
+        var priorNeighbors: [String] = neighboringNodes.removeLast();
+        let nextNeighbor: String = priorNeighbors.removeLast();
+        neighboringNodes.append(priorNeighbors);
+        currentPath.append(nextNeighbor);
+        currentPathNodes.insert(nextNeighbor);
+        return false;
+    }
+
+    var iterations: Int = -1;
+    repeat {
+        iterations += 1;
+        if iterations == maxIterations {break};
+        var nextConnections: [String] = getUnusedConnections(word: currentPath[currentPath.count-1], usedConnections: currentPathNodes);
+        if let index = nextConnections.firstIndex(of: eWord) {
+            allPaths.insert(currentPath+[eWord]);
+            nextConnections.remove(at: index);
+        }
+        if nextConnections.isEmpty || currentPath.count >= maxSize-1 {
+            if goBack() {break};
+        } else {
+            let next: String = nextConnections[nextConnections.count-1];
+            currentPath.append(next);
+            currentPathNodes.insert(next);
+            nextConnections.removeLast();
+            neighboringNodes.append(nextConnections);
+        }
+    } while !neighboringNodes.isEmpty;
+    if allPaths.isEmpty {return [["Not possible"]]} else {return allPaths};
+}
+
+print("Shortest Answer:");
+let shortestAnswer: [String] = getShortestPath(sWord: "cat", eWord: "fin");
+print(shortestAnswer);
+
+print("All Answers:");
+let allAnswers: Set<[String]> = getAllPaths(sWord: "cat", eWord: "fin", maxIterations: 999999, maxSize: 5);
+for answer in allAnswers {
+    print("\(answer),");
+}
+
+print("Finished Executing!");

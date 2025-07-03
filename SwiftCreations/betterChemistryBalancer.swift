@@ -189,9 +189,9 @@ repeat {
         let solution: [Int: Decimal] = solveData(data: data.data);
 
         /* Display */
+        print("Solution: ", terminator: "");
         let equalSignIndex: Int = data.sections[0].count - 1;
         let allPortions: [String] = data.sections[0] + data.sections[1];
-
         let sortedKeys: [Int] = solution.keys.sorted();
         for i in 0..<sortedKeys.count {
             if let value = solution[sortedKeys[i]] {
