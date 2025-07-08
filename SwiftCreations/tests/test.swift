@@ -136,3 +136,120 @@ func groupAnagrams(_ words: [String]) -> [[String]]? {
 
 let input = ["bat", "tab", "tap", "pat", "eat", "tea", "tan", "nat"]; // 3 anagram pairs
 let output = groupAnagrams(input);
+
+
+func oneOfFromPalindrome(word: String) -> Bool {
+    let a: [Character] = Array(word);
+    let c: Int = a.count-1;
+    let d: Int = c % 2 == 0 ? (c/2) : (c-1)/2;
+    var s: Int = 0;
+    for i in 0..<d {
+        if a[i] == a[c-i] {
+            continue;
+        } else if i+1<=c && a[i+1] == a[c-i] || i-1>=0 && a[i] == a[c-i-1] {
+            if s == 1 {return false};
+            s += 1;
+            continue;
+        } else {
+            return false;
+        }
+    }
+    return true;
+}
+print(oneOfFromPalindrome(word: "abcbbccca"));
+
+func longestCommonPrefix(data: [String]) -> String {
+    var commonPrefix: [Character] = [];
+    var i: Int = 0;
+    repeat {
+        for word in data {
+            if i >= word.count {return commonPrefix.isEmpty ? "" : String(commonPrefix)};
+            let j: String.Index = word.index(word.startIndex, offsetBy: i);
+            if commonPrefix.count-1 < i {
+                commonPrefix.append(word[j]);
+            } else if commonPrefix[i] != word[j] {
+                commonPrefix.removeLast();
+                return commonPrefix.isEmpty ? "" : String(commonPrefix);
+            }
+        }
+        i += 1;
+    } while true;
+}
+print(longestCommonPrefix(data: ["interspecies", "interstellar", "interstate"]));
+
+func digitalRoot(num: Int) -> Int {
+    var num: Int = abs(num);
+    var temp: Int = 0;
+    repeat {
+        let stringNum: String = String(num);
+        if stringNum.count <= 1 {return num};
+        stringNum.map({Int(String($0))!}).forEach({temp += $0});
+        num = temp;
+        temp = 0;
+    } while true;
+}
+print(digitalRoot(num: 38));
+
+func isAnagram(word1: String, word2: String) -> Bool {
+    if word1.count != word2.count {return false};
+    var allChars: [Character : Int] = [:];
+    for char in word1 {
+        allChars[char] = allChars[char] ?? 0 + 1;
+    }
+    let allKeys: Set<Character> = Set(allChars.keys);
+    for char in word2 {
+        if !allKeys.contains(char) {return false};
+        allChars[char]! -= 1;
+        if allChars[char]! < 0 {return false};
+    }
+    return true;
+}
+print(isAnagram(word1: "listen", word2: "silent"));
+
+func runLengthEncode(data: String) -> String {
+    var encodedText: String = "";
+    var currentChar: Character = data[data.index(data.startIndex, offsetBy: 0)];
+    var currentCount: Int = 0;
+    for char in data {
+        if char == currentChar {currentCount += 1} else {
+            encodedText += String(currentChar) + String(currentCount);
+            currentCount = 1;
+            currentChar = char;
+        }
+    }
+    encodedText += String(currentChar) + String(currentCount);
+    return encodedText;
+}
+
+func runLengthDecode(data: String) -> String {
+    var currentString: String = "";
+    var currentChar: String = "";
+    var currentCount: String = "0";
+    func addToString() -> Void {
+        if let endIndex = Int(currentCount) {
+            for _ in 0..<endIndex {
+                currentString += currentChar;
+            }
+        }
+    }
+    for char in data {
+        if !char.isNumber {
+            addToString();
+            currentChar = String(char);
+            currentCount = "";
+        } else {
+            currentCount += String(char);
+        }
+    }
+    addToString();
+    return currentString;
+}
+let results1: String = runLengthEncode(data: "Hello there welcome back to another video");
+let results2: String = runLengthDecode(data: results1);
+print(results1);
+print(results2)
+
+func isIsogram(word: String) -> Bool {
+    return Set(word.lowercased()).count-1 == word.count-1;
+}
+print(isIsogram(word: "Hello"));
