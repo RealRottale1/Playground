@@ -253,3 +253,61 @@ func isIsogram(word: String) -> Bool {
     return Set(word.lowercased()).count-1 == word.count-1;
 }
 print(isIsogram(word: "Hello"));
+
+func multiplyString(str: String, amount: Int) -> String {
+    guard amount > 0 else {
+        return "";
+    }
+    var returnString: String = str;
+    for _ in 0..<amount-1 {
+        returnString += str;
+    }
+    return returnString;
+}
+
+print(multiplyString(str: "Hello ", amount: 0));
+
+
+/*
+
+
+func eval(_ str: String) -> Int? {
+    if str.isEmpty {return nil};
+
+    var str: String = str;
+    str.removeAll(where: {$0==" "});
+    str = "(" + str + ")";
+
+    var sections: [Int: [(Int, Int)]] = [:];
+    var sectionStarters: [Int] = [];
+    for (i, char) in str.enumerated() {
+        if char == "(" {
+            sectionStarters.append(i);
+        } else if char == ")" {
+            let startIndex: Int = sectionStarters.removeLast();
+            sections[i-startIndex, default: []].append((startIndex, i));
+        }
+    }
+    print(sections)
+
+    var solvedSections: [String: String] = [:];
+
+    for length in sections.keys.sorted() {
+        let data: [(Int, Int)] = sections[length]!;
+        for (s, e) in data {
+            let startRange: String.Index = str.index(str.startIndex, offsetBy: s+1);
+            let endRange: String.Index = str.index(str.startIndex, offsetBy: e);
+            var equation: String = String(str[startRange..<endRange]);
+            print(equation)
+        }
+    }
+    return 0;
+}
+
+if let data = eval("2 + 3 - (24 / 4 + 1) * ((2+4)*(2*2))") {
+    print("-----");
+    print(data);
+} else {
+    print("NONE!");
+}
+*/
