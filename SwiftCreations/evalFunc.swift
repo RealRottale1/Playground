@@ -2,15 +2,17 @@
 import Foundation
 
 func eval(_ str: String) -> Double {
-    if str.isEmpty {print("C3"); return Double.nan};
+    // Initial string validation and formatting
+    if str.isEmpty {return Double.nan};
     var str: String = str;
     str.removeAll(where: {$0==" "});
     var balancedParentheses: Int = 0;
     let allowedChars: Set<Character> = ["0","1","2","3","4","5","6","7","8","9","0",".","-","+","/","*","^"];
-    for char in str {if char == "(" {balancedParentheses += 1;} else if char == ")" {balancedParentheses -= 1;} else if !allowedChars.contains(char) {print("D4"); return Double.nan};}
-    if balancedParentheses != 0 {print("E5"); return Double.nan};
+    for char in str {if char == "(" {balancedParentheses += 1;} else if char == ")" {balancedParentheses -= 1;} else if !allowedChars.contains(char) {return Double.nan};}
+    if balancedParentheses != 0 {return Double.nan};
     str = "(" + str + ")";
 
+    // Breaks raw equation into a flexible variable format
     func segmentData() -> [String: [(isV: Bool, content: String)]] {
         var currentVarID: Int = 0;
         var variables: [String: [(isV: Bool, content: String)]] = [:];
@@ -56,8 +58,8 @@ func eval(_ str: String) -> Double {
                     }
                     j += 1;
                 }
-                if currentVariable.isEmpty {
-                    let priorPart: (isV: Bool, content: String) = (isV: false, content: String(tempStr[tempStr.index(tempStr.startIndex, offsetBy: 1)..<tempStr.index(tempStr.startIndex, offsetBy: tempStr.count-1)]));
+                if gotString && firstStringIndex < tempStr.count - 1 {
+                    let priorPart: (isV: Bool, content: String) = (isV: false, content: String(tempStr[tempStr.index(tempStr.startIndex, offsetBy: firstStringIndex)..<tempStr.index(tempStr.endIndex, offsetBy: -1)]));
                     currentVariable.append(priorPart);
                 }
                 let nextVarID: String = String(currentVarID);
@@ -66,14 +68,12 @@ func eval(_ str: String) -> Double {
                 currentVarID += 1;
             }
         }
-        for d in variables {
-            print("\(d)\n");
-        }
         return variables;
     }
     var variables: [String: [(isV: Bool, content: String)]] = segmentData();
     var solvedVariables: [String: String] = [:];
 
+    // Attempts to match a value with a variable
     func solveEquation(data: [(isV: Bool, content: String)]) -> String {
         var solveString: String = "";
         for section in data {
@@ -92,9 +92,6 @@ func eval(_ str: String) -> Double {
         var priorChar: Character = "(";
         for (i, char) in solveString.enumerated() {
             if !char.isNumber && char != "." {
-                if char == "-" {
-                    print(priorChar)
-                }
                 if char != "-" || char == "-" && (priorChar == ")" || priorChar.isNumber) {
                     let startRange = solveString.index(solveString.startIndex, offsetBy: startingIndex);
                     let endRange = solveString.index(solveString.startIndex, offsetBy: i);
@@ -108,8 +105,17 @@ func eval(_ str: String) -> Double {
         let startRange = solveString.index(solveString.startIndex, offsetBy: startingIndex);
         let endRange = solveString.index(solveString.startIndex, offsetBy: solveString.count);
         solveArray.append(String(solveString[startRange..<endRange]));
-        print(solveArray);
-
+        for entry in solveArray {
+            var totalDecmialPoints: Int = 0;
+            for char in entry {
+                if char == "." {
+                    if totalDecmialPoints == 1 {
+                        return "nan";
+                    }
+                    totalDecmialPoints += 1;
+                }
+            }
+        }
         func calculate(num1: String, num2: String, operation: String) -> String {
             if let val1 = Double(num1) {
                 if let val2 = Double(num2) {
@@ -129,7 +135,24 @@ func eval(_ str: String) -> Double {
             }
             return "nan";
         }
-        let operators: [Set<String>] = [["^"], ["*", "/"], ["+", "-"]];
+
+        // Exponents are calculated in reverse (right to left) order
+        var eJ: Int = solveArray.count - 2;
+        repeat {
+            if eJ < 1 {
+                break;
+            }
+            if solveArray[eJ] == "^" {
+                let value: String = calculate(num1: solveArray[eJ-1], num2: solveArray[eJ+1], operation: solveArray[eJ]);
+                if value == "nan" {return value;}
+                solveArray[eJ-1] = value;
+                solveArray.removeSubrange(eJ...eJ+1);
+            }
+            eJ -= 2;
+        } while true;
+
+        // Everything else is calculated in normal (left to right) order
+        let operators: [Set<String>] = [["*", "/"], ["+", "-"]];
         for s in operators {
             var j = 1;
             repeat {
@@ -138,10 +161,7 @@ func eval(_ str: String) -> Double {
                 }
                 if s.contains(solveArray[j]) {
                     let value: String = calculate(num1: solveArray[j-1], num2: solveArray[j+1], operation: solveArray[j]);
-                    if value == "nan" {
-                        print("F6");
-                        return value;
-                    }
+                    if value == "nan" {return value;}
                     solveArray[j-1] = value;
                     solveArray.removeSubrange(j...j+1);
                 } else {
@@ -152,22 +172,22 @@ func eval(_ str: String) -> Double {
         return solveArray[0];
     }
     
+    // Handles matching values to variables
     for _ in 0..<variables.count {
         for (key, data) in variables {
             let answer: String = solveEquation(data: data);
             if answer != "" {
-                if answer == "nan" {print("A1"); return Double.nan};
+                if answer == "nan" {return Double.nan};
                 if variables.count == 1 {
-                    return Double(answer)!;
+                    return Double(round(1000000000 * Double(answer)!) / 1000000000);
                 }
                 solvedVariables[key] = answer;
                 variables.removeValue(forKey: key);
             }
         }
     }
-    print("B2");
     return Double.nan;
 }
-//2+4*2^4-((2*7+3)-(2*4)+4)*4
-let data: Double = eval("(2*7+3)-(2*4)+4");
+
+let data: Double = eval("0.1+0.2");
 print(data);
