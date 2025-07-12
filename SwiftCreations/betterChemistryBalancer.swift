@@ -19,7 +19,7 @@ func getData(formula: String) -> (data: [String: (start: [(variable: Int, multip
         start: [(variable: Int, multiplicity: Int)],
         end: [(variable: Int, multiplicity: Int)]
     )] = [:];
-
+ 
 
     let sides: [Substring] = formula.split(separator: "=");
     let sections: [[String]] = [sides[0].split(separator: "+").map({String($0)}), sides[1].split(separator: "+").map({String($0)})];

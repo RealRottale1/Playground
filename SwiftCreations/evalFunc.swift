@@ -105,6 +105,7 @@ func eval(_ str: String) -> Double {
         let startRange = solveString.index(solveString.startIndex, offsetBy: startingIndex);
         let endRange = solveString.index(solveString.startIndex, offsetBy: solveString.count);
         solveArray.append(String(solveString[startRange..<endRange]));
+        print(solveArray)
         for entry in solveArray {
             var totalDecmialPoints: Int = 0;
             for char in entry {
@@ -189,5 +190,5 @@ func eval(_ str: String) -> Double {
     return Double.nan;
 }
 
-let data: Double = eval("0.1+0.2");
+let data: Double = eval("0/0");
 print(data);
