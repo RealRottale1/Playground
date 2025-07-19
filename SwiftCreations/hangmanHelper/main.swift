@@ -1,8 +1,9 @@
 import Foundation
 
 struct WordData : Hashable {
-    var word: [Character]
-    var letters: Set<Character>
+    var desc: [Character: Set<Int>]
+    var size: Int
+    var temp: String
 }
 
 func loadDictionary(wordSizes: Set<Int>) -> Set<WordData> {
@@ -12,10 +13,14 @@ func loadDictionary(wordSizes: Set<Int>) -> Set<WordData> {
         rawData = try String(contentsOfFile: "allWords.txt", encoding: .utf8);
         for word in rawData.split(separator: "\n") {
             if wordSizes.contains(word.count) {
-                let arrayWord: [Character] = Array(word);
+                var desc: [Character: Set<Int>] = [:];
+                for (i, char) in word.enumerated() {
+                    desc[char, default: []].insert(i);
+                }
                 let data: WordData = WordData(
-                    word: arrayWord,
-                    letters: Set(arrayWord)
+                    desc: desc,
+                    size: word.count,
+                    temp: String(word),
                     );
                 allWords.insert(data);
             }
@@ -50,20 +55,32 @@ func updateGuessWords(pastGuessWords: [[Character]]?) -> [[Character]] {
     return [[]];
 }
 
+func makeWordDict(data: [[Character]]) -> [Int: Int] {
+    var dict: [Int: Int] = [:];
+    for word in data {
+        dict[word.count] = (dict[word.count] ?? 0) + 1;
+    }
+    print(dict)
+    return dict;
+}
+
 var guessWords: [[Character]] = updateGuessWords(pastGuessWords: nil);
+var guessWordCount: [Int: Int] = makeWordDict(data: guessWords);
 var dictionary: Set<WordData> = loadDictionary(wordSizes: Set(Array(guessWords.map({$0.count}))));
 
 func getPercentUsage(usedChars: Set<Character>) -> Bool {
     var charDict: [Character: Int] = [:];
     var total: Float = 0;
     for data in dictionary {
-        for char in data.word {
+        for (char, loc) in data.desc {
             if !usedChars.contains(char) {
-                charDict[char, default: 0] += 1;
-                total += 1;
+                let size: Int = loc.count;
+                charDict[char, default: 0] += size;
+                total += Float(size);
             }
         }
     }
+    print(charDict);
     if charDict.isEmpty {return true};
     print("Letter percentage");
     let sortedDict: [(key: Character, value: Int)] = charDict.sorted(by: {$0.value > $1.value});
@@ -77,36 +94,47 @@ func getPercentUsage(usedChars: Set<Character>) -> Bool {
 }
 
 func removeImpossibleWords(char: Character, hasChar: Bool) -> Void {
+    var removeSet: Set<WordData> = [];
     for data in dictionary {
-        let results: Bool = data.letters.contains(char);
+        let results: Bool = data.desc[char] != nil;
         if hasChar && !results || !hasChar && results {
-            dictionary.remove(data);
+            removeSet.insert(data);
         }
+    }
+    for data in removeSet {
+        dictionary.remove(data);
     }
 }
 
 func removeInvalidPositionWords() -> Void {
-    let singleWordGuess: Bool = guessWords.count == 1;
+    var removeSet: Set<WordData> = [];
     for data in dictionary {
-        var invalidPosition: Int = 0;
-        var checkedWords: Int = 0;
+        print(data.temp)
+        var foundPossibleWord: Bool = false;
         for guess in guessWords {
-            if guess.count != data.word.count {continue};
-            checkedWords += 1;
-            for i in 0..<guess.count {
-                if data.word[i] != guess[i] && guess[i] != "_" {
-                    invalidPosition += 1;
+            if guessWordCount[data.size] == nil {continue};
+            if guess.count != data.size {continue};
+            var exitedEarly: Bool = false;
+            for (i, char) in guess.enumerated() {
+                if char == "_" {continue};
+                print("CURRENT: \(char)")
+                if data.desc[char] == nil || !(data.desc[char]!).contains(i) {
+                    exitedEarly = true;
                     break;
                 }
             }
-            if invalidPosition == 2 {
-                dictionary.remove(data);
+            if !exitedEarly {
+                foundPossibleWord = true;
                 break;
             }
         }
-        if checkedWords == 1 && invalidPosition == 1 {
-            dictionary.remove(data);
+        if !foundPossibleWord {
+            print("Removed: \(data.temp)")
+            removeSet.insert(data);
         }
+    }
+    for data in removeSet {
+        dictionary.remove(data);
     }
 }
 
