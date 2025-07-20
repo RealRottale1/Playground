@@ -57,7 +57,7 @@ func loadTrie() -> Void {
     var contents: String;
     do {
         contents = try String(contentsOfFile: "boggleWords.txt", encoding: .utf8);
-    } catch {
+    } catch { 
         return;
     }
     print("Getting possible words");

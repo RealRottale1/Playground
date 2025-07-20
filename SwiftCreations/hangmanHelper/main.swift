@@ -3,7 +3,6 @@ import Foundation
 struct WordData : Hashable {
     var desc: [Character: Set<Int>]
     var size: Int
-    var temp: String
 }
 
 func loadDictionary(wordSizes: Set<Int>) -> Set<WordData> {
@@ -20,7 +19,6 @@ func loadDictionary(wordSizes: Set<Int>) -> Set<WordData> {
                 let data: WordData = WordData(
                     desc: desc,
                     size: word.count,
-                    temp: String(word),
                     );
                 allWords.insert(data);
             }
@@ -31,42 +29,44 @@ func loadDictionary(wordSizes: Set<Int>) -> Set<WordData> {
     return allWords;
 }
 
-func updateGuessWords(pastGuessWords: [[Character]]?) -> [[Character]] {
+func createGuessWords(guessedChar: Character) -> ([Int: [[Int: Character]]], Set<Int>) {
+    var guessWords: [Int: [[Int: Character]]] = [:];
+    var sizesWithoutChar: Set<Int> = [];
+    var charSizeDict: [Int: Int] = [:];
     repeat {
         print("Input the current board where [_] indicates an unknown and [ ] indicates a space");
         if let userInput = readLine() {
-            let guessWords: [[Character]] = userInput.split(separator: " ").map({Array($0)});
-            if let pastGuessWords = pastGuessWords {
-                if guessWords.count != pastGuessWords.count {continue};
-                var notSame: Bool = false;
-                for i in 0..<pastGuessWords.count {
-                    if guessWords[i].count != pastGuessWords[i].count {
-                        notSame = true;
-                        break;
-                    }
+            let rawGuessWords: [[Character]] = userInput.split(separator: " ").map({Array($0)});
+            for word in rawGuessWords {
+                let wordSize: Int = word.count;
+                if charSizeDict[wordSize] == nil {
+                    charSizeDict[wordSize] = 0;
                 }
-                if notSame {
-                    continue;
+                var foundGuessedChar: Bool = false;
+                var temp: [Int: Character] = [:];
+                for (i, char) in word.enumerated() {
+                    if char == "_" {continue};
+                    if !foundGuessedChar && char == guessedChar {
+                        foundGuessedChar = true;
+                        (charSizeDict[wordSize]!) += 1;
+                    }
+                    temp[i] = char;
+                }
+                guessWords[wordSize, default: []].append(temp);
+            }
+            for (size, value) in charSizeDict {
+                if value == 0 {
+                    sizesWithoutChar.insert(size);
                 }
             }
-            return guessWords;
+            return (guessWords, sizesWithoutChar);
         }
     } while true;
-    return [[]];
+    return (guessWords, sizesWithoutChar);
 }
 
-func makeWordDict(data: [[Character]]) -> [Int: Int] {
-    var dict: [Int: Int] = [:];
-    for word in data {
-        dict[word.count] = (dict[word.count] ?? 0) + 1;
-    }
-    print(dict)
-    return dict;
-}
-
-var guessWords: [[Character]] = updateGuessWords(pastGuessWords: nil);
-var guessWordCount: [Int: Int] = makeWordDict(data: guessWords);
-var dictionary: Set<WordData> = loadDictionary(wordSizes: Set(Array(guessWords.map({$0.count}))));
+var guessWords: [Int: [[Int: Character]]] = createGuessWords(guessedChar: "_").0;
+var dictionary: Set<WordData> = loadDictionary(wordSizes: Set(guessWords.keys));
 
 func getPercentUsage(usedChars: Set<Character>) -> Bool {
     var charDict: [Character: Int] = [:];
@@ -80,7 +80,6 @@ func getPercentUsage(usedChars: Set<Character>) -> Bool {
             }
         }
     }
-    print(charDict);
     if charDict.isEmpty {return true};
     print("Letter percentage");
     let sortedDict: [(key: Character, value: Int)] = charDict.sorted(by: {$0.value > $1.value});
@@ -93,54 +92,8 @@ func getPercentUsage(usedChars: Set<Character>) -> Bool {
     return false;
 }
 
-func removeImpossibleWords(char: Character, hasChar: Bool) -> Void {
-    var removeSet: Set<WordData> = [];
-    for data in dictionary {
-        let results: Bool = data.desc[char] != nil;
-        if hasChar && !results || !hasChar && results {
-            removeSet.insert(data);
-        }
-    }
-    for data in removeSet {
-        dictionary.remove(data);
-    }
-}
-
-func removeInvalidPositionWords() -> Void {
-    var removeSet: Set<WordData> = [];
-    for data in dictionary {
-        print(data.temp)
-        var foundPossibleWord: Bool = false;
-        for guess in guessWords {
-            if guessWordCount[data.size] == nil {continue};
-            if guess.count != data.size {continue};
-            var exitedEarly: Bool = false;
-            for (i, char) in guess.enumerated() {
-                if char == "_" {continue};
-                print("CURRENT: \(char)")
-                if data.desc[char] == nil || !(data.desc[char]!).contains(i) {
-                    exitedEarly = true;
-                    break;
-                }
-            }
-            if !exitedEarly {
-                foundPossibleWord = true;
-                break;
-            }
-        }
-        if !foundPossibleWord {
-            print("Removed: \(data.temp)")
-            removeSet.insert(data);
-        }
-    }
-    for data in removeSet {
-        dictionary.remove(data);
-    }
-}
-
 var usedChars: Set<Character> = [];
 repeat {
-    print(guessWords);
     let noneLeft: Bool = getPercentUsage(usedChars: usedChars);
     if noneLeft {break};
 
@@ -151,13 +104,43 @@ repeat {
             print("Is [\(nextGuess)] on the board? (Y/N)");
             if let validate = readLine() {
                 let answer: Bool = validate == "Y" || validate == "y";
+                var removeSet: Set<WordData> = [];
                 if answer {
                     usedChars.insert(nextGuess);
-                    guessWords = updateGuessWords(pastGuessWords: guessWords);
+                    let guessData: ([Int: [[Int: Character]]], Set<Int>) = createGuessWords(guessedChar: nextGuess)
+                    guessWords = guessData.0;
+                    let sizesWithoutChar: Set<Int> = guessData.1;
+                    for data in dictionary {
+                        if data.desc[nextGuess] != nil && sizesWithoutChar.contains(data.size) {
+                            removeSet.insert(data);
+                            continue;
+                        }
+                        let wordsOfSize: [[Int: Character]] = guessWords[data.size]!;
+                        let totalWordsOfSize: Int = wordsOfSize.count;
+                        var nonFits: Int = 0;
+                        for word in wordsOfSize {
+                            for (i, char) in word {
+                                if data.desc[char] == nil ||
+                                   data.desc[char] != nil && !(data.desc[char]!).contains(i) {
+                                    nonFits += 1;
+                                    break;
+                                }
+                            }
+                        }
+                        if nonFits >= totalWordsOfSize {
+                            removeSet.insert(data);
+                            continue;
+                        }
+                    }
+                } else {
+                    for data in dictionary {
+                        if data.desc[nextGuess] != nil {
+                            removeSet.insert(data);
+                        }
+                    }
                 }
-                removeImpossibleWords(char: nextGuess, hasChar: answer);
-                if answer {
-                    removeInvalidPositionWords();
+                for data in removeSet {
+                    dictionary.remove(data);
                 }
             }
         }
