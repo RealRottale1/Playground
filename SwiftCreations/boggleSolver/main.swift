@@ -1,3 +1,7 @@
+/* To run input the following commands
+    cd [Directory of parent folder]
+    swift main.swift
+*/
 import Foundation
 
 class trieNode {

@@ -40,7 +40,7 @@ func playGame() -> () {
 
     let placeUserPiece = {(userInput: String, gameBoard: inout [[Character]]) -> Bool in 
         if userInput.count == 2 {
-            if userInput.allSatisfy{$0.isNumber} {
+            if userInput.allSatisfy({$0.isNumber}) {
                 let y: Int = (userInput.first!).wholeNumberValue!;
                 let x: Int = (userInput[userInput.index(userInput.startIndex, offsetBy: 1)]).wholeNumberValue!;
                 if y > -1 && y < 3 && x > -1 && x < 3 {
@@ -171,7 +171,7 @@ func playGame() -> () {
             let handledBlockMoves: Bool = handlePossibleMoves(blockMoves, &gameBoard);
             if !handledBlockMoves {
                 let emptyMoves: [Int: [Int]] = getEmptySpots(gameBoard);
-                handlePossibleMoves(emptyMoves, &gameBoard);
+                let _: Bool = handlePossibleMoves(emptyMoves, &gameBoard);
             }
         }
     } while true;
