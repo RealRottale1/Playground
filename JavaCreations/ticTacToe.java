@@ -1,4 +1,6 @@
 import java.util.Scanner;
+import java.util.HashMap;
+import java.util.Vector;
 
 public class Main {
 
@@ -54,6 +56,63 @@ public class Main {
         return false;
     }
 
+    public static HashMap<int, Vector<int>> getSelectSpots(char Character, char[][] gameBoard) {
+        HashMap<int, Vector<int>> moves = new HashMap<>();
+        for (int h = 0; h < 2; h++) {
+            for (int i = 0; i < 3; i++) {
+                int emptySpot = -1;
+                int xCounter = 0;
+                for (int j = 0; j < 3; j++) {
+                    if (h != 0) {
+                        if (gameBoard[j][i] == Character) {
+                            xCounter += 1;
+                        } else if (gameBoard[j][i] == '_') {
+                            emptySpot = j;
+                        }
+                        if (xCounter == 2 && emptySpot > -1) {
+                            moves.computeIfAbsent(emptySpot, _ -> {new Vector<Int>()}).add(i);
+                        }
+                    } else {
+                        if (gameBoard[i][j] == Character) {
+                            xCounter += 1;
+                        } else if (gameBoard[i][j] == '_') {
+                            emptySpot = j;
+                        }
+                        if (xCounter == 2 && emptySpot > -1) {
+                            moves.computeIfAbsent(i, _ -> {new Vector<Int>()}).add(emptySpot);
+                        }
+                    }
+                }
+            }
+        }
+        for (int h = 0; h < 2; h++) {
+            int emptyY = -1;
+            int emptyX = -1;
+            int xCounter = 0;
+            for (int i = 0; i < 3; i++) {
+                int useIndex = (h == 0) ? (2 - 1) : i;
+                if (gameBoard[i][useIndex] == Character) {
+                    xCounter += 1;
+                } else if (gameBoard[i][useIndex] == '_') {
+                    emptyY = i;
+                    emptyX = useIndex;
+                }
+                if (xCounter == 2 && emptyY > -1) {
+                    moves.computeIfAbsent(emptySpot, _ -> new Vector<int>()).add(emptyX);
+                }
+            }
+        }
+        return moves;
+    }
+
+    public static boolean handlePossibleMoves(HashMap<int, Vector<int>> moves, char[][] gameBoard) {
+        Vector<int> allRows = new Vector<int>();
+        int index = 0;
+        for (HashMap.Entry<int, int> entry : moves.entrySet()) {
+            // Continue here
+        }
+    }
+
     public static void playGame() {
         char[][] gameBoard = {{'_','_','_'}, {'_','_','_'}, {'_','_','_'}};
 
@@ -79,7 +138,8 @@ public class Main {
                 }
             } while true;
 
-            // Continue from here :)
+            HashMap<int, Vector<int>> winMoves = getSelectSpots('O', gameBoard);
+            boolean handledWinMoves = handlePossibleMoves(winMoves, gameBoard);
         } while true;
     }
 
