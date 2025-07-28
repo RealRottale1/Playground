@@ -1,6 +1,7 @@
 import java.util.Scanner;
 import java.util.HashMap;
 import java.util.Vector;
+import java.util.Random;
 
 public class Main {
 
@@ -56,8 +57,8 @@ public class Main {
         return false;
     }
 
-    public static HashMap<int, Vector<int>> getSelectSpots(char Character, char[][] gameBoard) {
-        HashMap<int, Vector<int>> moves = new HashMap<>();
+    public static HashMap<Integer, Vector<Integer>> getSelectSpots(char Character, char[][] gameBoard) {
+        HashMap<Integer, Vector<Integer>> moves = new HashMap<>();
         for (int h = 0; h < 2; h++) {
             for (int i = 0; i < 3; i++) {
                 int emptySpot = -1;
@@ -70,7 +71,7 @@ public class Main {
                             emptySpot = j;
                         }
                         if (xCounter == 2 && emptySpot > -1) {
-                            moves.computeIfAbsent(emptySpot, _ -> {new Vector<Int>()}).add(i);
+                            moves.computeIfAbsent(emptySpot, t -> new Vector<Integer>()).add(i);
                         }
                     } else {
                         if (gameBoard[i][j] == Character) {
@@ -79,7 +80,7 @@ public class Main {
                             emptySpot = j;
                         }
                         if (xCounter == 2 && emptySpot > -1) {
-                            moves.computeIfAbsent(i, _ -> {new Vector<Int>()}).add(emptySpot);
+                            moves.computeIfAbsent(i, t -> new Vector<Integer>()).add(emptySpot);
                         }
                     }
                 }
@@ -98,19 +99,48 @@ public class Main {
                     emptyX = useIndex;
                 }
                 if (xCounter == 2 && emptyY > -1) {
-                    moves.computeIfAbsent(emptySpot, _ -> new Vector<int>()).add(emptyX);
+                    moves.computeIfAbsent(emptyY, t -> new Vector<Integer>()).add(emptyX);
                 }
             }
         }
         return moves;
     }
 
-    public static boolean handlePossibleMoves(HashMap<int, Vector<int>> moves, char[][] gameBoard) {
-        Vector<int> allRows = new Vector<int>();
+    public static boolean handlePossibleMoves(HashMap<Integer, Vector<Integer>> moves, char[][] gameBoard) {
+        Vector<Integer> allRows = new Vector<Integer>();
         int index = 0;
-        for (HashMap.Entry<int, int> entry : moves.entrySet()) {
-            // Continue here
+        for (HashMap.Entry<Integer, Vector<Integer>> entry : moves.entrySet()) {
+            if (!entry.getValue().isEmpty() && entry.getValue().get(0) >= 0) {
+                allRows.add(entry.getKey());
+            }
+            index += 1;
         }
+        int allRowsCount = allRows.size();
+        if (allRowsCount != 0) {
+            Random rand = new Random();
+            int rRow = rand.nextInt(allRowsCount);
+            Vector<Integer> columns = moves.get(allRows.get(rRow));
+            if (!columns.isEmpty()) {
+                if (columns.size() > 0) {
+                    int rColumn = rand.nextInt(columns.size());
+                    gameBoard[allRows.get(rRow)][columns.get(rColumn)] = 'O';
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public static HashMap<Integer, Vector<Integer>> getEmptySpots(char[][] gameBoard) {
+        HashMap<Integer, Vector<Integer>> allEmptySpots = new HashMap<Integer, Vector<Integer>>();
+        for (int y = 0; y < 3; y++) {
+            for (int x = 0; x < 3; x++) {
+                if (gameBoard[y][x] == '_') {
+                    allEmptySpots.computeIfAbsent(y, t -> new Vector<Integer>()).add(x);
+                } 
+            }
+        }
+        return allEmptySpots;
     }
 
     public static void playGame() {
@@ -120,8 +150,8 @@ public class Main {
             outputBoard(gameBoard);
             char gameResults = checkForWinner(gameBoard);
             if (gameResults != 'P') {
-                if gameResults == 'D' {
-                    System.out.prinln("Draw");
+                if (gameResults == 'D') {
+                    System.out.println("Draw");
                 } else {
                     System.out.println(gameResults + " won the game!");
                 }
@@ -133,19 +163,33 @@ public class Main {
                 System.out.println("Players move: ");
                 String userInput = scanner.nextLine();
                 boolean results = placeUserPiece(userInput, gameBoard);
-                if results {
+                if (results) {
                     break;
                 }
-            } while true;
+            } while (true);
 
-            HashMap<int, Vector<int>> winMoves = getSelectSpots('O', gameBoard);
+            HashMap<Integer, Vector<Integer>> winMoves = getSelectSpots('O', gameBoard);
             boolean handledWinMoves = handlePossibleMoves(winMoves, gameBoard);
-        } while true;
+            if (!handledWinMoves) {
+                HashMap<Integer, Vector<Integer>> blockMoves = getSelectSpots('X', gameBoard);
+                boolean handledBlockMoves = handlePossibleMoves(blockMoves, gameBoard);
+                if (!handledBlockMoves) {
+                    HashMap<Integer, Vector<Integer>> emptyMoves = getEmptySpots(gameBoard);
+                    handlePossibleMoves(emptyMoves, gameBoard);
+                }
+            }
+        } while (true);
     }
 
     public static void main(String[] args) {
         do {
             playGame();
-        } while true;
+            System.out.println("Play again? (Y/N): ");
+            Scanner scanner = new Scanner(System.in);
+            String userInput = scanner.nextLine();
+            if (userInput.equalsIgnoreCase("n")) {
+                break;
+            }
+        } while (true);
     }
 }
