@@ -78,6 +78,14 @@ class Library {
     }
 
     public boolean requestBook(Integer id) {
+        if (this.libraryBooks.containsKey(id)) {
+            HashMap<Integer, Book> booksById = this.libraryBooks.get(id);
+            for (HashMap.Entry<Integer, Book> entry : booksById.entrySet()) {
+                if (entry != null) {
+                    return false;
+                }
+            }
+        }
         Integer requests = this.ongoingBookRequests.get(id);
         this.ongoingBookRequests.put(id, (requests == null ? 0 : requests) + 1);
         return true;
@@ -110,6 +118,21 @@ class Library {
                     this.totalBooksInStore -= 1;
                     return book;
                 }
+            }
+        }
+        return null;
+    }
+
+    public Book removeBook(Book book) {
+        Integer id = book.getId();
+        if (this.libraryBooks.containsKey(id)) {
+            HashMap<Integer, Book> booksById = this.libraryBooks.get(id);
+            Integer bookId = book.getBookId();
+            if (booksById.containsKey(bookId)) {
+                booksById.put(bookId, null);
+                this.totalBooks -= 1;
+                this.totalBooksInStore -= 1;
+                return book;
             }
         }
         return null;
@@ -167,6 +190,15 @@ class User {
         if (this.myLibrary(library)) {
             Book book = new Book(title, author, genre, library.getId());
             return book;
+        }
+        return null;
+    }
+
+    public Book removeBook(Library library, Book book) {
+        if (this.myLibrary(library)) {
+            if (this.myBook(library, book)) {
+                return library.removeBook(book);
+            }
         }
         return null;
     }
@@ -229,5 +261,8 @@ public class Main {
         /* Daves backend */
         Book b4 = dave.registerBook(davesLibrary, "Moby Dick", "George", "Boring");   // Registers book
         dave.addBook(davesLibrary, b4); // Adds book to shelf
+        Book rB1 = dave.removeBook(davesLibrary, b2); // Removes book from library
+        System.out.println(rB1.info()); // Outputs book info
+        System.out.println("Total books in store: " + davesLibrary.getTotalBooksInStore()); // Gets total books curently in the library
     }
 }
