@@ -1,3 +1,4 @@
+let pastMainGameDiv = null
 function game() {
     // Creates MainDiv
     const MainDiv = document.createElement("div")
@@ -13,6 +14,7 @@ function game() {
     MainDiv.style.transform = "translate(-50%, -50%)"
     MainDiv.style.border = "solid black 25px"
     MainDiv.style.borderRadius = "10px"
+    pastMainGameDiv = MainDiv;
     document.body.appendChild(MainDiv)
 
     // Creates Original Snake
@@ -265,7 +267,7 @@ function game() {
     }
 
     document.addEventListener("keypress", function (event) {
-        if (event.key == " ") {
+        if (event.key == "z") {
             MainDiv.style.display = (MainDiv.style.display == "flex" ? "none" : "flex")
         }
     })
@@ -276,6 +278,7 @@ function game() {
 
 document.addEventListener("keypress", function (event) {
     if (event.key == "r") {
+        if (pastMainGameDiv) {pastMainGameDiv.remove()}
         game()
     }
 })
