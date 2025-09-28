@@ -11,15 +11,22 @@ const gameTextures = {
     missingTexture: makeImage("missing"),
     warrior: makeImage("warrior"),
     fishling: makeImage("fishling"),
+    elf: makeImage("elf"),
+    troll: makeImage("troll"),
+    fledgling: makeImage("fledgling"),
+    goblin: makeImage("goblin"),
+    unitBar: makeImage("tabUnitBar"),
 }
 
 /* Canvas Variables */
 const WP = {
     windowWidth: 0,
     windowHeight: 0,
+    resized: false,
     getWindowResize: function() {
         WP.windowWidth = window.innerWidth; 
         WP.windowHeight = window.innerHeight;
+        WP.resized = true;
     },
     right: function(x) {return WP.windowWidth - x;},
     bottom: function(y) {return WP.windowHeight - y;},
@@ -33,7 +40,9 @@ const MKI = {
     y: 0,
     downX: 0,
     downY: 0,
-    clicked: false,
+    wentDown: false,
+    wentUp: false,
+    initialTarget: null,
     getMouseMove: function(event) {
         const rect = mainWindow.getBoundingClientRect();
         MKI.x = event.clientX - rect.left;
@@ -42,11 +51,43 @@ const MKI = {
     getMouseDown: function() {
         MKI.downX = MKI.x;
         MKI.downY = MKI.y;
+        MKI.wentDown = true;
     },
     getMouseUp: function() {
-        if (MKI.downX == MKI.x && MKI.downY == MKI.y) {
-            MKI.clicked = true;
-        }
+        MKI.wentUp = true;
+    }
+}
+
+/* Graphical User Interface */
+class GUI {
+    static instances = {};
+    enabled = false;
+    content = null;
+    x = 0;
+    y = 0;
+    width = 0;
+    height = 0;
+    zindex = 0;
+    constructor(name, content, x, y, width, height, zindex) {
+        this.name = name;
+        this.content = content;
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+        this.zindex = zindex;
+        GUI.instances[name] = this;
+    }
+    update(x, y, width, height, zindex) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+        this.zindex = zindex;
+        this.enabled = true;
+    }
+    render() {
+        ctx.drawImage(gameTextures[this.content], this.x, this.y, this.width, this.height);
     }
 }
 
@@ -58,23 +99,34 @@ function bootGame() {
     mainWindow.addEventListener("mousemove", MKI.getMouseMove);
     mainWindow.addEventListener("mousedown", MKI.getMouseDown);
     mainWindow.addEventListener("mouseup", MKI.getMouseUp);
+    for (const tab of ["Warrior", "Fishling", "Elf", "Troll", "Fledgling", "Goblin"]) {
+        const tabName = tab.toLowerCase()
+        const element = new GUI(tabName+"Tab", tabName, 0, 0, 0, 0, 0);
+        element.hover = () => {
+            const x = WP.middle(0);
+            const y = WP.bottom(110);
+            ctx.font = "35px serif";
+            ctx.textAlign = "center";
+            ctx.textBaseLine = "middle";
+            ctx.fillText(tab, x, y);
+        }   
+    }
 }
 bootGame();
 
 /* Unit Tab */
 function handleUnitTab() {
-    if (WP.windowHeight < 500) {return [0, 0, 0, 0];};
-    ctx.fillStyle = 'rgb(125, 125, 125)';
-    ctx.beginPath();
-    const x = WP.middle(1000);
+    const tabs = ["warriorTab", "fishlingTab", "elfTab", "trollTab", "fledglingTab", "goblinTab"];
+    if (WP.windowHeight < 500) {for (let i = 0; i < 6; i++) {GUI.instances[tabs[i]].enabled = false}; return};
+    const x = WP.middle(600);
     const y = WP.bottom(100);
-    const width = 1000;
+    const width = 600;
     const height = 100;
-    ctx.rect(x, y, width, height);
-    ctx.fill();
-    ctx.closePath();
-    ctx.drawImage(gameTextures.warrior, x + 25, y + 25, 50, 50)
-    ctx.drawImage(gameTextures.fishling, x + 125, y + 25, 50, 50)
+    ctx.drawImage(gameTextures.unitBar, x, y, width, height);
+    for (let i = 0; i < 6; i++) {
+        if (WP.resized) {GUI.instances[tabs[i]].update(x + 100*i + 25, y + 25, 50, 50)};
+        GUI.instances[tabs[i]].render();
+    }
     return [x, y, width, height];
 }
 
@@ -87,24 +139,56 @@ async function startGame() {
 
         // Background
         ctx.clearRect(0, 0, WP.windowWidth, WP.windowHeight);
-        ctx.fillStyle = 'rgb(255, 0 ,0)';
         mainWindow.width = WP.windowWidth;
         mainWindow.height = WP.windowHeight;
         ctx.font = "25px serif";
         ctx.fillText(`Width: ${WP.windowWidth}, Height: ${WP.windowHeight}, a = ${a}`, 100, 100);
     
         // GUI
-        const [unitX, unitY, unitWidth, unitHeight] = handleUnitTab();
-        console.log(unitX +" , "+  unitY);
-        // Mouse Input
-        if (MKI.clicked) {
-            if (MKI.downX >= unitX && MKI.downX <= unitX + unitWidth && MKI.downY >= unitY && MKI.downY <= unitY + unitHeight) {
-                console.log("CLICKED")
+        handleUnitTab();
+
+
+        // Mouse Input Of All Kind
+        let overElement = false;
+        for (const [key, element] of Object.entries(GUI.instances)) {
+            if (element.enabled) {
+                if (MKI.x >= element.x && MKI.x <= element.x + element.width && MKI.y >= element.y && MKI.y <= element.y + element.height) {
+                    overElement = true;
+                    element.hover();
+                    MKI.hoveringOver = key;
+                    if (MKI.wentDown) {
+                        MKI.wentDown = false;
+                        MKI.initialTarget = key;
+                        break;
+                    }
+                    if (MKI.wentUp) {
+                        MKI.wentUp = false;
+                        if (MKI.initialTarget == key && MKI.hoveringOver == key) {
+                            prompt("You clicked "+ key);
+                            MKI.downX = 0;
+                            MKI.downY = 0;
+                        }
+                        MKI.initialTarget = null;
+                    }
+                    break;
+                }
             }
-            MKI.downX = 0;
-            MKI.downY = 0;
-            MKI.clicked = false;
         }
+        if (!overElement) {
+            MKI.hoveringOver = null
+            if (MKI.wentDown) {
+                MKI.wentDown = false;
+                MKI.initialTarget = null;
+            }
+            if (MKI.wentUp) {
+                MKI.wentUp = false;
+                MKI.downX = 0;
+                MKI.downY = 0;
+            }
+        };
+
+        WP.justReleased = false;
+        WP.resized = false;
     }
 }
 
