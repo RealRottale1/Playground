@@ -4,7 +4,14 @@ const ctx = mainWindow.getContext("2d");
 /* Critical Functions */
 async function wait(duration) {return new Promise((complete) => {setTimeout(() => {complete();}, duration);})}
 function halt(duration) {return new Promise((complete) => {setTimeout(() => {complete();}, duration);})}
+function makeImage(url) {const image = new Image(); try {image.src = ("textures/"+url+".png");} catch {image.src = 'textures/missing.png';} return image;}
 
+/* Game Textures */
+const gameTextures = {
+    missingTexture: makeImage("missing"),
+    warrior: makeImage("warrior"),
+    fishling: makeImage("fishling"),
+}
 
 /* Canvas Variables */
 const WP = {
@@ -66,6 +73,8 @@ function handleUnitTab() {
     ctx.rect(x, y, width, height);
     ctx.fill();
     ctx.closePath();
+    ctx.drawImage(gameTextures.warrior, x + 25, y + 25, 50, 50)
+    ctx.drawImage(gameTextures.fishling, x + 125, y + 25, 50, 50)
     return [x, y, width, height];
 }
 
