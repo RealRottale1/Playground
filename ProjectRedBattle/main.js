@@ -56,12 +56,17 @@ bootGame();
 
 /* Unit Tab */
 function handleUnitTab() {
-    if (WP.windowHeight < 500) {return;};
+    if (WP.windowHeight < 500) {return [0, 0, 0, 0];};
     ctx.fillStyle = 'rgb(125, 125, 125)';
     ctx.beginPath();
-    ctx.rect(WP.middle(1000), WP.bottom(100), 1000, 100);
+    const x = WP.middle(1000);
+    const y = WP.bottom(100);
+    const width = 1000;
+    const height = 100;
+    ctx.rect(x, y, width, height);
     ctx.fill();
     ctx.closePath();
+    return [x, y, width, height];
 }
 
 
@@ -80,15 +85,16 @@ async function startGame() {
         ctx.fillText(`Width: ${WP.windowWidth}, Height: ${WP.windowHeight}, a = ${a}`, 100, 100);
     
         // GUI
-        handleUnitTab();
-
+        const [unitX, unitY, unitWidth, unitHeight] = handleUnitTab();
+        console.log(unitX +" , "+  unitY);
         // Mouse Input
         if (MKI.clicked) {
-            ctx.fillStyle = 'rgba(183, 57, 57, 1)';
-            ctx.beginPath();
-            ctx.rect(MKI.downX, MKI.downY, 5, 5);
-            ctx.fill();
-            ctx.closePath();
+            if (MKI.downX >= unitX && MKI.downX <= unitX + unitWidth && MKI.downY >= unitY && MKI.downY <= unitY + unitHeight) {
+                console.log("CLICKED")
+            }
+            MKI.downX = 0;
+            MKI.downY = 0;
+            MKI.clicked = false;
         }
     }
 }
