@@ -58,6 +58,13 @@ const MKI = {
     }
 }
 
+/* Battle Map */
+class BM {
+    static maxColumns = 100;
+    static maxRows = 100;
+    static map = [[]];
+}
+
 /* Graphical User Interface */
 class GUI {
     static instances = {};
@@ -110,6 +117,15 @@ function bootGame() {
             ctx.textBaseLine = "middle";
             ctx.fillText(tab, x, y);
         }   
+    }
+    for (let y = 0; y < BM.maxRows; y++) {
+        for (let x = 0; x < BM.maxColumns; x++) {
+            if (!BM.map[y]) {
+                BM.map[y] = ["grass"];
+            } else {
+                BM.map[y].push("grass");
+            }
+        }
     }
 }
 bootGame();
