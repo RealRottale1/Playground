@@ -62,13 +62,13 @@ const MKI = {
     getMouseScroll: function(event) {
         event.preventDefault();
         const change = (MKI.lastScroll > event.deltaY ? -1 : 1);
-        console.log(change)
         const forcasted = BM.zoom + change/2;
         if (forcasted >= 0.85 && forcasted <= 2) {
             MKI.lastScroll = change;
             BM.zoom = forcasted;
             const ratio = (WP.windowWidth/BM.maxColumns) * BM.zoom;
-            BM.mouseX += change*ratio;
+            console.log(ratio)
+            //BM.mouseX += change*ratio;
         }
     } 
 }
