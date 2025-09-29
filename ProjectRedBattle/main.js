@@ -16,6 +16,8 @@ const gameTextures = {
     fledgling: makeImage("fledgling"),
     goblin: makeImage("goblin"),
     unitBar: makeImage("tabUnitBar"),
+
+        grass: makeImage("goblin"),
 }
 
 /* Canvas Variables */
@@ -43,6 +45,7 @@ const MKI = {
     wentDown: false,
     wentUp: false,
     initialTarget: null,
+    lastScroll: 0,
     getMouseMove: function(event) {
         const rect = mainWindow.getBoundingClientRect();
         MKI.x = event.clientX - rect.left;
@@ -55,14 +58,42 @@ const MKI = {
     },
     getMouseUp: function() {
         MKI.wentUp = true;
-    }
+    },
+    getMouseScroll: function(event) {
+        event.preventDefault();
+        const change = (MKI.lastScroll > event.deltaY ? -1 : 1);
+        console.log(change)
+        const forcasted = BM.zoom + change/2;
+        if (forcasted >= 0.85 && forcasted <= 2) {
+            MKI.lastScroll = change;
+            BM.zoom = forcasted;
+            const ratio = (WP.windowWidth/BM.maxColumns) * BM.zoom;
+            BM.mouseX += change*ratio;
+        }
+    } 
 }
 
 /* Battle Map */
 class BM {
     static maxColumns = 100;
     static maxRows = 100;
+    static mouseX = 0;
+    static mouseY = this.maxRows/2;
+    static zoom = 1;
     static map = [[]];
+
+    static render() {
+        const ratio = (WP.windowWidth/this.maxColumns) * this.zoom;
+        const size = Math.ceil(ratio);
+        for (let y = 0; y < this.maxRows; y++) {
+            for (let x = 0; x < this.maxColumns; x++) {
+                ctx.drawImage(gameTextures[this.map[y][x]], 
+                    Math.floor(ratio*x - (ratio/this.zoom)*this.mouseX), 
+                    Math.floor(ratio*y - (ratio/this.zoom)*this.mouseY),
+                    size, size);
+            }
+        }
+    }
 }
 
 /* Graphical User Interface */
@@ -106,12 +137,15 @@ function bootGame() {
     mainWindow.addEventListener("mousemove", MKI.getMouseMove);
     mainWindow.addEventListener("mousedown", MKI.getMouseDown);
     mainWindow.addEventListener("mouseup", MKI.getMouseUp);
+    mainWindow.addEventListener("wheel", MKI.getMouseScroll);
     for (const tab of ["Warrior", "Fishling", "Elf", "Troll", "Fledgling", "Goblin"]) {
         const tabName = tab.toLowerCase()
         const element = new GUI(tabName+"Tab", tabName, 0, 0, 0, 0, 0);
         element.hover = () => {
             const x = WP.middle(0);
-            const y = WP.bottom(110);
+            const y = WP.bottom(120);
+            ctx.drawImage(gameTextures.unitBar, x - 90, y - 35, 180, 50);
+            ctx.fillStyle = "rgba(255, 255, 255, 1)";
             ctx.font = "35px serif";
             ctx.textAlign = "center";
             ctx.textBaseLine = "middle";
@@ -121,9 +155,9 @@ function bootGame() {
     for (let y = 0; y < BM.maxRows; y++) {
         for (let x = 0; x < BM.maxColumns; x++) {
             if (!BM.map[y]) {
-                BM.map[y] = ["grass"];
+                BM.map[y] = ["elf"];
             } else {
-                BM.map[y].push("grass");
+                BM.map[y].push((y == 99 || y == 0 || x == 99) ? "elf" : ((Math.random() > 0.5 ? "grass" : "warrior")));
             }
         }
     }
@@ -154,9 +188,12 @@ async function startGame() {
         await wait(1);
 
         // Background
-        ctx.clearRect(0, 0, WP.windowWidth, WP.windowHeight);
         mainWindow.width = WP.windowWidth;
         mainWindow.height = WP.windowHeight;
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, WP.windowWidth, WP.windowHeight);
+        BM.render();
+
         ctx.font = "25px serif";
         ctx.fillText(`Width: ${WP.windowWidth}, Height: ${WP.windowHeight}, a = ${a}`, 100, 100);
     
