@@ -42,6 +42,8 @@ const MKI = {
     y: 0,
     downX: 0,
     downY: 0,
+    changeX: 0,
+    changeY: 0,
     wentDown: false,
     wentUp: false,
     initialTarget: null,
@@ -61,13 +63,14 @@ const MKI = {
     },
     getMouseScroll: function(event) {
         event.preventDefault();
-        const change = (MKI.lastScroll > event.deltaY ? -1 : 1);
-        const forcasted = BM.zoom + change/2;
-        if (forcasted >= 0.85 && forcasted <= 2) {
+        const change = (MKI.lastScroll > event.deltaY ? 1 : -1);
+        const forcasted = BM.zoom + change/5;
+        console.log(forcasted)
+        if (forcasted >= 0.25 && forcasted <= 2) {
             MKI.lastScroll = change;
             BM.zoom = forcasted;
             const ratio = (WP.windowWidth/BM.maxColumns) * BM.zoom;
-            console.log(ratio)
+            // console.log(ratio)
             //BM.mouseX += change*ratio;
         }
     } 
@@ -137,6 +140,7 @@ function bootGame() {
     mainWindow.addEventListener("mousemove", MKI.getMouseMove);
     mainWindow.addEventListener("mousedown", MKI.getMouseDown);
     mainWindow.addEventListener("mouseup", MKI.getMouseUp);
+    mainWindow.addEventListener("mouseleave", MKI.getMouseUp)
     mainWindow.addEventListener("wheel", MKI.getMouseScroll);
     for (const tab of ["Warrior", "Fishling", "Elf", "Troll", "Fledgling", "Goblin"]) {
         const tabName = tab.toLowerCase()
@@ -194,9 +198,6 @@ async function startGame() {
         ctx.fillRect(0, 0, WP.windowWidth, WP.windowHeight);
         BM.render();
 
-        ctx.font = "25px serif";
-        ctx.fillText(`Width: ${WP.windowWidth}, Height: ${WP.windowHeight}, a = ${a}`, 100, 100);
-    
         // GUI
         handleUnitTab();
 
@@ -233,10 +234,30 @@ async function startGame() {
                 MKI.wentDown = false;
                 MKI.initialTarget = null;
             }
+            ctx.fillStyle = "white";
+            ctx.font = "34px serif";
+            ctx.fillText(`Zoom: ${BM.zoom}`, 120, 120);
+            ctx.fillText(`MouseY ${BM.mouseY}`, 120, 140);
+            if (MKI.downX != 0 && MKI.downY != 0) {
+
+                console.log("Y: "+BM.mouseY)
+                console.log("Percent: "+(BM.zoom/2.25)/BM.maxRows)
+                const shiftX = (MKI.changeX == 0 ? 0 : (MKI.changeX - MKI.x)/5);
+                const shiftY = (MKI.changeY == 0 ? 0 : (MKI.changeY - MKI.y)/5);
+                const forcastX = (BM.mouseX + shiftX);
+                const forcastY = (BM.mouseY + shiftY);
+                const s = BM.zoom > 1 ? ((BM.zoom - 1) / 1) : 0;
+                BM.mouseX = (forcastX > BM.maxColumns || forcastX < -1*BM.maxColumns) ? BM.mouseX : forcastX;
+                BM.mouseY = (forcastY > BM.maxRows || forcastY < -1*BM.maxRows) ? BM.mouseY : forcastY;
+                MKI.changeX = MKI.x;
+                MKI.changeY = MKI.y;
+            }
             if (MKI.wentUp) {
                 MKI.wentUp = false;
                 MKI.downX = 0;
                 MKI.downY = 0;
+                MKI.changeX = 0;
+                MKI.changeY = 0;
             }
         };
 
