@@ -24,6 +24,7 @@ const gameTextures = {
     shallowwater: makeImage("shallowWater"),
     deepwater: makeImage("deepWater"),
     sand: makeImage("sand"),
+    lava: makeImage("lava"),
 }
 
 /* Canvas Variables */
@@ -210,7 +211,7 @@ function bootGame() {
     }
 
     /* Handles Tile Buttons */
-    for (const tile of ["Grass", "Stone", "Shallow Water", "Deep Water", "Sand"]) {
+    for (const tile of ["Grass", "Stone", "Shallow Water", "Deep Water", "Sand", "Lava"]) {
         const tileName = tile.toLowerCase().replaceAll(" ","");
         const element = new GUI(tileName + "Tab", tileName, 0, 0, 0, 0, 0);
         const length = tile.length * 20 + 50;
@@ -227,7 +228,7 @@ function bootGame() {
         element.click = () => {
             const alreadyUsing = BM.currentTile == tileName;
             if (!alreadyUsing) {
-                for (const otherTile of ["Grass", "Stone", "Shallow Water", "Deep Water", "Sand"]) {
+                for (const otherTile of ["Grass", "Stone", "Shallow Water", "Deep Water", "Sand", "Lava"]) {
                     const otherElement = GUI.instances[otherTile.toLowerCase().replaceAll(" ","")+"Tab"];
                     if (otherElement.darkness != 0) {
                         otherElement.darkness = 0;
@@ -245,7 +246,7 @@ function bootGame() {
             if (!BM.map[y]) {
                 BM.map[y] = ["stone"];
             } else {
-                BM.map[y].push((y == BM.maxRows-1 || y == 0 || x == BM.maxColumns-1) ? "stone" : (Math.random() > 0.5 ? "sand" : "shallowwater"));
+                BM.map[y].push((y == BM.maxRows-1 || y == 0 || x == BM.maxColumns-1) ? "stone" : (Math.random() > 0.5 ? "sand" : "lava"));
             }
         }
     }
@@ -274,7 +275,7 @@ function handleMapTab() {
     const width = 100;
     const height = 600;
     ctx.drawImage(gameTextures.mapBar, x, y, width, height);
-    const tiles = ["grassTab", "stoneTab", "shallowwaterTab", "deepwaterTab", "sandTab"];
+    const tiles = ["grassTab", "stoneTab", "shallowwaterTab", "deepwaterTab", "sandTab", "lavaTab"];
     for (let i = 0; i < tiles.length; i++) {
         if (WP.resized) {GUI.instances[tiles[i]].update(x + 25, y + 75 * i + 75, 50, 50)}
         GUI.instances[tiles[i]].render();
@@ -289,11 +290,11 @@ function getSelectedTile() {
     const halfWidth = WP.windowWidth / 2;
     const halfHeight = WP.windowHeight / 2;
 
-    const tileX = Math.floor((MKI.x - halfWidth) / tileSize + BM.mouseX);
-    const tileY = Math.floor((MKI.y - halfHeight) / tileSize + BM.mouseY);
+    const tileX = Math.floor(BM.mouseX + (MKI.x - halfWidth) / tileSize);
+    const tileY = Math.floor(BM.mouseY + (MKI.y - halfHeight) / tileSize);
     
-    const selectedX = Math.max(0, Math.min(BM.maxColumns - 1, tileX));
-    const selectedY = Math.max(0, Math.min(BM.maxRows - 1, tileY));
+    const selectedX = (tileX > (BM.maxColumns-1) || tileX < 0) ? null : tileX;
+    const selectedY = (tileY > (BM.maxRows-1) || tileY < 0) ? null : tileY;
     console.log(selectedX +", "+ selectedY);
     return [selectedX, selectedY];
 }
@@ -372,7 +373,7 @@ function gameLoop() {
         
         if (MKI.currentMouse == 0 && BM.currentTile != null) {
             const [x, y] = getSelectedTile();
-            if (x && y) {BM.map[y][x] = BM.currentTile};
+            if (x != null && y != null) {BM.map[y][x] = BM.currentTile};
         }
     };
 
