@@ -120,6 +120,7 @@ class BM {
     static zoom = 1;
     static zoomFactor = 1.1;
     static map = [[]];
+    static tiles = ["Grass", "Stone", "Shallow Water", "Deep Water", "Sand", "Lava"];
 
     static render() {
         const baseTileSize = WP.windowWidth / BM.maxColumns;
@@ -214,7 +215,7 @@ function bootGame() {
     }
 
     /* Handles Tile Buttons */
-    for (const tile of ["Grass", "Stone", "Shallow Water", "Deep Water", "Sand", "Lava"]) {
+    for (const tile of BM.tiles) {
         const tileName = tile.toLowerCase().replaceAll(" ","");
         const element = new GUI(tileName + "Tab", tileName, 0, 0, 0, 0, 0);
         const length = tile.length * 20 + 50;
@@ -231,7 +232,7 @@ function bootGame() {
         element.click = () => {
             const alreadyUsing = BM.currentTile == tileName;
             if (!alreadyUsing) {
-                for (const otherTile of ["Grass", "Stone", "Shallow Water", "Deep Water", "Sand", "Lava"]) {
+                for (const otherTile of BM.tiles) {
                     const otherElement = GUI.instances[otherTile.toLowerCase().replaceAll(" ","")+"Tab"];
                     if (otherElement.darkness != 0) {
                         otherElement.darkness = 0;
@@ -246,12 +247,39 @@ function bootGame() {
 
     const uploadIcon = new GUI("uploadTab", "uploadIcon", 0, 0, 0, 0, 0);
     uploadIcon.click = () => {
+        if (!BM.canEdit) {return};
         const data = prompt("Insert World File");
+        if (data && data.length > 0) {
+            const worldFile = data.split(" ");
+            if (worldFile.length === BM.maxRows * BM.maxColumns) {
+                const validTiles = new Set(BM.tiles.map(s => s.toLowerCase().replace(/\s+/g, "")));
+                let hasInvalidTile = false;
+                for (const tile of worldFile) {
+                    if (!validTiles.has(tile)) {
+                        hasInvalidTile = true;
+                        break;
+                    }
+                }
+                if (!hasInvalidTile) {
+                    for (let y = 0; y < BM.maxRows; y++) {
+                        for (let x = 0; x < BM.maxColumns; x++) {
+                            BM.map[y][x] = worldFile[y * BM.maxColumns + x];
+                        }
+                    }
+                    return;
+                }
+            }
+        }
+        alert("Invalid World File");
     };
     const saveIcon = new GUI("saveTab", "saveIcon", 0, 0, 0, 0, 0);
     saveIcon.click = async () => {
+        if (!BM.canEdit) {return};
         try {
-            await navigator.clipboard.writeText("World File Here");
+            const worldFile = BM.map.flat().map(
+                t => t.toLowerCase().replace(/\s+/g, "") // normalize
+            ).join(" ");
+            await navigator.clipboard.writeText(worldFile);
         } catch {
             alert("Something Went Wrong Please Try Again");
         }
