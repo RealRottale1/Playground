@@ -25,6 +25,9 @@ const gameTextures = {
     deepwater: makeImage("deepWater"),
     sand: makeImage("sand"),
     lava: makeImage("lava"),
+
+    saveIcon: makeImage("saveIcon"),
+    uploadIcon: makeImage("uploadIcon"),
 }
 
 /* Canvas Variables */
@@ -241,6 +244,19 @@ function bootGame() {
         }
     }
 
+    const uploadIcon = new GUI("uploadTab", "uploadIcon", 0, 0, 0, 0, 0);
+    uploadIcon.click = () => {
+        const data = prompt("Insert World File");
+    };
+    const saveIcon = new GUI("saveTab", "saveIcon", 0, 0, 0, 0, 0);
+    saveIcon.click = async () => {
+        try {
+            await navigator.clipboard.writeText("World File Here");
+        } catch {
+            alert("Something Went Wrong Please Try Again");
+        }
+    };
+
     for (let y = 0; y < BM.maxRows; y++) {
         for (let x = 0; x < BM.maxColumns; x++) {
             if (!BM.map[y]) {
@@ -280,6 +296,11 @@ function handleMapTab() {
         if (WP.resized) {GUI.instances[tiles[i]].update(x + 25, y + 75 * i + 75, 50, 50)}
         GUI.instances[tiles[i]].render();
     }
+    if (WP.resized) {GUI.instances["uploadTab"].update(x + 25, y - 50, 50, 50)}
+    GUI.instances["uploadTab"].render();
+
+    if (WP.resized) {GUI.instances["saveTab"].update(x + 25, y + 600, 50, 50)}
+    GUI.instances["saveTab"].render();
 }
 
 /* Gets Tile From Mouse Position */
