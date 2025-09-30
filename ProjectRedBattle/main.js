@@ -17,11 +17,12 @@ const gameTextures = {
     goblin: makeImage("goblin"),
 
     unitBar: makeImage("tabUnitBar"),
+    mapBar: makeImage("mapBar"),
 
     grass: makeImage("grass"),
     stone: makeImage("stone"),
-    shallowWater: makeImage("shallowWater"),
-    deepWater: makeImage("deepWater"),
+    shallowwater: makeImage("shallowWater"),
+    deepwater: makeImage("deepWater"),
 }
 
 /* Canvas Variables */
@@ -50,6 +51,7 @@ const MKI = {
     changeY: 0,
     wentDown: false,
     wentUp: false,
+    currentMouse: null,
     initialTarget: null,
     lastScroll: 0,
     getMouseMove: function (event) {
@@ -57,15 +59,22 @@ const MKI = {
         MKI.x = event.clientX - rect.left;
         MKI.y = event.clientY - rect.top;
     },
-    getMouseDown: function () {
-        MKI.downX = MKI.x;
-        MKI.downY = MKI.y;
-        MKI.changeX = MKI.x;
-        MKI.changeY = MKI.y;
+    getMouseDown: function (event) {
+        MKI.currentMouse = event.button;
+        if (event.button == 2) {
+            MKI.downX = MKI.x;
+            MKI.downY = MKI.y;
+            MKI.changeX = MKI.x;
+            MKI.changeY = MKI.y;
+        }
         MKI.wentDown = true;
     },
-    getMouseUp: function () {
+    getMouseUp: function (event) {
+        MKI.currentMouse = null;
         MKI.wentUp = true;
+    },
+    getRightClick: function(event) {
+        event.preventDefault();
     },
     getMouseScroll: function (event) {
         event.preventDefault();
@@ -97,6 +106,8 @@ const MKI = {
 
 /* Battle Map */
 class BM {
+    static canEdit = true;
+    static currentTile = null;
     static maxColumns = 50;
     static maxRows = 50;
     static mouseX = this.maxColumns / 2;
@@ -141,6 +152,7 @@ class GUI {
     width = 0;
     height = 0;
     zindex = 0;
+    darkness = 0;
     constructor(name, content, x, y, width, height, zindex) {
         this.name = name;
         this.content = content;
@@ -161,6 +173,10 @@ class GUI {
     }
     render() {
         ctx.drawImage(gameTextures[this.content], this.x, this.y, this.width, this.height);
+        if (this.darkness != 0) {
+            ctx.fillStyle = `rgba(0, 0, 0, ${this.darkness})`;
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+        }
     }
 }
 
@@ -174,6 +190,9 @@ function bootGame() {
     mainWindow.addEventListener("mouseup", MKI.getMouseUp);
     mainWindow.addEventListener("mouseleave", MKI.getMouseUp)
     mainWindow.addEventListener("wheel", MKI.getMouseScroll);
+    mainWindow.addEventListener("contextmenu", MKI.getRightClick);
+
+    /* Handles Tab Buttons */
     for (const tab of ["Warrior", "Fishling", "Elf", "Troll", "Fledgling", "Goblin"]) {
         const tabName = tab.toLowerCase()
         const element = new GUI(tabName + "Tab", tabName, 0, 0, 0, 0, 0);
@@ -188,12 +207,44 @@ function bootGame() {
             ctx.fillText(tab, x, y);
         }
     }
+
+    /* Handles Tile Buttons */
+    for (const tile of ["Grass", "Stone", "Shallow Water", "Deep Water"]) {
+        const tileName = tile.toLowerCase().replaceAll(" ","");
+        const element = new GUI(tileName + "Tab", tileName, 0, 0, 0, 0, 0);
+        const length = tile.length * 20 + 50;
+        element.hover = () => {
+            const x = length + 15;
+            const y = WP.center(0) - 300;
+            ctx.drawImage(gameTextures.unitBar, x - length, y - 35, length, 50);
+            ctx.fillStyle = "rgba(255, 255, 255, 1)";
+            ctx.font = "35px serif";
+            ctx.textAlign = "center";
+            ctx.textBaseLine = "middle";
+            ctx.fillText(tile, x - length/2, y);
+        }
+        element.click = () => {
+            const alreadyUsing = BM.currentTile == tileName;
+            if (!alreadyUsing) {
+                for (const otherTile of ["Grass", "Stone", "Shallow Water", "Deep Water"]) {
+                    const otherElement = GUI.instances[otherTile.toLowerCase().replaceAll(" ","")+"Tab"];
+                    if (otherElement.darkness != 0) {
+                        otherElement.darkness = 0;
+                        break;
+                    }
+                }
+            }
+            element.darkness = (alreadyUsing ? 0 : 0.65);
+            BM.currentTile = (alreadyUsing ? null : tileName);
+        }
+    }
+
     for (let y = 0; y < BM.maxRows; y++) {
         for (let x = 0; x < BM.maxColumns; x++) {
             if (!BM.map[y]) {
                 BM.map[y] = ["stone"];
             } else {
-                BM.map[y].push((y == BM.maxRows-1 || y == 0 || x == BM.maxColumns-1) ? "stone" : (Math.random() > 0.5 ? "deepWater" : "shallowWater"));
+                BM.map[y].push((y == BM.maxRows-1 || y == 0 || x == BM.maxColumns-1) ? "stone" : (Math.random() > 0.5 ? "deepwater" : "shallowwater"));
             }
         }
     }
@@ -213,7 +264,37 @@ function handleUnitTab() {
         if (WP.resized) { GUI.instances[tabs[i]].update(x + 100 * i + 25, y + 25, 50, 50) };
         GUI.instances[tabs[i]].render();
     }
-    return [x, y, width, height];
+}
+
+/* Map Tab */
+function handleMapTab() {
+    const x = 0;
+    const y = WP.center(0) - 300;
+    const width = 100;
+    const height = 600;
+    ctx.drawImage(gameTextures.mapBar, x, y, width, height);
+    const tiles = ["grassTab", "stoneTab", "shallowwaterTab", "deepwaterTab"];
+    for (let i = 0; i < 4; i++) {
+        if (WP.resized) {GUI.instances[tiles[i]].update(x + 25, y + 75 * i + 75, 50, 50)}
+        GUI.instances[tiles[i]].render();
+    }
+}
+
+/* Gets Tile From Mouse Position */
+function getSelectedTile() {
+    const baseTileSize = WP.windowWidth / BM.maxColumns;
+    const tileSize = baseTileSize * BM.zoom;
+
+    const halfWidth = WP.windowWidth / 2;
+    const halfHeight = WP.windowHeight / 2;
+
+    const tileX = Math.floor((MKI.x - halfWidth) / tileSize + BM.mouseX);
+    const tileY = Math.floor((MKI.y - halfHeight) / tileSize + BM.mouseY);
+    
+    const selectedX = Math.max(0, Math.min(BM.maxColumns - 1, tileX));
+    const selectedY = Math.max(0, Math.min(BM.maxRows - 1, tileY));
+    console.log(selectedX +", "+ selectedY);
+    return [selectedX, selectedY];
 }
 
 function gameLoop() {
@@ -226,6 +307,7 @@ function gameLoop() {
 
     // GUI
     handleUnitTab();
+    handleMapTab();
 
 
     // Mouse Input Of All Kind
@@ -234,7 +316,7 @@ function gameLoop() {
         if (element.enabled) {
             if (MKI.x >= element.x && MKI.x <= element.x + element.width && MKI.y >= element.y && MKI.y <= element.y + element.height) {
                 overElement = true;
-                element.hover();
+                if (element.hover) {element.hover()};
                 MKI.hoveringOver = key;
                 if (MKI.wentDown) {
                     MKI.wentDown = false;
@@ -244,6 +326,7 @@ function gameLoop() {
                 if (MKI.wentUp) {
                     MKI.wentUp = false;
                     if (MKI.initialTarget == key && MKI.hoveringOver == key) {
+                        if (element.click) {element.click()};
                         prompt("You clicked " + key);
                         MKI.downX = 0;
                         MKI.downY = 0;
@@ -255,24 +338,27 @@ function gameLoop() {
         }
     }
 
+    /* Handles Moving The Screen */
     if (!overElement) {
         MKI.hoveringOver = null
-        if (MKI.wentDown) {
-            MKI.wentDown = false;
-            MKI.initialTarget = null;
-        }
-        if (MKI.downX != 0 && MKI.downY != 0) {
-            const baseTileSize = WP.windowWidth / BM.maxColumns;
-            const tileSize = baseTileSize * BM.zoom;
+        if (MKI.currentMouse == 2) {
+            if (MKI.wentDown) {
+                MKI.wentDown = false;
+                MKI.initialTarget = null;
+            }
+            if (MKI.downX != 0 && MKI.downY != 0) {
+                const baseTileSize = WP.windowWidth / BM.maxColumns;
+                const tileSize = baseTileSize * BM.zoom;
 
-            const downXPixels = MKI.x - MKI.changeX;
-            const downYPixels = MKI.y - MKI.changeY;
+                const downXPixels = MKI.x - MKI.changeX;
+                const downYPixels = MKI.y - MKI.changeY;
 
-            if (downXPixels != 0 || downYPixels != 0) {
-                BM.mouseX -= downXPixels / tileSize;
-                BM.mouseY -= downYPixels / tileSize;
-                MKI.changeX = MKI.x;
-                MKI.changeY = MKI.y;
+                if (downXPixels != 0 || downYPixels != 0) {
+                    BM.mouseX -= downXPixels / tileSize;
+                    BM.mouseY -= downYPixels / tileSize;
+                    MKI.changeX = MKI.x;
+                    MKI.changeY = MKI.y;
+                }
             }
         }
         if (MKI.wentUp) {
@@ -281,6 +367,11 @@ function gameLoop() {
             MKI.downY = 0;
             MKI.changeX = 0;
             MKI.changeY = 0;
+        }
+        
+        if (MKI.currentMouse == 0 && BM.currentTile != null) {
+            const [x, y] = getSelectedTile();
+            if (x && y) {BM.map[y][x] = BM.currentTile};
         }
     };
 
