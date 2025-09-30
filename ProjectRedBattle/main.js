@@ -15,8 +15,13 @@ const gameTextures = {
     troll: makeImage("troll"),
     fledgling: makeImage("fledgling"),
     goblin: makeImage("goblin"),
+
     unitBar: makeImage("tabUnitBar"),
+
     grass: makeImage("grass"),
+    stone: makeImage("stone"),
+    shallowWater: makeImage("shallowWater"),
+    deepWater: makeImage("deepWater"),
 }
 
 /* Canvas Variables */
@@ -186,9 +191,9 @@ function bootGame() {
     for (let y = 0; y < BM.maxRows; y++) {
         for (let x = 0; x < BM.maxColumns; x++) {
             if (!BM.map[y]) {
-                BM.map[y] = ["elf"];
+                BM.map[y] = ["stone"];
             } else {
-                BM.map[y].push((y == 49 || y == 0 || x == 49) ? "elf" : "grass");
+                BM.map[y].push((y == BM.maxRows-1 || y == 0 || x == BM.maxColumns-1) ? "stone" : (Math.random() > 0.5 ? "deepWater" : "shallowWater"));
             }
         }
     }
