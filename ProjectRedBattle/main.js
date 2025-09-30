@@ -23,6 +23,7 @@ const gameTextures = {
     stone: makeImage("stone"),
     shallowwater: makeImage("shallowWater"),
     deepwater: makeImage("deepWater"),
+    sand: makeImage("sand"),
 }
 
 /* Canvas Variables */
@@ -209,7 +210,7 @@ function bootGame() {
     }
 
     /* Handles Tile Buttons */
-    for (const tile of ["Grass", "Stone", "Shallow Water", "Deep Water"]) {
+    for (const tile of ["Grass", "Stone", "Shallow Water", "Deep Water", "Sand"]) {
         const tileName = tile.toLowerCase().replaceAll(" ","");
         const element = new GUI(tileName + "Tab", tileName, 0, 0, 0, 0, 0);
         const length = tile.length * 20 + 50;
@@ -226,7 +227,7 @@ function bootGame() {
         element.click = () => {
             const alreadyUsing = BM.currentTile == tileName;
             if (!alreadyUsing) {
-                for (const otherTile of ["Grass", "Stone", "Shallow Water", "Deep Water"]) {
+                for (const otherTile of ["Grass", "Stone", "Shallow Water", "Deep Water", "Sand"]) {
                     const otherElement = GUI.instances[otherTile.toLowerCase().replaceAll(" ","")+"Tab"];
                     if (otherElement.darkness != 0) {
                         otherElement.darkness = 0;
@@ -244,7 +245,7 @@ function bootGame() {
             if (!BM.map[y]) {
                 BM.map[y] = ["stone"];
             } else {
-                BM.map[y].push((y == BM.maxRows-1 || y == 0 || x == BM.maxColumns-1) ? "stone" : (Math.random() > 0.5 ? "deepwater" : "shallowwater"));
+                BM.map[y].push((y == BM.maxRows-1 || y == 0 || x == BM.maxColumns-1) ? "stone" : (Math.random() > 0.5 ? "sand" : "shallowwater"));
             }
         }
     }
@@ -273,8 +274,8 @@ function handleMapTab() {
     const width = 100;
     const height = 600;
     ctx.drawImage(gameTextures.mapBar, x, y, width, height);
-    const tiles = ["grassTab", "stoneTab", "shallowwaterTab", "deepwaterTab"];
-    for (let i = 0; i < 4; i++) {
+    const tiles = ["grassTab", "stoneTab", "shallowwaterTab", "deepwaterTab", "sandTab"];
+    for (let i = 0; i < tiles.length; i++) {
         if (WP.resized) {GUI.instances[tiles[i]].update(x + 25, y + 75 * i + 75, 50, 50)}
         GUI.instances[tiles[i]].render();
     }
