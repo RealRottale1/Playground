@@ -178,10 +178,62 @@ class GUI {
         this.enabled = true;
     }
     render() {
+        const baseTileSize = WP.windowWidth / BM.maxColumns;
+        const tileSize = baseTileSize * BM.zoom;
+        const size = Math.ceil(tileSize);
+
+        const halfWidth = WP.windowWidth / 2;
+        const halfHeight = WP.windowHeight / 2;
         ctx.drawImage(gameTextures[this.content], this.x, this.y, this.width, this.height);
         if (this.darkness != 0) {
             ctx.fillStyle = `rgba(0, 0, 0, ${this.darkness})`;
             ctx.fillRect(this.x, this.y, this.width, this.height);
+        }
+    }
+}
+
+class Creature {
+    static goodInstances = new Set();
+    static badInstances = new Set();
+    x = 0;
+    y = 0;
+    width = 0;
+    height = 0;
+    health = 0;
+    isGood = false;
+    constructor(x, y, width, height, texture, health, isGood) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+        this.texture = texture;
+        this.health = health;
+        this.isGood = isGood;
+        const useSet = (isGood ? Creature.goodInstances : Creature.badInstances);
+        useSet.add(this);
+    }
+    static renderInstances() {
+        const baseTileSize = WP.windowWidth / BM.maxColumns;
+        const tileSize = baseTileSize * BM.zoom;
+        const size = Math.ceil(tileSize);
+
+        const halfWidth = WP.windowWidth / 2;
+        const halfHeight = WP.windowHeight / 2;
+
+        for (const instances of [Creature.goodInstances, Creature.badInstances]) {
+            for (const instance of instances) {
+                const screenX = Math.floor((instance.x - BM.mouseX) * tileSize + halfWidth);
+                const screenY = Math.floor((instance.y - BM.mouseY) * tileSize + halfHeight);
+                const screenWidth = size*instance.width;
+                const screenHeight = size*instance.height;
+                ctx.drawImage(
+                    gameTextures[instance.texture],
+                    screenX - screenWidth/2,
+                    screenY - screenHeight/2,
+                    screenWidth,
+                    screenHeight
+                );
+            }
         }
     }
 }
@@ -245,6 +297,7 @@ function bootGame() {
         }
     }
 
+    /* Save And Upload Buttons */
     const uploadIcon = new GUI("uploadTab", "uploadIcon", 0, 0, 0, 0, 0);
     uploadIcon.click = () => {
         if (!BM.canEdit) {return};
@@ -285,6 +338,7 @@ function bootGame() {
         }
     };
 
+    /* Default World Tiles */
     for (let y = 0; y < BM.maxRows; y++) {
         for (let x = 0; x < BM.maxColumns; x++) {
             if (!BM.map[y]) {
@@ -294,6 +348,9 @@ function bootGame() {
             }
         }
     }
+
+    new Creature(0, 0, 0.5, 0.5, "warrior", 100, true);
+    new Creature(50, 50, 0.5, 0.5, "goblin", 100, false);
 }
 bootGame();
 
@@ -356,10 +413,12 @@ function gameLoop() {
     ctx.fillRect(0, 0, WP.windowWidth, WP.windowHeight);
     BM.render();
 
+    // Creatures
+    Creature.renderInstances();
+
     // GUI
     handleUnitTab();
     handleMapTab();
-
 
     // Mouse Input Of All Kind
     let overElement = false;
@@ -378,7 +437,7 @@ function gameLoop() {
                     MKI.wentUp = false;
                     if (MKI.initialTarget == key && MKI.hoveringOver == key) {
                         if (element.click) {element.click()};
-                        prompt("You clicked " + key);
+                        console.log(`You clicked the ${element.name}`);
                         MKI.downX = 0;
                         MKI.downY = 0;
                     }
