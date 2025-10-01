@@ -5,7 +5,7 @@ const ctx = mainWindow.getContext("2d");
 async function wait(duration) { return new Promise((complete) => { setTimeout(() => { complete(); }, duration); }) }
 function halt(duration) { return new Promise((complete) => { setTimeout(() => { complete(); }, duration); }) }
 function makeImage(url) { const image = new Image(); try { image.src = ("textures/" + url + ".png"); } catch { image.src = 'textures/missing.png'; } return image; }
-function distance(y2, y1, x2, x1) {return (y2 - y1) / (x2 - x1)};
+function getDistance(y2, y1, x2, x1) {return Math.abs(y2 - y1) + Math.abs(x2 - x1)};
 
 /* Game Textures */
 const gameTextures = {
@@ -199,7 +199,7 @@ class AStar {
         this.start = start;
         this.goal = goal;
 
-        this.open = [{position: start, g: 0, f: this.heuristic(start, goal), parent: null}];
+        this.open = [{position: start, g: 0, f: AStar.heuristic(start, goal), parent: null}];
         this.closed = new Set();
         this.finished = false;
         this.path = null;
@@ -223,7 +223,7 @@ class AStar {
         for (const [dx, dy] of dirs) {
             const nx = x + dx;
             const ny = y + dy;
-            if (nx >= 0 && ny >= 0 && BM.width > nx && BM.length > ny) {
+            if (nx >= 0 && ny >= 0 && nx < BM.maxColumns && ny < BM.maxRows) {
                 results.push([nx, ny]);
             }
         }
@@ -235,19 +235,19 @@ class AStar {
         let current = node;
         while (current) {
             path.push(current.position);
-            cur = cur.parent;
+            current = current.parent;
         }
         return path.reverse();
     }
 
-    static step(maxSteps = 10, instance) {
+    static step(maxSteps, instance) {
         for (let i = 0; i < maxSteps && instance.open.length > 0; i++) {
             instance.open.sort((a, b) => a.f - b.f);
             const current = instance.open.shift();
-            const key = current.position[0]+","+current.pos[1];
+            const key = current.position[0]+","+current.position[1];
             if (instance.closed.has(key)) {continue};
             instance.closed.add(key);
-            if (current.position[0] == instance.goal[0] && current.pos[1] == instance.goal[1]) {
+            if (current.position[0] == instance.goal[0] && current.position[1] == instance.goal[1]) {
                 instance.finished = true;
                 instance.path = AStar.reconstruct(current);
                 return;
@@ -255,7 +255,7 @@ class AStar {
             for (const neighbor of AStar.neighbors(current.position)) {
                 const [nx, ny] = neighbor;
                 const tileName = BM.map[ny][nx];
-                if (tileName == "rock") {continue};
+                if (tileName == "stone") {continue};
                 const g = current.g + instance.tileWeights[tileName];
                 const h = AStar.heuristic(neighbor, instance.goal);
                 const f = g + h;
@@ -265,10 +265,39 @@ class AStar {
     }
 }
 
+class PathManager {
+    static developingPaths = new Map();
+    static add(instance) {
+        PathManager.developingPaths.set(instance, new AStar([instance.x, instance.y], [instance.initialEnemyX, instance.initialEnemyY], instance.weights));
+    }
+
+    static developPaths(minSteps) {
+        if (PathManager.developingPaths.size <= 0) {return};
+
+        let stepsLeft = minSteps;
+        let allPathsComplete = true;
+        do {
+            allPathsComplete = true;
+            for (const path of PathManager.developingPaths.values()) {
+                if (!path.finished) {
+                    AStar.step(5, path);
+                    stepsLeft -= 5;
+                }
+
+                if (!path.finished) {
+                    allPathsComplete = false;
+                }
+            }
+            if (allPathsComplete) {break};
+        } while (stepsLeft > 0)
+    }
+}
+
 /* Creatures */
 class Creature {
     static goodInstances = new Set();
     static badInstances = new Set();
+
     x = 0;
     y = 0;
     width = 0;
@@ -279,10 +308,12 @@ class Creature {
     initialEnemyX = 0;
     initialEnemyY = 0;
     target = null;
+    pathIndex = 0;
     path = null;
     requestingPath = false;
+    weights = null;
 
-    constructor(x, y, width, height, texture, health, isGood) {
+    constructor(x, y, width, height, texture, health, isGood, weights) {
         this.x = x;
         this.y = y;
         this.width = width;
@@ -290,6 +321,7 @@ class Creature {
         this.texture = texture;
         this.health = health;
         this.isGood = isGood;
+        this.weights = weights;
         const useSet = (isGood ? Creature.goodInstances : Creature.badInstances);
         useSet.add(this);
     }
@@ -299,7 +331,7 @@ class Creature {
         let selectedEnemy = null;
         let shortestDistance = Number.MAX_VALUE;
         for (const enemy of (opposingSide ? Creature.goodInstances : Creature.badInstances)) {
-            const distance = distance(enemy.y, instance.y, enemy.x, instance.x);
+            const distance = getDistance(enemy.y, instance.y, enemy.x, instance.x);
             if (shortestDistance > distance && enemy.health > 0) {
                 shortestDistance = distance;
                 selectedEnemy = enemy;
@@ -317,7 +349,7 @@ class Creature {
 
         // Find a target
         if (!instance.requestingPath) {
-            if (!target || target && target.health <= 0) {
+            if (!instance.target || instance.target && instance.target.health <= 0) {
                 instance.target = Creature.getTarget(instance);
                 if (instance.target) {
                     instance.initialEnemyX = instance.target.x;
@@ -327,18 +359,26 @@ class Creature {
             }
 
             // Move to spot on path
-            if (instance.path && instance.target && distance(instance.target.y, instance.initialEnemyY, instance.target.x, instance.initialEnemyX) < 5) {
-
+            if (instance.path && instance.pathIndex < instance.path.length) {
+                instance.x = instance.path[instance.pathIndex][0];
+                instance.y = instance.path[instance.pathIndex][1];
+                instance.pathIndex += 1;
                 return;
             }
         }
 
         // Make New Path
-        instance.requestingPath = true;
-        instance.path = null;
-        // Request Path
-        // Continue path calculation
-        // Remove path from que and add to instance
+        if (!instance.requestingPath) {
+            instance.requestingPath = true;
+            instance.path = null;
+            PathManager.add(instance);
+            console.log("Requesting Path")
+        } if (PathManager.developingPaths.get(instance).finished) {
+            console.log("Done")
+            instance.path = PathManager.developingPaths.get(instance).path;
+            PathManager.developingPaths.delete(instance);
+            instance.requestingPath = false;
+        }
         return;
 
     }
@@ -480,7 +520,7 @@ function bootGame() {
     }
 
     new Creature(0, 0, 0.5, 0.5, "warrior", 100, true, [1, 0, 5, 10, 2, 15]);
-    new Creature(50, 50, 0.5, 0.5, "goblin", 100, false, [1, 0, 5, 10, 2, 15]);
+    new Creature(49, 49, 0.5, 0.5, "goblin", 100, false, [1, 0, 5, 10, 2, 15]);
 }
 bootGame();
 
@@ -543,7 +583,16 @@ function gameLoop() {
     ctx.fillRect(0, 0, WP.windowWidth, WP.windowHeight);
     BM.render();
 
+    // Creature Action
+    PathManager.developPaths(100);
+
+
     // Creatures
+    for (const pair of [Creature.goodInstances, Creature.badInstances]) {
+        for (const instance of pair) {
+            Creature.act(instance);
+        }
+    }
     Creature.renderInstances();
 
     // GUI
