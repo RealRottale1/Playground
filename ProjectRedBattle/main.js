@@ -267,9 +267,14 @@ class AStar {
 
 class PathManager {
     static developingPaths = new Map();
-    static add(instance) {
-        PathManager.developingPaths.set(instance, new AStar([instance.x, instance.y], [instance.initialEnemyX, instance.initialEnemyY], instance.weights));
-    }
+static add(instance) {
+    // Use grid coords for A* (integers)
+    const startX = Math.floor(instance.x);
+    const startY = Math.floor(instance.y);
+    const goalX = Math.floor(instance.target.x);
+    const goalY = Math.floor(instance.target.y);
+    PathManager.developingPaths.set(instance, new AStar([startX, startY], [goalX, goalY], instance.weights));
+}
 
     static developPaths(minSteps) {
         if (PathManager.developingPaths.size <= 0) {return};
@@ -303,6 +308,7 @@ class Creature {
     width = 0;
     height = 0;
     health = 0;
+    speed = 0;
     isGood = false;
 
     initialEnemyX = 0;
@@ -310,16 +316,18 @@ class Creature {
     target = null;
     pathIndex = 0;
     path = null;
+    destination = null;
     requestingPath = false;
     weights = null;
 
-    constructor(x, y, width, height, texture, health, isGood, weights) {
+    constructor(x, y, width, height, texture, health, speed, isGood, weights) {
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
         this.texture = texture;
         this.health = health;
+        this.speed = speed
         this.isGood = isGood;
         this.weights = weights;
         const useSet = (isGood ? Creature.goodInstances : Creature.badInstances);
@@ -347,6 +355,11 @@ class Creature {
             return;
         }
 
+        // If target is far from original spot make new path to same target
+        if (instance.target && getDistance(instance.target.y, instance.initialEnemyY, instance.target.x, instance.initialEnemyX) > 10) {
+            instance.path = null;
+        }
+
         // Find a target
         if (!instance.requestingPath) {
             if (!instance.target || instance.target && instance.target.health <= 0) {
@@ -360,9 +373,22 @@ class Creature {
 
             // Move to spot on path
             if (instance.path && instance.pathIndex < instance.path.length) {
-                instance.x = instance.path[instance.pathIndex][0];
-                instance.y = instance.path[instance.pathIndex][1];
-                instance.pathIndex += 1;
+                if (!instance.destination) {
+                    instance.destination = instance.path[instance.pathIndex];
+                }
+                
+                const dx = instance.destination[0] - instance.x;
+                const dy = instance.destination[1] - instance.y;
+                const distance = Math.sqrt(dx*dx + dy*dy);
+                if (distance <= instance.speed) {
+                    instance.x = instance.destination[0];
+                    instance.y = instance.destination[1];
+                    instance.pathIndex += 1;
+                    instance.destination = null
+                } else {
+                    instance.x += (dx / distance) * instance.speed;
+                    instance.y += (dy / distance) * instance.speed;
+                }
                 return;
             }
         }
@@ -371,11 +397,19 @@ class Creature {
         if (!instance.requestingPath) {
             instance.requestingPath = true;
             instance.path = null;
+
+            if (instance.target) {
+                instance.initialEnemyX = instance.target.x;
+                instance.initialEnemyY = instance.target.y;
+            }
+
             PathManager.add(instance);
             console.log("Requesting Path")
         } if (PathManager.developingPaths.get(instance).finished) {
             console.log("Done")
             instance.path = PathManager.developingPaths.get(instance).path;
+            instance.pathIndex = 0;
+            instance.destination = null;
             PathManager.developingPaths.delete(instance);
             instance.requestingPath = false;
         }
@@ -514,13 +548,26 @@ function bootGame() {
             if (!BM.map[y]) {
                 BM.map[y] = ["grass"];
             } else {
-                BM.map[y].push("grass");
+                let r = Math.random();
+                BM.map[y].push(
+                    (r < 0.25) ? "grass" :
+                    (r < 0.5) ? "sand" :
+                    (r < 0.75) ? "shallowwater" :
+                    (r < 1) ? "deepwater" : "lava"
+                );
             }
         }
     }
 
-    new Creature(0, 0, 0.5, 0.5, "warrior", 100, true, [1, 0, 5, 10, 2, 15]);
-    new Creature(49, 49, 0.5, 0.5, "goblin", 100, false, [1, 0, 5, 10, 2, 15]);
+    BM.map[25][25] = "lava"
+    new Creature(0, 0, 0.5, 0.5, "warrior", 100, 0.0125, true, [1, 0, 5, 10, 2, 15]);
+    new Creature(49, 49, 0.5, 0.5, "goblin", 100, 0.0125, false, [1, 0, 5, 10, 2, 15]);
+    // for (let i = 0; i < 50; i++) {
+    //     for (let o = 0; o < 25; o++) {
+    //         new Creature(i, o, 0.5, 0.5, "warrior", 100, 0.05, true, [1, 0, 5, 10, 2, 25]);
+    //         new Creature(i, 49-o, 0.5, 0.5, "goblin", 100, 0.05, false, [1, 0, 5, 10, 2, 25]);
+    //     }
+    // }
 }
 bootGame();
 
@@ -584,7 +631,7 @@ function gameLoop() {
     BM.render();
 
     // Creature Action
-    PathManager.developPaths(100);
+    PathManager.developPaths(1000);
 
 
     // Creatures
