@@ -5,6 +5,7 @@ const ctx = mainWindow.getContext("2d");
 async function wait(duration) { return new Promise((complete) => { setTimeout(() => { complete(); }, duration); }) }
 function halt(duration) { return new Promise((complete) => { setTimeout(() => { complete(); }, duration); }) }
 function makeImage(url) { const image = new Image(); try { image.src = ("textures/" + url + ".png"); } catch { image.src = 'textures/missing.png'; } return image; }
+function distance(y2, y1, x2, x1) {return (y2 - y1) / (x2 - x1)};
 
 /* Game Textures */
 const gameTextures = {
@@ -192,6 +193,79 @@ class GUI {
     }
 }
 
+/* AStar Path Finding */
+class AStar {
+    constructor(start, goal, weights) {
+        this.start = start;
+        this.goal = goal;
+
+        this.open = [{position: start, g: 0, f: this.heuristic(start, goal), parent: null}];
+        this.closed = new Set();
+        this.finished = false;
+        this.path = null;
+
+        this.tileWeights = {};
+        for (let i = 0; i < weights.length; i++) {
+            const tileName = BM.tiles[i].toLowerCase().replaceAll(" ","");
+            this.tileWeights[tileName] = weights[i];
+        }
+    }
+
+    static heuristic(a, b) {
+        return Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
+    }
+
+    static neighbors(currentPosition) {
+        const x = currentPosition[0];
+        const y = currentPosition[1];
+        const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+        const results = [];
+        for (const [dx, dy] of dirs) {
+            const nx = x + dx;
+            const ny = y + dy;
+            if (nx >= 0 && ny >= 0 && BM.width > nx && BM.length > ny) {
+                results.push([nx, ny]);
+            }
+        }
+        return results;
+    }
+
+    static reconstruct(node) {
+        const path = [];
+        let current = node;
+        while (current) {
+            path.push(current.position);
+            cur = cur.parent;
+        }
+        return path.reverse();
+    }
+
+    static step(maxSteps = 10, instance) {
+        for (let i = 0; i < maxSteps && instance.open.length > 0; i++) {
+            instance.open.sort((a, b) => a.f - b.f);
+            const current = instance.open.shift();
+            const key = current.position[0]+","+current.pos[1];
+            if (instance.closed.has(key)) {continue};
+            instance.closed.add(key);
+            if (current.position[0] == instance.goal[0] && current.pos[1] == instance.goal[1]) {
+                instance.finished = true;
+                instance.path = AStar.reconstruct(current);
+                return;
+            }
+            for (const neighbor of AStar.neighbors(current.position)) {
+                const [nx, ny] = neighbor;
+                const tileName = BM.map[ny][nx];
+                if (tileName == "rock") {continue};
+                const g = current.g + instance.tileWeights[tileName];
+                const h = AStar.heuristic(neighbor, instance.goal);
+                const f = g + h;
+                instance.open.push({position: neighbor, g: g, f: f, parent: current});
+            }
+        }
+    }
+}
+
+/* Creatures */
 class Creature {
     static goodInstances = new Set();
     static badInstances = new Set();
@@ -201,6 +275,13 @@ class Creature {
     height = 0;
     health = 0;
     isGood = false;
+
+    initialEnemyX = 0;
+    initialEnemyY = 0;
+    target = null;
+    path = null;
+    requestingPath = false;
+
     constructor(x, y, width, height, texture, health, isGood) {
         this.x = x;
         this.y = y;
@@ -212,6 +293,56 @@ class Creature {
         const useSet = (isGood ? Creature.goodInstances : Creature.badInstances);
         useSet.add(this);
     }
+
+    static getTarget(instance) {
+        const opposingSide = !instance.isGood;
+        let selectedEnemy = null;
+        let shortestDistance = Number.MAX_VALUE;
+        for (const enemy of (opposingSide ? Creature.goodInstances : Creature.badInstances)) {
+            const distance = distance(enemy.y, instance.y, enemy.x, instance.x);
+            if (shortestDistance > distance && enemy.health > 0) {
+                shortestDistance = distance;
+                selectedEnemy = enemy;
+            }
+        }
+        return selectedEnemy;
+    }
+
+    static act(instance) {
+        if (instance.health <= 0) {
+            // Remove current path from calculation
+            // Remove self
+            return;
+        }
+
+        // Find a target
+        if (!instance.requestingPath) {
+            if (!target || target && target.health <= 0) {
+                instance.target = Creature.getTarget(instance);
+                if (instance.target) {
+                    instance.initialEnemyX = instance.target.x;
+                    instance.initialEnemyY = instance.target.y;
+                }
+                return;
+            }
+
+            // Move to spot on path
+            if (instance.path && instance.target && distance(instance.target.y, instance.initialEnemyY, instance.target.x, instance.initialEnemyX) < 5) {
+
+                return;
+            }
+        }
+
+        // Make New Path
+        instance.requestingPath = true;
+        instance.path = null;
+        // Request Path
+        // Continue path calculation
+        // Remove path from que and add to instance
+        return;
+
+    }
+
     static renderInstances() {
         const baseTileSize = WP.windowWidth / BM.maxColumns;
         const tileSize = baseTileSize * BM.zoom;
@@ -237,7 +368,6 @@ class Creature {
         }
     }
 }
-
 
 /* Boot Up */
 function bootGame() {
@@ -349,8 +479,8 @@ function bootGame() {
         }
     }
 
-    new Creature(0, 0, 0.5, 0.5, "warrior", 100, true);
-    new Creature(50, 50, 0.5, 0.5, "goblin", 100, false);
+    new Creature(0, 0, 0.5, 0.5, "warrior", 100, true, [1, 0, 5, 10, 2, 15]);
+    new Creature(50, 50, 0.5, 0.5, "goblin", 100, false, [1, 0, 5, 10, 2, 15]);
 }
 bootGame();
 
