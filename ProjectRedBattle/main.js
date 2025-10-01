@@ -277,7 +277,7 @@ function bootGame() {
         if (!BM.canEdit) {return};
         try {
             const worldFile = BM.map.flat().map(
-                t => t.toLowerCase().replace(/\s+/g, "") // normalize
+                t => t.toLowerCase().replace(/\s+/g, "")
             ).join(" ");
             await navigator.clipboard.writeText(worldFile);
         } catch {
@@ -288,9 +288,9 @@ function bootGame() {
     for (let y = 0; y < BM.maxRows; y++) {
         for (let x = 0; x < BM.maxColumns; x++) {
             if (!BM.map[y]) {
-                BM.map[y] = ["stone"];
+                BM.map[y] = ["grass"];
             } else {
-                BM.map[y].push((y == BM.maxRows-1 || y == 0 || x == BM.maxColumns-1) ? "stone" : (Math.random() > 0.5 ? "sand" : "lava"));
+                BM.map[y].push("grass");
             }
         }
     }
