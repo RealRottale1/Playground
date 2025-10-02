@@ -376,9 +376,11 @@ class Creature {
                 if (!instance.destination) {
                     instance.destination = instance.path[instance.pathIndex];
                 }
-                const standingTile = BM.map[Math.floor(instance.y)][Math.floor(instance.x)];
+                const standingTile = BM.map[Math.round(instance.y)][Math.round(instance.x)];
+                console.log(standingTile)
                 const tileProps = instance.tileProperties[standingTile];
-                if (tileProps.drownDamage) {
+                console.log(tileProps)
+                if (tileProps.hasOwnProperty("drownDamage")) {
                     instance.health -= tileProps.drownDamage;
                     if (instance.health <= 0) {return};
                 }
@@ -556,21 +558,21 @@ function bootGame() {
                 let r = Math.random();
                 BM.map[y].push(
                     (r < 0.25) ? "grass" :
-                    (r < 0.5) ? "sand" :
-                    (r < 0.75) ? "shallowwater" :
-                    (r < 1) ? "deepwater" : "lava"
+                    (r < 0.5) ? "grass" :
+                    (r < 0.75) ? "sand" :
+                    (r < 1) ? "grass" : "lava"
                 );
             }
         }
     }
 
     BM.map[25][25] = "lava"
-    // new Creature(0, 0, 0.5, 0.5, "warrior", 100, true, {"grass": {r: 1, s: 0.025}, "sand": {r: 0, s: 0.020}, "shallowwater": {r: 5, s: 0.0125}, "deepwater": {r: 25, s: 0}, "lava": {r: 25, s: 0}});
-    // new Creature(49, 49, 0.5, 0.5, "goblin", 100, false, {"grass": {r: 1, s: 0.025}, "sand": {r: 0, s: 0.020}, "shallowwater": {r: 5, s: 0.0125}, "deepwater": {r: 25, s: 0}, "lava": {r: 25, s: 0}});
+    // new Creature(0, 0, 0.5, 0.5, "warrior", 100, true, {"grass": {r: 1, s: 0.025}, "stone": {r: 0, s: 0, drownDamage: 999}, "sand": {r: 0, s: 0.020}, "shallowwater": {r: 5, s: 0.0125}, "deepwater": {r: 25, s: 0}, "lava": {r: 25, s: 0}});
+    // new Creature(49, 49, 0.5, 0.5, "goblin", 100, false, {"grass": {r: 1, s: 0.025}, "stone": {r: 0, s: 0, drownDamage: 999}, "sand": {r: 0, s: 0.020}, "shallowwater": {r: 5, s: 0.0125}, "deepwater": {r: 25, s: 0}, "lava": {r: 25, s: 0}});
     for (let i = 0; i < 50; i++) {
-        for (let o = 0; o < 25; o++) {
-            new Creature(i, o, 0.5, 0.5, "warrior", 100, true, {"grass": {r: 1, s: 0.025}, "sand": {r: 0, s: 0.020}, "shallowwater": {r: 5, s: 0.0125, drownDamage: 0.025}, "deepwater": {r: 100, s: 0.0025, drownDamage: 1}, "lava": {r: 1000, s: 0.00125, drownDamage: 3}});
-            new Creature(i, 49-o, 0.5, 0.5, "goblin", 100, false, {"grass": {r: 1, s: 0.025}, "sand": {r: 0, s: 0.020}, "shallowwater": {r: 5, s: 0.0125, drownDamage: 0.025}, "deepwater": {r: 100, s: 0.0025, drownDamage: 1}, "lava": {r: 1000, s: 0.00125, drownDamage: 3}});
+        for (let o = 0; o < 10; o++) {
+            new Creature(i, o, 0.5, 0.5, "warrior", 100, true, {"grass": {r: 1, s: 0.025}, "stone": {r: 0, s: 0, drownDamage: 999}, "sand": {r: 0, s: 0.020}, "shallowwater": {r: 5, s: 0.0125, drownDamage: 0.025}, "deepwater": {r: 100, s: 0.0025, drownDamage: 1}, "lava": {r: 1000, s: 0.00125, drownDamage: 3}});
+            new Creature(i, 49-o, 0.5, 0.5, "goblin", 100, false, {"grass": {r: 1, s: 0.025}, "stone": {r: 0, s: 0, drownDamage: 999}, "sand": {r: 0, s: 0.020}, "shallowwater": {r: 5, s: 0.0125, drownDamage: 0.025}, "deepwater": {r: 100, s: 0.0025, drownDamage: 1}, "lava": {r: 1000, s: 0.00125, drownDamage: 3}});
         }
     }
 }
@@ -623,7 +625,6 @@ function getSelectedTile() {
     
     const selectedX = (tileX > (BM.maxColumns-1) || tileX < 0) ? null : tileX;
     const selectedY = (tileY > (BM.maxRows-1) || tileY < 0) ? null : tileY;
-    console.log(selectedX +", "+ selectedY);
     return [selectedX, selectedY];
 }
 
@@ -637,7 +638,6 @@ function gameLoop() {
 
     // Creature Action
     PathManager.developPaths(1000);
-
 
     // Creatures
     for (const pair of [Creature.goodInstances, Creature.badInstances]) {
