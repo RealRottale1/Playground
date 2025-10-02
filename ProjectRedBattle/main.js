@@ -195,7 +195,7 @@ class GUI {
 
 /* AStar Path Finding */
 class AStar {
-    constructor(start, goal, weights) {
+    constructor(start, goal, tileProperties) {
         this.start = start;
         this.goal = goal;
 
@@ -205,9 +205,8 @@ class AStar {
         this.path = null;
 
         this.tileWeights = {};
-        for (let i = 0; i < weights.length; i++) {
-            const tileName = BM.tiles[i].toLowerCase().replaceAll(" ","");
-            this.tileWeights[tileName] = weights[i];
+        for (const [key, data] of Object.entries(tileProperties)) {
+            this.tileWeights[key] = data.r;
         }
     }
 
@@ -267,14 +266,13 @@ class AStar {
 
 class PathManager {
     static developingPaths = new Map();
-static add(instance) {
-    // Use grid coords for A* (integers)
-    const startX = Math.floor(instance.x);
-    const startY = Math.floor(instance.y);
-    const goalX = Math.floor(instance.target.x);
-    const goalY = Math.floor(instance.target.y);
-    PathManager.developingPaths.set(instance, new AStar([startX, startY], [goalX, goalY], instance.weights));
-}
+    static add(instance) {
+        const startX = Math.floor(instance.x);
+        const startY = Math.floor(instance.y);
+        const goalX = Math.floor(instance.target.x);
+        const goalY = Math.floor(instance.target.y);
+        PathManager.developingPaths.set(instance, new AStar([startX, startY], [goalX, goalY], instance.tileProperties));
+    }
 
     static developPaths(minSteps) {
         if (PathManager.developingPaths.size <= 0) {return};
@@ -308,7 +306,6 @@ class Creature {
     width = 0;
     height = 0;
     health = 0;
-    speed = 0;
     isGood = false;
 
     initialEnemyX = 0;
@@ -318,18 +315,18 @@ class Creature {
     path = null;
     destination = null;
     requestingPath = false;
-    weights = null;
 
-    constructor(x, y, width, height, texture, health, speed, isGood, weights) {
+    tileProperties = null;
+
+    constructor(x, y, width, height, texture, health, isGood, tileProperties) {
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
         this.texture = texture;
         this.health = health;
-        this.speed = speed
         this.isGood = isGood;
-        this.weights = weights;
+        this.tileProperties = tileProperties;
         const useSet = (isGood ? Creature.goodInstances : Creature.badInstances);
         useSet.add(this);
     }
@@ -376,18 +373,20 @@ class Creature {
                 if (!instance.destination) {
                     instance.destination = instance.path[instance.pathIndex];
                 }
+                const standingTile = BM.map[Math.floor(instance.y)][Math.floor(instance.x)];
+                const speed = instance.tileProperties[standingTile].s;
                 
                 const dx = instance.destination[0] - instance.x;
                 const dy = instance.destination[1] - instance.y;
                 const distance = Math.sqrt(dx*dx + dy*dy);
-                if (distance <= instance.speed) {
+                if (distance <= speed) {
                     instance.x = instance.destination[0];
                     instance.y = instance.destination[1];
                     instance.pathIndex += 1;
                     instance.destination = null
                 } else {
-                    instance.x += (dx / distance) * instance.speed;
-                    instance.y += (dy / distance) * instance.speed;
+                    instance.x += (dx / distance) * speed;
+                    instance.y += (dy / distance) * speed;
                 }
                 return;
             }
@@ -427,8 +426,8 @@ class Creature {
 
         for (const instances of [Creature.goodInstances, Creature.badInstances]) {
             for (const instance of instances) {
-                const screenX = Math.floor((instance.x - BM.mouseX) * tileSize + halfWidth);
-                const screenY = Math.floor((instance.y - BM.mouseY) * tileSize + halfHeight);
+                const screenX = Math.floor((instance.x - BM.mouseX + 0.5) * tileSize + halfWidth);
+                const screenY = Math.floor((instance.y - BM.mouseY + 0.5) * tileSize + halfHeight);
                 const screenWidth = size*instance.width;
                 const screenHeight = size*instance.height;
                 ctx.drawImage(
@@ -560,14 +559,14 @@ function bootGame() {
     }
 
     BM.map[25][25] = "lava"
-    new Creature(0, 0, 0.5, 0.5, "warrior", 100, 0.0125, true, [1, 0, 5, 10, 2, 15]);
-    new Creature(49, 49, 0.5, 0.5, "goblin", 100, 0.0125, false, [1, 0, 5, 10, 2, 15]);
-    // for (let i = 0; i < 50; i++) {
-    //     for (let o = 0; o < 25; o++) {
-    //         new Creature(i, o, 0.5, 0.5, "warrior", 100, 0.05, true, [1, 0, 5, 10, 2, 25]);
-    //         new Creature(i, 49-o, 0.5, 0.5, "goblin", 100, 0.05, false, [1, 0, 5, 10, 2, 25]);
-    //     }
-    // }
+    // new Creature(0, 0, 0.5, 0.5, "warrior", 100, true, {"grass": {r: 1, s: 0.025}, "sand": {r: 0, s: 0.020}, "shallowwater": {r: 5, s: 0.0125}, "deepwater": {r: 25, s: 0}, "lava": {r: 25, s: 0}});
+    // new Creature(49, 49, 0.5, 0.5, "goblin", 100, false, {"grass": {r: 1, s: 0.025}, "sand": {r: 0, s: 0.020}, "shallowwater": {r: 5, s: 0.0125}, "deepwater": {r: 25, s: 0}, "lava": {r: 25, s: 0}});
+    for (let i = 0; i < 50; i++) {
+        for (let o = 0; o < 25; o++) {
+            new Creature(i, o, 0.5, 0.5, "warrior", 100, true, {"grass": {r: 1, s: 0.025}, "sand": {r: 0, s: 0.020}, "shallowwater": {r: 5, s: 0.0125}, "deepwater": {r: 25, s: 0}, "lava": {r: 25, s: 0}});
+            new Creature(i, 49-o, 0.5, 0.5, "goblin", 100, false, {"grass": {r: 1, s: 0.025}, "sand": {r: 0, s: 0.020}, "shallowwater": {r: 5, s: 0.0125}, "deepwater": {r: 25, s: 0}, "lava": {r: 25, s: 0}});
+        }
+    }
 }
 bootGame();
 
