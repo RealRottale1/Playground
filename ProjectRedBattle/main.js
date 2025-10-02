@@ -307,6 +307,7 @@ class Creature {
     height = 0;
     health = 0;
     isGood = false;
+    awaitingDeath = false;
 
     initialEnemyX = 0;
     initialEnemyY = 0;
@@ -347,8 +348,10 @@ class Creature {
 
     static act(instance) {
         if (instance.health <= 0) {
-            // Remove current path from calculation
-            // Remove self
+            if (PathManager.developingPaths.has(instance)) {
+                PathManager.developingPaths.delete(instance);
+            }
+            instance.awaitingDeath = true;
             return;
         }
 
@@ -374,7 +377,12 @@ class Creature {
                     instance.destination = instance.path[instance.pathIndex];
                 }
                 const standingTile = BM.map[Math.floor(instance.y)][Math.floor(instance.x)];
-                const speed = instance.tileProperties[standingTile].s;
+                const tileProps = instance.tileProperties[standingTile];
+                if (tileProps.drownDamage) {
+                    instance.health -= tileProps.drownDamage;
+                    if (instance.health <= 0) {return};
+                }
+                const speed = tileProps.s;
                 
                 const dx = instance.destination[0] - instance.x;
                 const dy = instance.destination[1] - instance.y;
@@ -403,9 +411,7 @@ class Creature {
             }
 
             PathManager.add(instance);
-            console.log("Requesting Path")
         } if (PathManager.developingPaths.get(instance).finished) {
-            console.log("Done")
             instance.path = PathManager.developingPaths.get(instance).path;
             instance.pathIndex = 0;
             instance.destination = null;
@@ -563,8 +569,8 @@ function bootGame() {
     // new Creature(49, 49, 0.5, 0.5, "goblin", 100, false, {"grass": {r: 1, s: 0.025}, "sand": {r: 0, s: 0.020}, "shallowwater": {r: 5, s: 0.0125}, "deepwater": {r: 25, s: 0}, "lava": {r: 25, s: 0}});
     for (let i = 0; i < 50; i++) {
         for (let o = 0; o < 25; o++) {
-            new Creature(i, o, 0.5, 0.5, "warrior", 100, true, {"grass": {r: 1, s: 0.025}, "sand": {r: 0, s: 0.020}, "shallowwater": {r: 5, s: 0.0125}, "deepwater": {r: 25, s: 0}, "lava": {r: 25, s: 0}});
-            new Creature(i, 49-o, 0.5, 0.5, "goblin", 100, false, {"grass": {r: 1, s: 0.025}, "sand": {r: 0, s: 0.020}, "shallowwater": {r: 5, s: 0.0125}, "deepwater": {r: 25, s: 0}, "lava": {r: 25, s: 0}});
+            new Creature(i, o, 0.5, 0.5, "warrior", 100, true, {"grass": {r: 1, s: 0.025}, "sand": {r: 0, s: 0.020}, "shallowwater": {r: 5, s: 0.0125, drownDamage: 0.025}, "deepwater": {r: 100, s: 0.0025, drownDamage: 1}, "lava": {r: 1000, s: 0.00125, drownDamage: 3}});
+            new Creature(i, 49-o, 0.5, 0.5, "goblin", 100, false, {"grass": {r: 1, s: 0.025}, "sand": {r: 0, s: 0.020}, "shallowwater": {r: 5, s: 0.0125, drownDamage: 0.025}, "deepwater": {r: 100, s: 0.0025, drownDamage: 1}, "lava": {r: 1000, s: 0.00125, drownDamage: 3}});
         }
     }
 }
@@ -637,6 +643,9 @@ function gameLoop() {
     for (const pair of [Creature.goodInstances, Creature.badInstances]) {
         for (const instance of pair) {
             Creature.act(instance);
+            if (instance.awaitingDeath) {
+                pair.delete(instance);
+            };
         }
     }
     Creature.renderInstances();
