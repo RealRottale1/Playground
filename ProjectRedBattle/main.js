@@ -368,15 +368,18 @@ class Creature {
         if (instance.target) {
             if (getDistance(instance.target.y, instance.initialEnemyY, instance.target.x, instance.initialEnemyX) > instance.repathRange) {
                 instance.path = null;
+                console.log("BA")
             } else if (getDistance(instance.target.y, instance.y, instance.target.x, instance.x) < instance.attackRange) {
-                instance.target.health -= 25;
+                console.log("BB")
+                instance.target.health -= 100;
                 return;
+            } else {
+                console.log("BC")
             }
         }
 
         // Find a target
         if (!instance.requestingPath) {
-            console.log("We searching")
             if (!instance.target || instance.target && instance.target.health <= 0) {
                 instance.target = Creature.getTarget(instance);
                 if (instance.target) {
@@ -395,7 +398,7 @@ class Creature {
                 const tileProps = instance.tileProperties[standingTile];
                 if (tileProps.hasOwnProperty("drownDamage")) {
                     instance.health -= tileProps.drownDamage;
-                    if (instance.health <= 0) {return};
+                    if (instance.health <= 0) {console.log("D UH OH"); return};
                 }
                 const speed = tileProps.s;
                 
@@ -403,19 +406,31 @@ class Creature {
                 const dy = instance.destination[1] - instance.y;
                 const distance = Math.sqrt(dx*dx + dy*dy);
                 const snapTo = (distance <= speed);
-                const [cx, cy] = (snapTo ? [instance.destination[0], instance.destination[1]] : [instance.x + (dx / distance) * speed, instance.y + (dy / distance) * speed])
+                let stepX = (dx / distance) * speed;
+                let stepY = (dy / distance) * speed;
+                if (Math.abs(stepX) < 0.001 && Math.abs(dx) > 0) stepX = Math.sign(dx) * 0.001;
+                if (Math.abs(stepY) < 0.001 && Math.abs(dy) > 0) stepY = Math.sign(dy) * 0.001;
+
+
+                const [cx, cy] = (snapTo ? [instance.destination[0], instance.destination[1]] : [instance.x + stepX, instance.y + stepY])
+
                 const newPositionCord = Math.round(cy)+','+Math.round(cx);
                 if (newPositionCord != initialPositionCord) {
+                    console.log("DA")
                     if (Creature.allCords.has(newPositionCord) && false) { // Temp
+                        console.log("I am blocked")
                         return;
                     } else {
                         Creature.allCords.delete(initialPositionCord);
                         Creature.allCords.set(newPositionCord, 1);
                     }
+                } else {
+                    console.log("DB")
                 }
                 instance.x = cx;
                 instance.y = cy;
                 if (snapTo) {
+                    console.log("SNAPPED TO!")
                     instance.pathIndex += 1;
                     instance.destination = null
                 }
@@ -434,13 +449,16 @@ class Creature {
             }
 
             PathManager.add(instance);
-        } if (PathManager.developingPaths.get(instance).finished) {
+        }
+        if (PathManager.developingPaths.get(instance).finished) {
             instance.path = PathManager.developingPaths.get(instance).path;
             instance.pathIndex = 0;
             instance.destination = null;
             PathManager.developingPaths.delete(instance);
             instance.requestingPath = false;
         }
+
+        console.log("defaulting")
         return;
 
     }
