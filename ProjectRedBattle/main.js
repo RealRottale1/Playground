@@ -5,7 +5,7 @@ const ctx = mainWindow.getContext("2d");
 async function wait(duration) { return new Promise((complete) => { setTimeout(() => { complete(); }, duration); }) }
 function halt(duration) { return new Promise((complete) => { setTimeout(() => { complete(); }, duration); }) }
 function makeImage(url) { const image = new Image(); try { image.src = ("textures/" + url + ".png"); } catch { image.src = 'textures/missing.png'; } return image; }
-function getDistance(y2, y1, x2, x1) {return Math.abs(y2 - y1) + Math.abs(x2 - x1)};
+function getDistance(y2, y1, x2, x1) {return Math.abs(x2 - x1) + Math.abs(y2 - y1)};
 
 /* Game Textures */
 const gameTextures = {
@@ -300,6 +300,7 @@ class PathManager {
 class Creature {
     static goodInstances = new Set();
     static badInstances = new Set();
+    static allCords = new Map();
 
     x = 0;
     y = 0;
@@ -316,8 +317,10 @@ class Creature {
     path = null;
     destination = null;
     requestingPath = false;
-
     tileProperties = null;
+
+    repathRange = 10;
+    attackRange = 1;
 
     constructor(x, y, width, height, texture, health, isGood, tileProperties) {
         this.x = x;
@@ -347,17 +350,28 @@ class Creature {
     }
 
     static act(instance) {
+        const roundedX = Math.round(instance.x);
+        const roundedY = Math.round(instance.y)
+        const initialPositionCord = roundedY+','+roundedX;
+        Creature.allCords.set(initialPositionCord, 1);
+
         if (instance.health <= 0) {
             if (PathManager.developingPaths.has(instance)) {
                 PathManager.developingPaths.delete(instance);
             }
+            Creature.allCords.delete(initialPositionCord);
             instance.awaitingDeath = true;
             return;
         }
 
         // If target is far from original spot make new path to same target
-        if (instance.target && getDistance(instance.target.y, instance.initialEnemyY, instance.target.x, instance.initialEnemyX) > 10) {
-            instance.path = null;
+        if (instance.target) {
+            if (getDistance(instance.target.y, instance.initialEnemyY, instance.target.x, instance.initialEnemyX) > instance.repathRange) {
+                instance.path = null;
+            } else if (getDistance(instance.target.y, instance.y, instance.target.x, instance.x) < instance.attackRange) {
+                instance.target.health -= 25;
+                return;
+            }
         }
 
         // Find a target
@@ -376,10 +390,8 @@ class Creature {
                 if (!instance.destination) {
                     instance.destination = instance.path[instance.pathIndex];
                 }
-                const standingTile = BM.map[Math.round(instance.y)][Math.round(instance.x)];
-                console.log(standingTile)
+                const standingTile = BM.map[roundedY][roundedX];
                 const tileProps = instance.tileProperties[standingTile];
-                console.log(tileProps)
                 if (tileProps.hasOwnProperty("drownDamage")) {
                     instance.health -= tileProps.drownDamage;
                     if (instance.health <= 0) {return};
@@ -389,14 +401,22 @@ class Creature {
                 const dx = instance.destination[0] - instance.x;
                 const dy = instance.destination[1] - instance.y;
                 const distance = Math.sqrt(dx*dx + dy*dy);
-                if (distance <= speed) {
-                    instance.x = instance.destination[0];
-                    instance.y = instance.destination[1];
+                const snapTo = (distance <= speed);
+                const [cx, cy] = (snapTo ? [instance.destination[0], instance.destination[1]] : [instance.x + (dx / distance) * speed, instance.y + (dy / distance) * speed])
+                const newPositionCord = Math.round(cy)+','+Math.round(cx);
+                if (newPositionCord != initialPositionCord) {
+                    if (Creature.allCords.has(newPositionCord) && false) {
+                        return;
+                    } else {
+                        Creature.allCords.delete(initialPositionCord);
+                        Creature.allCords.set(newPositionCord, 1);
+                    }
+                }
+                instance.x = cx;
+                instance.y = cy;
+                if (snapTo) {
                     instance.pathIndex += 1;
                     instance.destination = null
-                } else {
-                    instance.x += (dx / distance) * speed;
-                    instance.y += (dy / distance) * speed;
                 }
                 return;
             }
@@ -637,7 +657,7 @@ function gameLoop() {
     BM.render();
 
     // Creature Action
-    PathManager.developPaths(1000);
+    PathManager.developPaths(2000);
 
     // Creatures
     for (const pair of [Creature.goodInstances, Creature.badInstances]) {
