@@ -376,6 +376,7 @@ class Creature {
 
         // Find a target
         if (!instance.requestingPath) {
+            console.log("We searching")
             if (!instance.target || instance.target && instance.target.health <= 0) {
                 instance.target = Creature.getTarget(instance);
                 if (instance.target) {
@@ -405,7 +406,7 @@ class Creature {
                 const [cx, cy] = (snapTo ? [instance.destination[0], instance.destination[1]] : [instance.x + (dx / distance) * speed, instance.y + (dy / distance) * speed])
                 const newPositionCord = Math.round(cy)+','+Math.round(cx);
                 if (newPositionCord != initialPositionCord) {
-                    if (Creature.allCords.has(newPositionCord) && false) {
+                    if (Creature.allCords.has(newPositionCord) && false) { // Temp
                         return;
                     } else {
                         Creature.allCords.delete(initialPositionCord);
