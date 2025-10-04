@@ -6,6 +6,7 @@ async function wait(duration) { return new Promise((complete) => { setTimeout(()
 function halt(duration) { return new Promise((complete) => { setTimeout(() => { complete(); }, duration); }) }
 function makeImage(url) { const image = new Image(); try { image.src = ("textures/" + url + ".png"); } catch { image.src = 'textures/missing.png'; } return image; }
 function getDistance(y2, y1, x2, x1) {return Math.abs(x2 - x1) + Math.abs(y2 - y1)};
+function shuffleArray(array) {for (let i = array.length - 1; i > 0; i--) {const j = Math.floor(Math.random() * (i + 1));[array[i], array[j]] = [array[j], array[i]];}return array};
 
 /* Game Textures */
 const gameTextures = {
@@ -122,6 +123,25 @@ class BM {
     static zoomFactor = 1.1;
     static map = [[]];
     static tiles = ["Grass", "Stone", "Shallow Water", "Deep Water", "Sand", "Lava"];
+
+    static renderDebugTile(x, y) {
+        const baseTileSize = WP.windowWidth / BM.maxColumns;
+        const tileSize = baseTileSize * BM.zoom;
+        const size = Math.ceil(tileSize);
+
+        const halfWidth = WP.windowWidth / 2;
+        const halfHeight = WP.windowHeight / 2;
+
+        const screenX = Math.floor((x - BM.mouseX) * tileSize + halfWidth);
+        const screenY = Math.floor((y - BM.mouseY) * tileSize + halfHeight);
+
+        ctx.drawImage(
+            gameTextures.missingTexture,
+            screenX,
+            screenY,
+            size, size
+        );
+    }
 
     static render() {
         const baseTileSize = WP.windowWidth / BM.maxColumns;
@@ -319,8 +339,13 @@ class Creature {
     requestingPath = false;
     tileProperties = null;
 
-    repathRange = 10;
+    repathRange = 1;
     attackRange = 1;
+
+    // Debug
+    returnCode = 0;
+    debugInfo = null;
+    myCords = null;
 
     constructor(x, y, width, height, texture, health, isGood, tileProperties) {
         this.x = x;
@@ -350,31 +375,43 @@ class Creature {
     }
 
     static act(instance) {
-        const roundedX = Math.round(instance.x);
-        const roundedY = Math.round(instance.y)
-        const initialPositionCord = roundedY+','+roundedX;
-        Creature.allCords.set(initialPositionCord, 1);
+        const tileX = Math.floor(instance.x);
+        const tileY = Math.floor(instance.y)
+        const initialPositionCord = tileY+','+tileX;
+        instance.myCords = initialPositionCord;
+        Creature.allCords.set(initialPositionCord, instance);
 
         if (instance.health <= 0) {
-            if (PathManager.developingPaths.has(instance)) {
-                PathManager.developingPaths.delete(instance);
-            }
+            const instanceType = instance.isGood ? Creature.goodInstances : Creature.badInstances;
+            instanceType.delete(instance);
+
             Creature.allCords.delete(initialPositionCord);
-            instance.awaitingDeath = true;
+            PathManager.developingPaths.delete(instance);
+
+            instance.target = null;
+            instance.path = null;
+            instance.requestingPath = false;
+
+            for (const other of [...Creature.goodInstances, ...Creature.badInstances]) {
+                if (other.target === instance) {
+                    other.target = null;
+                    other.requestingPath = false;
+                }
+            }
+
+            instance.returnCode = 1;
             return;
         }
 
         // If target is far from original spot make new path to same target
         if (instance.target) {
             if (getDistance(instance.target.y, instance.initialEnemyY, instance.target.x, instance.initialEnemyX) > instance.repathRange) {
+                instance.target = this.getTarget(instance);
                 instance.path = null;
-                console.log("BA")
             } else if (getDistance(instance.target.y, instance.y, instance.target.x, instance.x) < instance.attackRange) {
-                console.log("BB")
-                instance.target.health -= 100;
+                instance.target.health -= 1;
+                instance.returnCode = 2;
                 return;
-            } else {
-                console.log("BC")
             }
         }
 
@@ -386,19 +423,29 @@ class Creature {
                     instance.initialEnemyX = instance.target.x;
                     instance.initialEnemyY = instance.target.y;
                 }
+                instance.returnCode = 3;
                 return;
             }
 
             // Move to spot on path
             if (instance.path && instance.pathIndex < instance.path.length) {
+                if (instance.path.length > 0) {
+                    const [firstX, firstY] = instance.path[0];
+                    if (firstX === tileX && firstY === tileY) {
+                        instance.path.shift();
+                        if (instance.pathIndex > 0) instance.pathIndex--;
+                    }
+                }
+
                 if (!instance.destination) {
                     instance.destination = instance.path[instance.pathIndex];
                 }
-                const standingTile = BM.map[roundedY][roundedX];
+
+                const standingTile = BM.map[tileY][tileX];
                 const tileProps = instance.tileProperties[standingTile];
                 if (tileProps.hasOwnProperty("drownDamage")) {
                     instance.health -= tileProps.drownDamage;
-                    if (instance.health <= 0) {console.log("D UH OH"); return};
+                    if (instance.health <= 0) {instance.returnCode = 4;return};
                 }
                 const speed = tileProps.s;
                 
@@ -411,29 +458,28 @@ class Creature {
                 if (Math.abs(stepX) < 0.001 && Math.abs(dx) > 0) stepX = Math.sign(dx) * 0.001;
                 if (Math.abs(stepY) < 0.001 && Math.abs(dy) > 0) stepY = Math.sign(dy) * 0.001;
 
-
                 const [cx, cy] = (snapTo ? [instance.destination[0], instance.destination[1]] : [instance.x + stepX, instance.y + stepY])
 
-                const newPositionCord = Math.round(cy)+','+Math.round(cx);
+                const newPositionCord = Math.floor(cy)+','+Math.floor(cx);
                 if (newPositionCord != initialPositionCord) {
-                    console.log("DA")
-                    if (Creature.allCords.has(newPositionCord) && false) { // Temp
-                        console.log("I am blocked")
-                        return;
-                    } else {
-                        Creature.allCords.delete(initialPositionCord);
-                        Creature.allCords.set(newPositionCord, 1);
+                    if (Creature.allCords.has(newPositionCord)) {
+                        //if (Creature.allCords.get(newPositionCord).isGood != instance.isGood) {
+                            // instance.target = null;
+                            // instance.path = null;
+                            instance.returnCode = 5;
+                            return;
+                        //}
                     }
-                } else {
-                    console.log("DB")
+                    Creature.allCords.delete(initialPositionCord);
+                    Creature.allCords.set(newPositionCord, instance);
                 }
                 instance.x = cx;
                 instance.y = cy;
                 if (snapTo) {
-                    console.log("SNAPPED TO!")
                     instance.pathIndex += 1;
                     instance.destination = null
                 }
+                instance.returnCode = 6;
                 return;
             }
         }
@@ -457,8 +503,7 @@ class Creature {
             PathManager.developingPaths.delete(instance);
             instance.requestingPath = false;
         }
-
-        console.log("defaulting")
+        instance.returnCode = 7;
         return;
 
     }
@@ -679,13 +724,8 @@ function gameLoop() {
     PathManager.developPaths(2000);
 
     // Creatures
-    for (const pair of [Creature.goodInstances, Creature.badInstances]) {
-        for (const instance of pair) {
-            Creature.act(instance);
-            if (instance.awaitingDeath) {
-                pair.delete(instance);
-            };
-        }
+    for (const instance of shuffleArray([...Creature.goodInstances, ...Creature.badInstances])) {
+        Creature.act(instance);
     }
     Creature.renderInstances();
 
@@ -752,9 +792,49 @@ function gameLoop() {
             MKI.changeY = 0;
         }
         
-        if (MKI.currentMouse == 0 && BM.currentTile != null) {
-            const [x, y] = getSelectedTile();
-            if (x != null && y != null) {BM.map[y][x] = BM.currentTile};
+        const [x, y] = getSelectedTile();
+        if (x != null && y != null) {
+            if (MKI.currentMouse == 0 && BM.currentTile != null) {
+                BM.map[y][x] = BM.currentTile;
+            }
+
+            // Debug Creatures
+            if (Creature.allCords.has(y+","+x)) {
+                const instance = Creature.allCords.get(y+","+x);
+                ctx.fillStyle = "blue";
+                ctx.font = "35px serif";
+                ctx.fillText(`Cords (y,x): ${y+","+x}`, 100, 100);
+
+                const selectedCords = instance.myCords;
+                ctx.fillText(`Instance Cords (y,x): ${selectedCords}`, 100, 120);
+
+
+                ctx.fillText(`Instance Position (y, x): ${instance.y}, ${instance.x}`, 100, 140);
+
+                ctx.fillText(`Target: ${instance.target}`, 100, 160);
+
+                ctx.fillText(`First Blocked In Path: ${(instance.path) ? Creature.allCords.has(instance.path[0][1]+","+instance.path[0][0]) : "No Path"}`,100, 200);
+                
+                if (instance.path) {
+                    BM.renderDebugTile(instance.path[instance.pathIndex][0], instance.path[instance.pathIndex][1]);
+                }
+
+                ctx.fillText(`Requesting Path: ${instance.requestingPath}`, 100, 220);
+                ctx.fillText(`Return Code ${instance.returnCode}`, 100, 240);
+                ctx.fillText(`Debug Info ${instance.debugInfo}`, 100, 260);
+                let count = 0;
+                for (const other of [...Creature.goodInstances, ...Creature.badInstances]) {
+                    if (other.myCords == selectedCords) {
+                        count += 1;
+                    }
+                }
+                ctx.fillText(`Creatures on my tile ${count}`, 100, 280);
+            } else {
+            ctx.fillStyle = "orange";
+            ctx.font = "25px serif";
+            ctx.fillText(`X:${x}, Y:${y}`, 100, 100);
+            }
+
         }
     };
 
