@@ -124,7 +124,7 @@ class BM {
     static map = [[]];
     static tiles = ["Grass", "Stone", "Shallow Water", "Deep Water", "Sand", "Lava"];
 
-    static renderDebugTile(x, y) {
+    static renderDebugTile(x, y, i) {
         const baseTileSize = WP.windowWidth / BM.maxColumns;
         const tileSize = baseTileSize * BM.zoom;
         const size = Math.ceil(tileSize);
@@ -135,12 +135,9 @@ class BM {
         const screenX = Math.floor((x - BM.mouseX) * tileSize + halfWidth);
         const screenY = Math.floor((y - BM.mouseY) * tileSize + halfHeight);
 
-        ctx.drawImage(
-            gameTextures.missingTexture,
-            screenX,
-            screenY,
-            size, size
-        );
+        ctx.fillStyle = "purple";
+        ctx.font = "25px serif";
+        ctx.fillText(i, screenX, screenY);
     }
 
     static render() {
@@ -324,6 +321,8 @@ class Creature {
 
     x = 0;
     y = 0;
+    fluidX = 0;
+    fluidY = 0;
     width = 0;
     height = 0;
     health = 0;
@@ -350,6 +349,8 @@ class Creature {
     constructor(x, y, width, height, texture, health, isGood, tileProperties) {
         this.x = x;
         this.y = y;
+        this.fluidX = x;
+        this.fluidY = y;
         this.width = width;
         this.height = height;
         this.texture = texture;
@@ -507,6 +508,29 @@ class Creature {
         return;
 
     }
+
+    static debugInstance(instance, color) {
+        const baseTileSize = WP.windowWidth / BM.maxColumns;
+        const tileSize = baseTileSize * BM.zoom;
+        const size = Math.ceil(tileSize);
+
+        const halfWidth = WP.windowWidth / 2;
+        const halfHeight = WP.windowHeight / 2;
+
+        const screenX = Math.floor((instance.x - BM.mouseX + 0.5) * tileSize + halfWidth);
+        const screenY = Math.floor((instance.y - BM.mouseY + 0.5) * tileSize + halfHeight);
+        const screenWidth = size*instance.width;
+        const screenHeight = size*instance.height;
+
+        ctx.beginPath();
+        ctx.fillStyle = color;
+        ctx.rect(screenX - screenWidth/2,
+            screenY - screenHeight/2,
+            screenWidth,
+            screenHeight);
+        ctx.fill();
+        ctx.closePath();
+    } 
 
     static renderInstances() {
         const baseTileSize = WP.windowWidth / BM.maxColumns;
@@ -801,34 +825,30 @@ function gameLoop() {
             // Debug Creatures
             if (Creature.allCords.has(y+","+x)) {
                 const instance = Creature.allCords.get(y+","+x);
+                Creature.debugInstance(instance, 'blue');
                 ctx.fillStyle = "blue";
                 ctx.font = "35px serif";
                 ctx.fillText(`Cords (y,x): ${y+","+x}`, 100, 100);
 
                 const selectedCords = instance.myCords;
-                ctx.fillText(`Instance Cords (y,x): ${selectedCords}`, 100, 120);
-
-
-                ctx.fillText(`Instance Position (y, x): ${instance.y}, ${instance.x}`, 100, 140);
+                ctx.fillText(`Instance Cords (y,x): ${selectedCords} | Instance Position (y, x): ${instance.y}, ${instance.x}`, 100, 130);
 
                 ctx.fillText(`Target: ${instance.target}`, 100, 160);
-
-                ctx.fillText(`First Blocked In Path: ${(instance.path) ? Creature.allCords.has(instance.path[0][1]+","+instance.path[0][0]) : "No Path"}`,100, 200);
-                
-                if (instance.path) {
-                    BM.renderDebugTile(instance.path[instance.pathIndex][0], instance.path[instance.pathIndex][1]);
+                if (instance.target) {
+                    Creature.debugInstance(instance.target, 'orange');
                 }
+                ctx.fillStyle = "blue";
 
-                ctx.fillText(`Requesting Path: ${instance.requestingPath}`, 100, 220);
-                ctx.fillText(`Return Code ${instance.returnCode}`, 100, 240);
-                ctx.fillText(`Debug Info ${instance.debugInfo}`, 100, 260);
-                let count = 0;
-                for (const other of [...Creature.goodInstances, ...Creature.badInstances]) {
-                    if (other.myCords == selectedCords) {
-                        count += 1;
+                ctx.fillText(`Requesting Path: ${instance.requestingPath}`, 100, 200);
+                ctx.fillText(`Has Path: ${instance.path != null}`, 100, 230);
+                if (instance.path) {
+                    for (let i = 0; i < instance.path.length; i++) {
+                        BM.renderDebugTile(instance.path[i][0], instance.path[i][1], i);
                     }
                 }
-                ctx.fillText(`Creatures on my tile ${count}`, 100, 280);
+
+                ctx.fillText(`Return Code ${instance.returnCode}`, 100, 270);
+                ctx.fillText(`Debug Info ${instance.debugInfo}`, 100, 300);
             } else {
             ctx.fillStyle = "orange";
             ctx.font = "25px serif";
