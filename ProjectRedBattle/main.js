@@ -376,9 +376,7 @@ class Creature {
     }
 
     static act(instance) {
-        const tileX = Math.floor(instance.x);
-        const tileY = Math.floor(instance.y)
-        const initialPositionCord = tileY+','+tileX;
+        const initialPositionCord = instance.y+','+instance.x;
         instance.myCords = initialPositionCord;
         Creature.allCords.set(initialPositionCord, instance);
 
@@ -429,60 +427,121 @@ class Creature {
             }
 
             // Move to spot on path
-            if (instance.path && instance.pathIndex < instance.path.length) {
-                if (instance.path.length > 0) {
-                    const [firstX, firstY] = instance.path[0];
-                    if (firstX === tileX && firstY === tileY) {
-                        instance.path.shift();
-                        if (instance.pathIndex > 0) instance.pathIndex--;
-                    }
-                }
+            // if (instance.path && instance.pathIndex < instance.path.length) {
+            //     if (instance.path.length > 0) {
+            //         const [firstX, firstY] = instance.path[0];
+            //         if (firstX === instance.x && firstY === instance.y) {
+            //             instance.path.shift();
+            //             if (instance.pathIndex > 0) instance.pathIndex--;
+            //         }
+            //     }
 
-                if (!instance.destination) {
-                    instance.destination = instance.path[instance.pathIndex];
-                }
+            //     if (!instance.destination) {
+            //         instance.destination = instance.path[instance.pathIndex];
+            //     }
 
-                const standingTile = BM.map[tileY][tileX];
-                const tileProps = instance.tileProperties[standingTile];
-                if (tileProps.hasOwnProperty("drownDamage")) {
-                    instance.health -= tileProps.drownDamage;
-                    if (instance.health <= 0) {instance.returnCode = 4;return};
-                }
-                const speed = tileProps.s;
+            //     const standingTile = BM.map[instance.y][instance.x];
+            //     const tileProps = instance.tileProperties[standingTile];
+            //     if (tileProps.hasOwnProperty("drownDamage")) {
+            //         instance.health -= tileProps.drownDamage;
+            //         if (instance.health <= 0) {instance.returnCode = 4;return};
+            //     }
+            //     const speed = tileProps.s;
                 
-                const dx = instance.destination[0] - instance.x;
-                const dy = instance.destination[1] - instance.y;
-                const distance = Math.sqrt(dx*dx + dy*dy);
-                const snapTo = (distance <= speed);
-                let stepX = (dx / distance) * speed;
-                let stepY = (dy / distance) * speed;
-                if (Math.abs(stepX) < 0.001 && Math.abs(dx) > 0) stepX = Math.sign(dx) * 0.001;
-                if (Math.abs(stepY) < 0.001 && Math.abs(dy) > 0) stepY = Math.sign(dy) * 0.001;
+            //     const dx = instance.destination[0] - instance.fluidX;
+            //     const dy = instance.destination[1] - instance.fluidY;
+            //     const distance = Math.sqrt(dx*dx + dy*dy);
+            //     const snapTo = (distance <= speed);
+            //     let stepX = (dx / distance) * speed;
+            //     let stepY = (dy / distance) * speed;
+            //     if (Math.abs(stepX) < 0.001 && Math.abs(dx) > 0) stepX = Math.sign(dx) * 0.001;
+            //     if (Math.abs(stepY) < 0.001 && Math.abs(dy) > 0) stepY = Math.sign(dy) * 0.001;
 
-                const [cx, cy] = (snapTo ? [instance.destination[0], instance.destination[1]] : [instance.x + stepX, instance.y + stepY])
+            //     const [cx, cy] = (snapTo ? [instance.destination[0], instance.destination[1]] : [instance.x + stepX, instance.y + stepY])
 
-                const newPositionCord = Math.floor(cy)+','+Math.floor(cx);
-                if (newPositionCord != initialPositionCord) {
-                    if (Creature.allCords.has(newPositionCord)) {
-                        //if (Creature.allCords.get(newPositionCord).isGood != instance.isGood) {
-                            // instance.target = null;
-                            // instance.path = null;
-                            instance.returnCode = 5;
-                            return;
-                        //}
-                    }
-                    Creature.allCords.delete(initialPositionCord);
-                    Creature.allCords.set(newPositionCord, instance);
-                }
-                instance.x = cx;
-                instance.y = cy;
-                if (snapTo) {
-                    instance.pathIndex += 1;
-                    instance.destination = null
-                }
-                instance.returnCode = 6;
-                return;
-            }
+            //     const newPositionCord = Math.floor(cy)+','+Math.floor(cx);
+            //     //instance.debugInfo=("x:"+ cx+",y:"+ cy+"| "+(newPositionCord != initialPositionCord))
+            //     if (newPositionCord != initialPositionCord) {
+            //         if (Creature.allCords.has(newPositionCord) && Creature.allCords.get(newPositionCord) != instance ) {
+            //             //if (Creature.allCords.get(newPositionCord).isGood != instance.isGood) {
+            //                 // instance.target = null;
+            //                 // instance.path = null;
+            //                 instance.returnCode = 5;
+            //                 return;
+            //             //}
+            //         }
+            //         Creature.allCords.delete(initialPositionCord);
+            //         Creature.allCords.set(newPositionCord, instance);
+            //     }
+            //     instance.fluidX = cx;
+            //     instance.fluidY = cy;
+            //     if (Number.isInteger(cx) && Number.isInteger(cy)) {
+            //         instance.x = cx;
+            //         instance.y = cy;
+            //     }
+            //     if (snapTo) {
+            //         instance.pathIndex += 1;
+            //         instance.destination = null
+            //     }
+            //     instance.returnCode = 6;
+            //     return;
+            // }
+            // Move to spot on path
+// Move along path
+if (instance.path && instance.pathIndex < instance.path.length) {
+    if (!instance.destination) {
+        instance.destination = instance.path[instance.pathIndex];
+    }
+
+    const speed = instance.tileProperties[BM.map[Math.floor(instance.fluidY)][Math.floor(instance.fluidX)]].s || 0.02;
+
+    const dx = instance.destination[0] - instance.fluidX;
+    const dy = instance.destination[1] - instance.fluidY;
+    const distance = Math.sqrt(dx*dx + dy*dy);
+
+    if (distance === 0) {
+        // Already at destination
+        instance.pathIndex++;
+        instance.destination = null;
+    } else {
+        // Move towards destination
+        const step = Math.min(speed, distance);
+        const stepX = (dx / distance) * step;
+        const stepY = (dy / distance) * step;
+
+        let newX = instance.fluidX + stepX;
+        let newY = instance.fluidY + stepY;
+
+        const newTileCord = Math.floor(newY) + ',' + Math.floor(newX);
+        const occupant = Creature.allCords.get(newTileCord);
+
+        if (!occupant || occupant === instance) {
+            // Update position
+            Creature.allCords.delete(instance.myCords);
+            instance.fluidX = newX;
+            instance.fluidY = newY;
+            instance.x = Math.floor(newX);
+            instance.y = Math.floor(newY);
+            instance.myCords = newTileCord;
+            Creature.allCords.set(newTileCord, instance);
+        }
+
+        // Snap to destination if close enough
+        if (Math.abs(newX - instance.destination[0]) < 0.001 && Math.abs(newY - instance.destination[1]) < 0.001) {
+            instance.fluidX = instance.destination[0];
+            instance.fluidY = instance.destination[1];
+            instance.x = Math.floor(instance.destination[0]);
+            instance.y = Math.floor(instance.destination[1]);
+            instance.pathIndex++;
+            instance.destination = null;
+        }
+    }
+
+    instance.returnCode = 6;
+    return;
+}
+
+
         }
 
         // Make New Path
@@ -517,8 +576,8 @@ class Creature {
         const halfWidth = WP.windowWidth / 2;
         const halfHeight = WP.windowHeight / 2;
 
-        const screenX = Math.floor((instance.x - BM.mouseX + 0.5) * tileSize + halfWidth);
-        const screenY = Math.floor((instance.y - BM.mouseY + 0.5) * tileSize + halfHeight);
+        const screenX = Math.floor((instance.fluidX - BM.mouseX + 0.5) * tileSize + halfWidth);
+        const screenY = Math.floor((instance.fluidY - BM.mouseY + 0.5) * tileSize + halfHeight);
         const screenWidth = size*instance.width;
         const screenHeight = size*instance.height;
 
@@ -542,8 +601,8 @@ class Creature {
 
         for (const instances of [Creature.goodInstances, Creature.badInstances]) {
             for (const instance of instances) {
-                const screenX = Math.floor((instance.x - BM.mouseX + 0.5) * tileSize + halfWidth);
-                const screenY = Math.floor((instance.y - BM.mouseY + 0.5) * tileSize + halfHeight);
+                const screenX = Math.floor((instance.fluidX - BM.mouseX + 0.5) * tileSize + halfWidth);
+                const screenY = Math.floor((instance.fluidY - BM.mouseY + 0.5) * tileSize + halfHeight);
                 const screenWidth = size*instance.width;
                 const screenHeight = size*instance.height;
                 ctx.drawImage(
@@ -847,6 +906,8 @@ function gameLoop() {
                     }
                 }
 
+                ctx.fillStyle = "blue";
+                ctx.font = "35px serif";
                 ctx.fillText(`Return Code ${instance.returnCode}`, 100, 270);
                 ctx.fillText(`Debug Info ${instance.debugInfo}`, 100, 300);
             } else {
