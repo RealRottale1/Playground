@@ -6,7 +6,6 @@ async function wait(duration) { return new Promise((complete) => { setTimeout(()
 function halt(duration) { return new Promise((complete) => { setTimeout(() => { complete(); }, duration); }) }
 function makeImage(url) { const image = new Image(); try { image.src = ("textures/" + url + ".png"); } catch { image.src = 'textures/missing.png'; } return image; }
 function getDistance(y2, y1, x2, x1) {return Math.abs(x2 - x1) + Math.abs(y2 - y1)};
-function shuffleArray(array) {for (let i = array.length - 1; i > 0; i--) {const j = Math.floor(Math.random() * (i + 1));[array[i], array[j]] = [array[j], array[i]];}return array};
 
 /* Game Textures */
 const gameTextures = {
@@ -376,7 +375,7 @@ class Creature {
     }
 
     static act(instance) {
-        const initialPositionCord = instance.y+','+instance.x;
+        const initialPositionCord = Math.floor(instance.x) + ',' + Math.floor(instance.y);
         instance.myCords = initialPositionCord;
         Creature.allCords.set(initialPositionCord, instance);
 
@@ -426,120 +425,66 @@ class Creature {
                 return;
             }
 
-            // Move to spot on path
-            // if (instance.path && instance.pathIndex < instance.path.length) {
-            //     if (instance.path.length > 0) {
-            //         const [firstX, firstY] = instance.path[0];
-            //         if (firstX === instance.x && firstY === instance.y) {
-            //             instance.path.shift();
-            //             if (instance.pathIndex > 0) instance.pathIndex--;
-            //         }
-            //     }
+            // Move along path
+            if (instance.path && instance.pathIndex < instance.path.length) {
+                if (!instance.destination) {
+                    instance.destination = instance.path[instance.pathIndex];
+                }
 
-            //     if (!instance.destination) {
-            //         instance.destination = instance.path[instance.pathIndex];
-            //     }
+                const speed = instance.tileProperties[BM.map[Math.floor(instance.fluidY)][Math.floor(instance.fluidX)]].s || 0.02;
 
-            //     const standingTile = BM.map[instance.y][instance.x];
-            //     const tileProps = instance.tileProperties[standingTile];
-            //     if (tileProps.hasOwnProperty("drownDamage")) {
-            //         instance.health -= tileProps.drownDamage;
-            //         if (instance.health <= 0) {instance.returnCode = 4;return};
-            //     }
-            //     const speed = tileProps.s;
-                
-            //     const dx = instance.destination[0] - instance.fluidX;
-            //     const dy = instance.destination[1] - instance.fluidY;
-            //     const distance = Math.sqrt(dx*dx + dy*dy);
-            //     const snapTo = (distance <= speed);
-            //     let stepX = (dx / distance) * speed;
-            //     let stepY = (dy / distance) * speed;
-            //     if (Math.abs(stepX) < 0.001 && Math.abs(dx) > 0) stepX = Math.sign(dx) * 0.001;
-            //     if (Math.abs(stepY) < 0.001 && Math.abs(dy) > 0) stepY = Math.sign(dy) * 0.001;
+                const dx = instance.destination[0] - instance.fluidX;
+                const dy = instance.destination[1] - instance.fluidY;
+                const distance = Math.sqrt(dx*dx + dy*dy);
 
-            //     const [cx, cy] = (snapTo ? [instance.destination[0], instance.destination[1]] : [instance.x + stepX, instance.y + stepY])
+                if (distance === 0) {
+                    // Already at destination
+                    instance.pathIndex++;
+                    instance.destination = null;
+                } else {
+                    // Move towards destination
+                    const step = Math.min(speed, distance);
+                    const stepX = (dx / distance) * step;
+                    const stepY = (dy / distance) * step;
 
-            //     const newPositionCord = Math.floor(cy)+','+Math.floor(cx);
-            //     //instance.debugInfo=("x:"+ cx+",y:"+ cy+"| "+(newPositionCord != initialPositionCord))
-            //     if (newPositionCord != initialPositionCord) {
-            //         if (Creature.allCords.has(newPositionCord) && Creature.allCords.get(newPositionCord) != instance ) {
-            //             //if (Creature.allCords.get(newPositionCord).isGood != instance.isGood) {
-            //                 // instance.target = null;
-            //                 // instance.path = null;
-            //                 instance.returnCode = 5;
-            //                 return;
-            //             //}
-            //         }
-            //         Creature.allCords.delete(initialPositionCord);
-            //         Creature.allCords.set(newPositionCord, instance);
-            //     }
-            //     instance.fluidX = cx;
-            //     instance.fluidY = cy;
-            //     if (Number.isInteger(cx) && Number.isInteger(cy)) {
-            //         instance.x = cx;
-            //         instance.y = cy;
-            //     }
-            //     if (snapTo) {
-            //         instance.pathIndex += 1;
-            //         instance.destination = null
-            //     }
-            //     instance.returnCode = 6;
-            //     return;
-            // }
-            // Move to spot on path
-// Move along path
-if (instance.path && instance.pathIndex < instance.path.length) {
-    if (!instance.destination) {
-        instance.destination = instance.path[instance.pathIndex];
-    }
+                    let newX = instance.fluidX + stepX;
+                    let newY = instance.fluidY + stepY;
 
-    const speed = instance.tileProperties[BM.map[Math.floor(instance.fluidY)][Math.floor(instance.fluidX)]].s || 0.02;
+                    const newTileCord = Math.floor(newX) + ',' + Math.floor(newY);
+                    const occupant = Creature.allCords.get(newTileCord);
 
-    const dx = instance.destination[0] - instance.fluidX;
-    const dy = instance.destination[1] - instance.fluidY;
-    const distance = Math.sqrt(dx*dx + dy*dy);
+                    if (!occupant || occupant === instance) {
+                        // Update position
+                        Creature.allCords.delete(instance.myCords);
+                        instance.fluidX = newX;
+                        instance.fluidY = newY;
+                        instance.x = Math.floor(newX);
+                        instance.y = Math.floor(newY);
+                        instance.myCords = newTileCord;
+                        Creature.allCords.set(newTileCord, instance);
+                    }
 
-    if (distance === 0) {
-        // Already at destination
-        instance.pathIndex++;
-        instance.destination = null;
-    } else {
-        // Move towards destination
-        const step = Math.min(speed, distance);
-        const stepX = (dx / distance) * step;
-        const stepY = (dy / distance) * step;
+                    // Snap to destination if close enough
+                    if (Math.abs(newX - instance.destination[0]) < 0.001 && Math.abs(newY - instance.destination[1]) < 0.001) {
+                        instance.fluidX = instance.destination[0];
+                        instance.fluidY = instance.destination[1];
+                        instance.x = Math.floor(instance.destination[0]);
+                        instance.y = Math.floor(instance.destination[1]);
+                        const snappedTile = instance.x + ',' + instance.y;
+                        if (snappedTile !== instance.myCords) {
+                            Creature.allCords.delete(instance.myCords);
+                            instance.myCords = snappedTile;
+                            Creature.allCords.set(instance.myCords, instance);
+                        }
+                        instance.pathIndex++;
+                        instance.destination = null;
+                    }
 
-        let newX = instance.fluidX + stepX;
-        let newY = instance.fluidY + stepY;
+                }
 
-        const newTileCord = Math.floor(newY) + ',' + Math.floor(newX);
-        const occupant = Creature.allCords.get(newTileCord);
-
-        if (!occupant || occupant === instance) {
-            // Update position
-            Creature.allCords.delete(instance.myCords);
-            instance.fluidX = newX;
-            instance.fluidY = newY;
-            instance.x = Math.floor(newX);
-            instance.y = Math.floor(newY);
-            instance.myCords = newTileCord;
-            Creature.allCords.set(newTileCord, instance);
-        }
-
-        // Snap to destination if close enough
-        if (Math.abs(newX - instance.destination[0]) < 0.001 && Math.abs(newY - instance.destination[1]) < 0.001) {
-            instance.fluidX = instance.destination[0];
-            instance.fluidY = instance.destination[1];
-            instance.x = Math.floor(instance.destination[0]);
-            instance.y = Math.floor(instance.destination[1]);
-            instance.pathIndex++;
-            instance.destination = null;
-        }
-    }
-
-    instance.returnCode = 6;
-    return;
-}
+                instance.returnCode = 6;
+                return;
+            }
 
 
         }
@@ -558,6 +503,9 @@ if (instance.path && instance.pathIndex < instance.path.length) {
         }
         if (PathManager.developingPaths.get(instance).finished) {
             instance.path = PathManager.developingPaths.get(instance).path;
+            if (instance.path && instance.path.length > 1 && instance.path[0][0] === instance.x && instance.path[0][1] === instance.y) {
+                instance.path.shift(); // remove current tile from the path
+            }
             instance.pathIndex = 0;
             instance.destination = null;
             PathManager.developingPaths.delete(instance);
@@ -726,20 +674,20 @@ function bootGame() {
                 BM.map[y].push(
                     (r < 0.25) ? "grass" :
                     (r < 0.5) ? "grass" :
-                    (r < 0.75) ? "sand" :
+                    (r < 0.75) ? "grass" :
                     (r < 1) ? "grass" : "lava"
                 );
             }
         }
     }
 
-    BM.map[25][25] = "lava"
+    //BM.map[25][25] = "lava"
     // new Creature(0, 0, 0.5, 0.5, "warrior", 100, true, {"grass": {r: 1, s: 0.025}, "stone": {r: 0, s: 0, drownDamage: 999}, "sand": {r: 0, s: 0.020}, "shallowwater": {r: 5, s: 0.0125}, "deepwater": {r: 25, s: 0}, "lava": {r: 25, s: 0}});
     // new Creature(49, 49, 0.5, 0.5, "goblin", 100, false, {"grass": {r: 1, s: 0.025}, "stone": {r: 0, s: 0, drownDamage: 999}, "sand": {r: 0, s: 0.020}, "shallowwater": {r: 5, s: 0.0125}, "deepwater": {r: 25, s: 0}, "lava": {r: 25, s: 0}});
     for (let i = 0; i < 50; i++) {
         for (let o = 0; o < 10; o++) {
-            new Creature(i, o, 0.5, 0.5, "warrior", 100, true, {"grass": {r: 1, s: 0.025}, "stone": {r: 0, s: 0, drownDamage: 999}, "sand": {r: 0, s: 0.020}, "shallowwater": {r: 5, s: 0.0125, drownDamage: 0.025}, "deepwater": {r: 100, s: 0.0025, drownDamage: 1}, "lava": {r: 1000, s: 0.00125, drownDamage: 3}});
-            new Creature(i, 49-o, 0.5, 0.5, "goblin", 100, false, {"grass": {r: 1, s: 0.025}, "stone": {r: 0, s: 0, drownDamage: 999}, "sand": {r: 0, s: 0.020}, "shallowwater": {r: 5, s: 0.0125, drownDamage: 0.025}, "deepwater": {r: 100, s: 0.0025, drownDamage: 1}, "lava": {r: 1000, s: 0.00125, drownDamage: 3}});
+            new Creature(i, 49-o, 0.5, 0.5, "warrior", 100, true, {"grass": {r: 1, s: 0.025}, "stone": {r: 0, s: 0, drownDamage: 999}, "sand": {r: 0, s: 0.020}, "shallowwater": {r: 5, s: 0.0125, drownDamage: 0.025}, "deepwater": {r: 100, s: 0.0025, drownDamage: 1}, "lava": {r: 1000, s: 0.00125, drownDamage: 3}});
+            new Creature(i, o, 0.5, 0.5, "goblin", 100, false, {"grass": {r: 1, s: 0.025}, "stone": {r: 0, s: 0, drownDamage: 999}, "sand": {r: 0, s: 0.020}, "shallowwater": {r: 5, s: 0.0125, drownDamage: 0.025}, "deepwater": {r: 100, s: 0.0025, drownDamage: 1}, "lava": {r: 1000, s: 0.00125, drownDamage: 3}});
         }
     }
 }
@@ -807,9 +755,14 @@ function gameLoop() {
     PathManager.developPaths(2000);
 
     // Creatures
-    for (const instance of shuffleArray([...Creature.goodInstances, ...Creature.badInstances])) {
-        Creature.act(instance);
-    }
+const allCreatures = [...Creature.goodInstances, ...Creature.badInstances];
+for (let i = allCreatures.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [allCreatures[i], allCreatures[j]] = [allCreatures[j], allCreatures[i]];
+}
+for (const instance of allCreatures) {
+    Creature.act(instance);
+}
     Creature.renderInstances();
 
     // GUI
@@ -882,15 +835,15 @@ function gameLoop() {
             }
 
             // Debug Creatures
-            if (Creature.allCords.has(y+","+x)) {
-                const instance = Creature.allCords.get(y+","+x);
+            if (Creature.allCords.has(x+","+y)) {
+                const instance = Creature.allCords.get(x+","+y);
                 Creature.debugInstance(instance, 'blue');
                 ctx.fillStyle = "blue";
                 ctx.font = "35px serif";
-                ctx.fillText(`Cords (y,x): ${y+","+x}`, 100, 100);
+                ctx.fillText(`Cords (x, y): ${x+","+y}`, 100, 100);
 
                 const selectedCords = instance.myCords;
-                ctx.fillText(`Instance Cords (y,x): ${selectedCords} | Instance Position (y, x): ${instance.y}, ${instance.x}`, 100, 130);
+                ctx.fillText(`Instance Cords (x, y): ${selectedCords} | Instance Position (y, x): ${instance.y}, ${instance.x}`, 100, 130);
 
                 ctx.fillText(`Target: ${instance.target}`, 100, 160);
                 if (instance.target) {
