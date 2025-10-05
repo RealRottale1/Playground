@@ -10,6 +10,7 @@ function getDistance(y2, y1, x2, x1) {return Math.abs(x2 - x1) + Math.abs(y2 - y
 /* Game Textures */
 const gameTextures = {
     missingTexture: makeImage("missing"),
+    debugOutline: makeImage("debugOutline"),
     warrior: makeImage("warrior"),
     fishling: makeImage("fishling"),
     elf: makeImage("elf"),
@@ -326,7 +327,6 @@ class Creature {
     height = 0;
     health = 0;
     isGood = false;
-    awaitingDeath = false;
 
     initialEnemyX = 0;
     initialEnemyY = 0;
@@ -338,12 +338,11 @@ class Creature {
     tileProperties = null;
 
     repathRange = 1;
-    attackRange = 1;
+    attackRange = 2;
 
     // Debug
     returnCode = 0;
     debugInfo = null;
-    myCords = null;
 
     constructor(x, y, width, height, texture, health, isGood, tileProperties) {
         this.x = x;
@@ -373,16 +372,15 @@ class Creature {
         }
         return selectedEnemy;
     }
-
+/*
+overlapping issue is visual only and is a result of fluidX and fluidY being malformed.
+fixing the issue will require a rework of fluidX and fluidY
+*/
     static act(instance) {
         const initialPositionCord = Math.floor(instance.x) + ',' + Math.floor(instance.y);
-        instance.myCords = initialPositionCord;
         Creature.allCords.set(initialPositionCord, instance);
 
         if (instance.health <= 0) {
-            const instanceType = instance.isGood ? Creature.goodInstances : Creature.badInstances;
-            instanceType.delete(instance);
-
             Creature.allCords.delete(initialPositionCord);
             PathManager.developingPaths.delete(instance);
 
@@ -396,6 +394,9 @@ class Creature {
                     other.requestingPath = false;
                 }
             }
+
+            const instanceType = instance.isGood ? Creature.goodInstances : Creature.badInstances;
+            instanceType.delete(instance);
 
             instance.returnCode = 1;
             return;
@@ -431,62 +432,53 @@ class Creature {
                     instance.destination = instance.path[instance.pathIndex];
                 }
 
-                const speed = instance.tileProperties[BM.map[Math.floor(instance.fluidY)][Math.floor(instance.fluidX)]].s || 0.02;
+                const nextCord = instance.destination[0]+","+instance.destination[1];
+                const nextTileTaken = Creature.allCords.has(nextCord);
+                const nextTileInstance = (nextTileTaken ? Creature.allCords.get(nextCord) : null);
+                if (nextTileInstance && nextCord != initialPositionCord) {
+                    instance.debugInfo = "Next is blocked" + nextTileInstance.x + "," + nextTileInstance.y;
+                    instance.returnCode = 5.5;
+                    return;
+                }
+
+                const speed = instance.tileProperties[BM.map[instance.y][instance.x]].s;
 
                 const dx = instance.destination[0] - instance.fluidX;
                 const dy = instance.destination[1] - instance.fluidY;
                 const distance = Math.sqrt(dx*dx + dy*dy);
 
-                if (distance === 0) {
-                    // Already at destination
-                    instance.pathIndex++;
+                if (distance == 0) {
+                    instance.pathIndex += 1;
                     instance.destination = null;
                 } else {
-                    // Move towards destination
                     const step = Math.min(speed, distance);
                     const stepX = (dx / distance) * step;
                     const stepY = (dy / distance) * step;
 
                     let newX = instance.fluidX + stepX;
                     let newY = instance.fluidY + stepY;
-
-                    const newTileCord = Math.floor(newX) + ',' + Math.floor(newY);
-                    const occupant = Creature.allCords.get(newTileCord);
-
-                    if (!occupant || occupant === instance) {
-                        // Update position
-                        Creature.allCords.delete(instance.myCords);
-                        instance.fluidX = newX;
-                        instance.fluidY = newY;
+                    const forcastedTile = Math.floor(newX) + ',' + Math.floor(newY);
+                    if (Creature.allCords.has(forcastedTile) && forcastedTile !== initialPositionCord) {
+                        instance.debugInfo = "Forecast blocked just now";
+                        instance.returnCode = 5.6;
+                        return;
+                    }
+                    
+                    if (forcastedTile == nextCord) {
+                        Creature.allCords.delete(initialPositionCord);
+                        Creature.allCords.set(forcastedTile, instance);
                         instance.x = Math.floor(newX);
                         instance.y = Math.floor(newY);
-                        instance.myCords = newTileCord;
-                        Creature.allCords.set(newTileCord, instance);
-                    }
-
-                    // Snap to destination if close enough
-                    if (Math.abs(newX - instance.destination[0]) < 0.001 && Math.abs(newY - instance.destination[1]) < 0.001) {
-                        instance.fluidX = instance.destination[0];
-                        instance.fluidY = instance.destination[1];
-                        instance.x = Math.floor(instance.destination[0]);
-                        instance.y = Math.floor(instance.destination[1]);
-                        const snappedTile = instance.x + ',' + instance.y;
-                        if (snappedTile !== instance.myCords) {
-                            Creature.allCords.delete(instance.myCords);
-                            instance.myCords = snappedTile;
-                            Creature.allCords.set(instance.myCords, instance);
-                        }
                         instance.pathIndex++;
                         instance.destination = null;
                     }
-
+                    instance.fluidX = newX;
+                    instance.fluidY = newY;
                 }
 
                 instance.returnCode = 6;
                 return;
             }
-
-
         }
 
         // Make New Path
@@ -549,16 +541,26 @@ class Creature {
 
         for (const instances of [Creature.goodInstances, Creature.badInstances]) {
             for (const instance of instances) {
+                const tileX = Math.floor((instance.x- BM.mouseX + 0.5) * tileSize + halfWidth);
+                const tileY = Math.floor((instance.y - BM.mouseY + 0.5) * tileSize + halfHeight);
                 const screenX = Math.floor((instance.fluidX - BM.mouseX + 0.5) * tileSize + halfWidth);
                 const screenY = Math.floor((instance.fluidY - BM.mouseY + 0.5) * tileSize + halfHeight);
                 const screenWidth = size*instance.width;
                 const screenHeight = size*instance.height;
+                
                 ctx.drawImage(
                     gameTextures[instance.texture],
                     screenX - screenWidth/2,
                     screenY - screenHeight/2,
                     screenWidth,
                     screenHeight
+                );
+                ctx.drawImage(
+                    gameTextures.debugOutline,
+                    tileX - size/2,
+                    tileY - size/2,
+                    size,
+                    size
                 );
             }
         }
@@ -673,8 +675,8 @@ function bootGame() {
                 let r = Math.random();
                 BM.map[y].push(
                     (r < 0.25) ? "grass" :
-                    (r < 0.5) ? "grass" :
-                    (r < 0.75) ? "grass" :
+                    (r < 0.5) ? "shallowwater" :
+                    (r < 0.75) ? "sand" :
                     (r < 1) ? "grass" : "lava"
                 );
             }
@@ -755,14 +757,14 @@ function gameLoop() {
     PathManager.developPaths(2000);
 
     // Creatures
-const allCreatures = [...Creature.goodInstances, ...Creature.badInstances];
-for (let i = allCreatures.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [allCreatures[i], allCreatures[j]] = [allCreatures[j], allCreatures[i]];
-}
-for (const instance of allCreatures) {
-    Creature.act(instance);
-}
+    const allCreatures = [...Creature.goodInstances, ...Creature.badInstances];
+    for (let i = allCreatures.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [allCreatures[i], allCreatures[j]] = [allCreatures[j], allCreatures[i]];
+    }
+    for (const instance of allCreatures) {
+        Creature.act(instance);
+    }
     Creature.renderInstances();
 
     // GUI
@@ -842,7 +844,7 @@ for (const instance of allCreatures) {
                 ctx.font = "35px serif";
                 ctx.fillText(`Cords (x, y): ${x+","+y}`, 100, 100);
 
-                const selectedCords = instance.myCords;
+                const selectedCords = instance.x+","+instance.y;
                 ctx.fillText(`Instance Cords (x, y): ${selectedCords} | Instance Position (y, x): ${instance.y}, ${instance.x}`, 100, 130);
 
                 ctx.fillText(`Target: ${instance.target}`, 100, 160);
