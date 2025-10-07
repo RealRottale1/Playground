@@ -220,13 +220,9 @@ class FlowField {
     static getStartUnits(isGood) {
         const start = [];
         for (const instance of (isGood ? Creature.goodInstances : Creature.badInstances)) {
-            start.push([instance.x, instance.y]);
+            start.push([instance.x, instance.y, 0]);
         }
         return start;
-    }
-
-    static getNeighbors(point) {
-
     }
 
     static makeFlowFields() {
@@ -234,10 +230,24 @@ class FlowField {
         for (let p = 0; p < 2; p++) {
             const usePathTypes = (p == 0 ? Creature.badPathTypes : Creature.goodPathTypes);
             for (const pathType of usePathTypes.keys()) {
-                const openData = FlowField.getStartUnits(!isGood);
+                let openData = FlowField.getStartUnits(!isGood);
                 const closedData = new Set();
                 while (openData.length > 0) {
-                    const closed = 
+                    let nextOpenData = [];
+                    for (const data of openData) {
+                        const x = data[0];
+                        const y = data[1];
+                        flowField.
+                        for (let direction of [[-1, -1], [0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0]]) {
+                            const nearbyX = x + direction[0];
+                            const nearbyY = y + direction[1];
+                            if (!closedData.has(nearbyX+","+nearbyY)) {
+                                if (nearbyX >= 0 && nearbyX < BM.maxColumns && nearbyY >= 0 && nearbyY < BM.maxRows) {
+                                    
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
