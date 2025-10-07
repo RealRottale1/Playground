@@ -216,6 +216,8 @@ const Soul = {
 }
 
 class FlowField {
+    static goodFlowFields = new Map();
+    static badFlowFields = new Map();
 
     static getStartUnits(isGood) {
         const start = [];
@@ -226,29 +228,61 @@ class FlowField {
     }
 
     static makeFlowFields() {
-        let flowField = new Map();
         for (let p = 0; p < 2; p++) {
+            const useFlowField = (p == 0 ? FlowField.badFlowFields : FlowField.goodFlowFields);
+            useFlowField.clear();
             const usePathTypes = (p == 0 ? Creature.badPathTypes : Creature.goodPathTypes);
             for (const pathType of usePathTypes.keys()) {
-                let openData = FlowField.getStartUnits(!isGood);
-                const closedData = new Set();
+                let closedData = new Map();
+                let openData = FlowField.getStartUnits(p != 0);
+                prompt("I forgot to keep track of marked tiles")
+                // Get Distance And Risk
                 while (openData.length > 0) {
                     let nextOpenData = [];
                     for (const data of openData) {
                         const x = data[0];
                         const y = data[1];
-                        flowField.
-                        for (let direction of [[-1, -1], [0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0]]) {
-                            const nearbyX = x + direction[0];
-                            const nearbyY = y + direction[1];
+                        const d = data[2];
+                        closedData.set((x+","+y), d + tileConfigurations[pathType][BM.map[y][x]].r);
+                        for (let [xDir, yDir] of [[-1, -1], [0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0]]) {
+                            const nearbyX = x + xDir;
+                            const nearbyY = y + yDir;
                             if (!closedData.has(nearbyX+","+nearbyY)) {
                                 if (nearbyX >= 0 && nearbyX < BM.maxColumns && nearbyY >= 0 && nearbyY < BM.maxRows) {
-                                    
+                                    nextOpenData.push([nearbyX, nearbyY, d+1]);
                                 }
                             }
                         }
                     }
+                    openData = nextOpenData;
+                    prompt(openData)
                 }
+                prompt("SKIBIDI")
+                // Turns Data Into Directions
+                let flowField = new Map();
+                for (let y = 0; y < BM.maxRows; y++) {
+                    for (let x = 0; x < BM.maxColumns; x++) {
+                        const parentKey = x+","+y;
+                        if (closedData.has(parentKey)) {
+                            let leastSpace = null;
+                            let leastNumber = Number.MAX_VALUE;
+                            for (let [xDir, yDir] of [[-1, -1], [0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0]]) {
+                                const currentKey = (x+xDir)+","+(y+yDir);
+                                if (closedData.has(currentKey)) {
+                                    const currentValue = closedData.get(currentKey);
+                                    if (currentValue < leastNumber || !leastSpace) {
+                                        leastSpace = currentKey;
+                                        leastNumber = currentValue;
+                                    }
+                                }
+                            }
+                            flowField.set(parentKey, leastSpace);
+                        }
+                    }
+                }
+
+                // Saves Data
+                useFlowField.set(pathType, flowField);
             }
         }
     }
@@ -288,16 +322,16 @@ class Creature {
         this.fluidX = x;
         this.fluidY = y;
 
-        const info = Soul.soulType;
+        const info = Soul[soulType];
         this.width = info.sizeX;
         this.height = info.sizeY;
         this.texture = info.texture;
         this.health = info.maxHealth;
         this.isGood = info.isGood;
 
-        this.pathConfigType = soulType.pathConfigType;
+        this.pathConfigType = info.pathConfigType;
         const usePathTypes = (this.isGood ? Creature.goodPathTypes : Creature.badPathTypes);
-        usePathTypes.set(soulType.pathConfigType, (usePathTypes.has(pathConfigType) ? usePathTypes.get(pathConfigType) + 1: 1));    
+        usePathTypes.set(this.pathConfigType, (usePathTypes.has(this.pathConfigType) ? usePathTypes.get(this.pathConfigType) + 1: 1));    
         
         const useSet = (this.isGood ? Creature.goodInstances : Creature.badInstances);
         useSet.add(this);
@@ -318,7 +352,23 @@ class Creature {
     }
 
     static act(instance) {
-        
+        // const useFlowType = (instance.isGood ? FlowField.badFlowFields : FlowField.goodFlowFields);
+        // const useFlowField = useFlowType.get(instance.pathConfigType);
+        // if (!useFlowField) {return};
+        // const useKey = instance.x + "," + instance.y;
+        // if (useFlowField.has(useKey)) {
+        //     let rawPos = useFlowField.get(useKey);
+        //     if (!rawPos) {
+        //         return;
+        //     }
+        //     rawPos = rawPos.split(",");
+        //     const x = parseInt(rawPos[0]);
+        //     const y = parseInt(rawPos[1]);
+        //     instance.x = x;
+        //     instance.y = y;
+        //     instance.fluidX = x;
+        //     instance.fluidY = y;
+        // }
     }
 
     static renderInstances() {
@@ -457,21 +507,19 @@ function bootGame() {
     };
 
     /* Default World Tiles */
-    for (let y = 0; y < BM.maxRows; y++) {
-        for (let x = 0; x < BM.maxColumns; x++) {
-            if (!BM.map[y]) {
-                BM.map[y] = ["grass"];
-            } else {
-                let r = Math.random();
-                BM.map[y].push(
-                    (r < 0.25) ? "grass" :
-                    (r < 0.5) ? "shallowwater" :
-                    (r < 0.75) ? "sand" :
-                    (r < 1) ? "grass" : "lava"
-                );
-            }
-        }
+BM.map = [];
+for (let y = 0; y < BM.maxRows; y++) {
+    BM.map[y] = [];
+    for (let x = 0; x < BM.maxColumns; x++) {
+        let r = Math.random();
+        BM.map[y][x] =
+            (r < 0.25) ? "grass" :
+            (r < 0.5) ? "shallowwater" :
+            (r < 0.75) ? "sand" :
+            (r < 1) ? "grass" : "lava";
     }
+}
+
 
     for (let i = 0; i < 50; i++) {
         for (let o = 0; o < 10; o++) {
@@ -532,6 +580,7 @@ function getSelectedTile() {
     return [selectedX, selectedY];
 }
 
+let f = 0;
 function gameLoop() {
     // Background
     mainWindow.width = WP.windowWidth;
@@ -540,11 +589,12 @@ function gameLoop() {
     ctx.fillRect(0, 0, WP.windowWidth, WP.windowHeight);
     BM.render();
 
-    // Creature Action
-    PathManager.developPaths(2000);
-
     // Creatures
-    FlowField.makeFlowFields();
+    f += 1;
+    if (f >= 100) {
+FlowField.makeFlowFields();
+f = 0;
+    }
     const allCreatures = [...Creature.goodInstances, ...Creature.badInstances];
     for (let i = allCreatures.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
