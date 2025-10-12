@@ -195,7 +195,7 @@ class GUI {
 }
 
 const tileConfigurations = {
-    standard: {"grass": {r: 1, s: 0.025}, "stone": {r: 0, s: 0, drownDamage: 999}, "sand": {r: 0, s: 0.020}, "shallowwater": {r: 5, s: 0.0125, drownDamage: 0.025}, "deepwater": {r: 100, s: 0.0025, drownDamage: 1}, "lava": {r: 1000, s: 0.00125, drownDamage: 3}},
+    standard: {"grass": {r: 1, s: 0.025}, "stone": {r: -1, s: 0, drownDamage: 999}, "sand": {r: 0, s: 0.020}, "shallowwater": {r: 5, s: 0.0125, drownDamage: 0.025}, "deepwater": {r: 100, s: 0.0025, drownDamage: 1}, "lava": {r: 1000, s: 0.00125, drownDamage: 3}},
 }
 
 const Soul = {
@@ -222,7 +222,7 @@ class FlowField {
     static getStartUnits(isGood) {
         const start = [];
         for (const instance of (isGood ? Creature.goodInstances : Creature.badInstances)) {
-            start.push([instance.x, instance.y, 0]);
+            start.push([instance.x, instance.y]);
         }
         return start;
     }
@@ -233,56 +233,82 @@ class FlowField {
             useFlowField.clear();
             const usePathTypes = (p == 0 ? Creature.badPathTypes : Creature.goodPathTypes);
             for (const pathType of usePathTypes.keys()) {
-                let closedData = new Map();
+                // Start up
+                const mappedData = new Map();
+                let closedData = new Set();
                 let openData = FlowField.getStartUnits(p != 0);
-                prompt("I forgot to keep track of marked tiles")
-                // Get Distance And Risk
+                for (const data of openData) {
+                    const x = data[0];
+                    const y = data[1];
+                    closedData.add(x+","+y);
+                    if (!mappedData.has(y)) {
+                    mappedData.set(y, new Map());
+                    }
+                    mappedData.get(y).set(x, [0, 0]);
+                }
+                
+                // Pathing
+                let distance = 1;
                 while (openData.length > 0) {
                     let nextOpenData = [];
                     for (const data of openData) {
                         const x = data[0];
                         const y = data[1];
-                        const d = data[2];
-                        closedData.set((x+","+y), d + tileConfigurations[pathType][BM.map[y][x]].r);
-                        for (let [xDir, yDir] of [[-1, -1], [0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0]]) {
-                            const nearbyX = x + xDir;
-                            const nearbyY = y + yDir;
-                            if (!closedData.has(nearbyX+","+nearbyY)) {
-                                if (nearbyX >= 0 && nearbyX < BM.maxColumns && nearbyY >= 0 && nearbyY < BM.maxRows) {
-                                    nextOpenData.push([nearbyX, nearbyY, d+1]);
+                        for (let [xDir, yDir] of [[0, -1], [1, 0], [0, 1], [-1, 0], [-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+                            const nX = xDir + x;
+                            const nY = yDir + y;
+                            if (!closedData.has(nX+","+nY)) {
+                                if (nX >= 0 && nX < BM.maxColumns && nY >= 0 && nY < BM.maxRows) {
+                                    closedData.add(nX+","+nY);
+                                    if (!mappedData.has(nY)) {
+                                        mappedData.set(nY, new Map());
+                                    }
+                                    const risk = tileConfigurations[pathType][BM.map[nY][nX]].r;
+                                    mappedData.get(nY).set(nX, [distance, (risk == -1 ? null : risk)]);
+                                    nextOpenData.push([nX, nY]);
                                 }
                             }
                         }
                     }
                     openData = nextOpenData;
-                    prompt(openData)
-                }
-                prompt("SKIBIDI")
-                // Turns Data Into Directions
-                let flowField = new Map();
-                for (let y = 0; y < BM.maxRows; y++) {
-                    for (let x = 0; x < BM.maxColumns; x++) {
-                        const parentKey = x+","+y;
-                        if (closedData.has(parentKey)) {
-                            let leastSpace = null;
-                            let leastNumber = Number.MAX_VALUE;
-                            for (let [xDir, yDir] of [[-1, -1], [0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0]]) {
-                                const currentKey = (x+xDir)+","+(y+yDir);
-                                if (closedData.has(currentKey)) {
-                                    const currentValue = closedData.get(currentKey);
-                                    if (currentValue < leastNumber || !leastSpace) {
-                                        leastSpace = currentKey;
-                                        leastNumber = currentValue;
-                                    }
-                                }
-                            }
-                            flowField.set(parentKey, leastSpace);
-                        }
-                    }
+                    distance += 1;
                 }
 
-                // Saves Data
-                useFlowField.set(pathType, flowField);
+                // Direction
+                const directionData = new Map();
+                for (let y = 0; y < BM.maxRows; y++) {
+                    directionData.set(y, new Map());
+                    for (let x = 0; x < BM.maxColumns; x++) {
+                        if (mappedData.get(y).get(x)[1] == null) {
+                            directionData.get(y).set(x, null);
+                            continue;
+                        }
+                        let lowestPos = null;
+                        let lowestDistance = Number.MAX_VALUE;
+                        let lowestRisk = Number.MAX_VALUE;
+                        for (let [xDir, yDir] of [[0, -1], [1, 0], [0, 1], [-1, 0], [-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+                            const nX = x + xDir;
+                            const nY = y + yDir;
+                            if (nX >= 0 && nX < BM.maxColumns && nY >= 0 && nY < BM.maxRows) {
+                                const data = mappedData.get(nY).get(nX);
+                                const distance = data[0];
+                                const risk = data[1];
+                                if (risk == null) {
+                                    continue;
+                                }
+                                if (distance < lowestDistance || (distance == lowestDistance && risk < lowestRisk)) {
+                                    lowestPos = [[nY, nX]];
+                                    lowestDistance = distance;
+                                    lowestRisk = risk;
+                                } else if (distance == lowestDistance && risk == lowestRisk) {
+                                    lowestPos.push([nY, nX]);
+                                }
+                            }
+                        }
+                        directionData.get(y).set(x, lowestPos);
+                    }
+                }
+                useFlowField.set(pathType, directionData);
             }
         }
     }
@@ -350,25 +376,24 @@ class Creature {
             instanceType.delete(instance);
         }
     }
-
     static act(instance) {
-        // const useFlowType = (instance.isGood ? FlowField.badFlowFields : FlowField.goodFlowFields);
-        // const useFlowField = useFlowType.get(instance.pathConfigType);
-        // if (!useFlowField) {return};
-        // const useKey = instance.x + "," + instance.y;
-        // if (useFlowField.has(useKey)) {
-        //     let rawPos = useFlowField.get(useKey);
-        //     if (!rawPos) {
-        //         return;
-        //     }
-        //     rawPos = rawPos.split(",");
-        //     const x = parseInt(rawPos[0]);
-        //     const y = parseInt(rawPos[1]);
-        //     instance.x = x;
-        //     instance.y = y;
-        //     instance.fluidX = x;
-        //     instance.fluidY = y;
-        // }
+        const useFlowType = (instance.isGood ? FlowField.badFlowFields : FlowField.goodFlowFields);
+        const useFlowField = useFlowType.get(instance.pathConfigType);
+        const nextPositions = useFlowField.get(instance.y).get(instance.x);
+        if (nextPositions == null) {return};
+        for (const nextPosition of nextPositions) {
+            const x = nextPosition[1];
+            const y = nextPosition[0];
+            if (Creature.allCords.has(x+","+y)) {
+                continue;
+            }
+            Creature.allCords.delete(instance.x+","+instance.y);
+            instance.x = x;
+            instance.y = y;
+            instance.fluidX = instance.x;
+            instance.fluidY = instance.y;
+            Creature.allCords.set(instance.x+","+instance.y, instance);
+        }
     }
 
     static renderInstances() {
@@ -523,8 +548,8 @@ for (let y = 0; y < BM.maxRows; y++) {
 
     for (let i = 0; i < 50; i++) {
         for (let o = 0; o < 10; o++) {
-            new Creature(i, 49-o, "warrior");
-            new Creature(i, o, "goblin");
+            new Creature(i, o, "warrior");
+            new Creature(i, 49-o, "goblin");
         }
     }
 }
@@ -581,7 +606,7 @@ function getSelectedTile() {
 }
 
 let f = 0;
-function gameLoop() {
+async function gameLoop() {
     // Background
     mainWindow.width = WP.windowWidth;
     mainWindow.height = WP.windowHeight;
@@ -590,11 +615,11 @@ function gameLoop() {
     BM.render();
 
     // Creatures
-    f += 1;
-    if (f >= 100) {
-FlowField.makeFlowFields();
-f = 0;
+    if (f <= 0) {
+        FlowField.makeFlowFields();
+        f = 20;
     }
+    f -= 1;
     const allCreatures = [...Creature.goodInstances, ...Creature.badInstances];
     for (let i = allCreatures.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
