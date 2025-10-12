@@ -376,6 +376,7 @@ class Creature {
             instanceType.delete(instance);
         }
     }
+
     static act(instance) {
         const useFlowType = (instance.isGood ? FlowField.badFlowFields : FlowField.goodFlowFields);
         const useFlowField = useFlowType.get(instance.pathConfigType);
@@ -387,12 +388,12 @@ class Creature {
             if (Creature.allCords.has(x+","+y)) {
                 continue;
             }
-            Creature.allCords.delete(instance.x+","+instance.y);
-            instance.x = x;
-            instance.y = y;
-            instance.fluidX = instance.x;
-            instance.fluidY = instance.y;
-            Creature.allCords.set(instance.x+","+instance.y, instance);
+            // Creature.allCords.delete(instance.x+","+instance.y);
+            // instance.x = x;
+            // instance.y = y;
+            // instance.fluidX = instance.x;
+            // instance.fluidY = instance.y;
+            // Creature.allCords.set(instance.x+","+instance.y, instance);
         }
     }
 
