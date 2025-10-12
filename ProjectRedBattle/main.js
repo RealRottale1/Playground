@@ -388,12 +388,25 @@ class Creature {
             if (Creature.allCords.has(x+","+y)) {
                 continue;
             }
-            // Creature.allCords.delete(instance.x+","+instance.y);
-            // instance.x = x;
-            // instance.y = y;
-            // instance.fluidX = instance.x;
-            // instance.fluidY = instance.y;
-            // Creature.allCords.set(instance.x+","+instance.y, instance);
+            const distance = getDistance(y, instance.fluidY, x, instance.fluidX);
+            if (distance < 0.1) {
+                Creature.allCords.delete(instance.x+","+instance.y);
+                instance.fluidX = x;
+                instance.fluidY = y;
+                instance.x = x;
+                instance.y = y;
+                Creature.allCords.set(instance.x+","+instance.y, instance);
+            } else {
+                const tileSpeed = tileConfigurations[instance.pathConfigType][BM.map[y][x]].s;
+                instance.fluidX += (x - instance.fluidX) * tileSpeed;
+                instance.fluidY += (y - instance.fluidY) * tileSpeed;
+                if (distance < 1) {
+                    Creature.allCords.delete(instance.x+","+instance.y);
+                    instance.x = x;
+                    instance.y = y;
+                    Creature.allCords.set(instance.x+","+instance.y, instance);
+                }
+            }
         }
     }
 
