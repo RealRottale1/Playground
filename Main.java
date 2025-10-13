@@ -1,9 +1,14 @@
-import java.util.Scanner;
+/* Name: Christopher Markham
+ * Date: 10/13/2025
+ * Project Name: Account Class
+ * Description: An account class which handles finacial transactions
+ */
+
 import java.util.Date;
 
 public class Main {
 
-    public class Account {
+    public static  class Account {
         private int id;
         private double balence;
         private double annualInterestRate;
@@ -18,10 +23,10 @@ public class Main {
         }
 
         /* Constructor method for objects with predefined id and balence */
-        public Account(int id, double balence) {
+        public Account(int id, double balence, double annualInterestRate) {
             this.id = id;
             this.balence = balence;
-            this.annualInterestRate = 0.0;
+            this.annualInterestRate = annualInterestRate;
             this.dateCreated = new Date();
         }
 
@@ -56,7 +61,7 @@ public class Main {
         }
 
         /* Withdraw method that withdraws unless amount is greater than current balence */
-        public int withdraw(int amount) {
+        public double withdraw(double amount) {
             if (amount > this.balence) {
                 return 0;
             }
@@ -71,7 +76,18 @@ public class Main {
     }
 
     public static void main(String[] args) {
-        Account Christopher = new Account(1122, 20000, 4.5);
-        Christopher.withdraw(2500);
+        /* We create the object here */
+        Account christopher = new Account(1122, 20000, 4.5);
+        
+        /* We withdraw money here */
+        double housePayment = christopher.withdraw(2500);
+
+        /* We deposit money here */
+        christopher.deposit(3000);
+
+        /* We get output here */
+        System.out.println("Balence: "+christopher.getBalence());
+        System.out.println("Monthly Interest: "+christopher.getMonthlyInterestRate());
+        System.out.println("Date Created: "+christopher.getDateCreated());
     }
 }
