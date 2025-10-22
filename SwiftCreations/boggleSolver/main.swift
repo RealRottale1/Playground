@@ -49,7 +49,7 @@ let trieTree: trieManager = trieManager();
     t e e i o p h r e i t s w i f z u er u m c f h a o
     t r qu p n i a r a r t e o i r t l f d i s m u m u
 */
-let rawData: String = "s n o a t g r e n h e r e r s i an l d z i t m t i";
+let rawData: String = "l a in h v e t s c o h s t u a e i o i f i i z p m".lowercased();
 let boardPieces: [String] = rawData.split(separator: " ").map({String($0)});
 var boardData: [[String]] = [];
 for i in 0..<5 {
@@ -165,10 +165,13 @@ func findAllWords() -> Void {
 }
 
 func displayWords() -> [Int: [String]] {
+    var points: Int = 0;
     var dict: [Int: [String]] = [:];
     for word in allFoundWords {
+        points += word.count;
         dict[word.count, default: []].append(word);
     }
+    print("Total Points: \(points)");
     for key in dict.keys.sorted() {
         print("Char #: \(key), Words: \(String(describing: dict[key]!))");
     }
