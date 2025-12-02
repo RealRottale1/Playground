@@ -17,33 +17,6 @@ class Card {
             case 0:
                 this.faceId = "A";
                 break;
-            case 1:
-                this.faceId = "2";
-                break;
-            case 2:
-                this.faceId = "3";
-                break;
-            case 3:
-                this.faceId = "4";
-                break;
-            case 4:
-                this.faceId = "5";
-                break;
-            case 5:
-                this.faceId = "6";
-                break;
-            case 6:
-                this.faceId = "7";
-                break;
-            case 7:
-                this.faceId = "8";
-                break;
-            case 8:
-                this.faceId = "9";
-                break;
-            case 9:
-                this.faceId = "10";
-                break;
             case 10:
                 this.faceId = "J";
                 break;
@@ -53,6 +26,8 @@ class Card {
             case 12:
                 this.faceId = "K";
                 break;
+            default
+                this.faceId = String.valueOf(id);
         }
     }
 }
@@ -122,5 +97,6 @@ class GoFish extends GameHandler {
 public class Main {
 
     public static void main(String[] args) {
+        
     }
 }
