@@ -26,7 +26,7 @@ class Card {
             case 12:
                 this.faceId = "K";
                 break;
-            default
+            default:
                 this.faceId = String.valueOf(id);
         }
     }
@@ -36,12 +36,14 @@ abstract class GameHandler {
 
     abstract void setupDeck(); // Establishes the current deck
 
-    abstract void playGame(); // One game function/action
+    abstract int playGame(); // One game function/action
+
+    abstract String getInput(); // Gets user input
 
     public static ArrayList<Card> makeDeck(Map<Integer, Integer> worthMap) {
         ArrayList<Card> deck = new ArrayList<>();
         for (int s = 0; s < 4; s++) {
-            String suit = (s == 0 ? "\u2665" : (s == 1 ? "\u2666" : (s == 2 ? "\u2663" : "\u2660")));
+            String suit = (s == 0 ? "♥️" : (s == 1 ? "♠️" : (s == 2 ? "♦️" : "♣️")));
             for (int i = 0; i < 13; i++) {
                 Card newCard = new Card(suit, i, worthMap.get(i));
                 deck.add(newCard);
@@ -74,23 +76,23 @@ class War extends GameHandler {
     }
 
     @Override
-    void playGame() {
+    int playGame() {
         ArrayList<Card> winPool = new ArrayList<>();
         int useIndex = 0;
-        while (true) do {
+        while (true) {
             // If you run out of cards you lose
             if (useIndex != 0) {
                 int p1Size = player1Deck.size();
                 int p2Size = player2Deck.size();
                 if (p1Size == p2Size && p1Size < 3) {
-                    // Stale mate
-                    break;
+                    System.out.println("Stalemate! Game Over!");
+                    return 0;
                 } else if (p1Size < 3) {
-                    // Player 2 Wins
-                    break;
+                    System.out.println("Player 2 won!");
+                    return 2;
                 } else if (p2Size < 3) {
-                    // Player 1 Wins
-                    break;
+                    System.out.println("Player 1 won!");
+                    return 1;
                 }
             }
 
@@ -103,50 +105,72 @@ class War extends GameHandler {
             winPool.add(player1Card);
             winPool.add(player2Card);
 
-            for (int i = useIndex - 1; i > 0; i--) {
+            for (int i = useIndex - 1; i >= 0; i--) {
                 Card card1 = player1Deck.get(i);
                 Card card2 = player2Deck.get(i);
                 player1Deck.remove(i);
                 player2Deck.remove(i);
-                winPool.add(player1Card);
-                winPool.add(player2Card);
+                winPool.add(card1);
+                winPool.add(card2);
             }
 
             if (player1Card.value > player2Card.value) {
-                System.out.println("Player1 won the battle and won " + winPool.size() + "card(s)");
-                winPool.shuffle();
+                System.out.print("Player1 won the battle and won ");
+                Collections.shuffle(winPool);
                 for (Card c : winPool) {
+                    System.out.print(c.faceId + c.suit + " , ");
                     player1Deck.add(c);
                 }
+                System.out.println("");
                 break;
             } else if (player1Card.value < player2Card.value) {
-                                System.out.println("Player2 won the battle and won " + winPool.size() + "card(s)");
-                winPool.shuffle();
+                System.out.print("Player2 won the battle and won ");
+                Collections.shuffle(winPool);
                 for (Card c : winPool) {
+                    System.out.print(c.faceId + c.suit + " , ");
                     player2Deck.add(c);
                 }
+                System.out.println("");
                 break;
             } else {
-                useIndex = 2
+                System.out.println("A draw! This means WAR!");
+                useIndex = 2;
             }
         }
+        return -1;
+    }
+
+    @Override
+    String getInput() {
+        System.out.println("Continue ...");
+        Scanner input = new Scanner(System.in);
+        String text = input.nextLine();
+        return text;
     }
 }
 
-class BlackJack extends GameHandler {
+// class BlackJack extends GameHandler {
 
-}
+// }
 
-class CrazyEights extends GameHandler {
+// class CrazyEights extends GameHandler {
 
-}
+// }
 
-class GoFish extends GameHandler {
-}
+// class GoFish extends GameHandler {
+// }
 
 public class Main {
 
     public static void main(String[] args) {
-        
+        War game = new War();
+        game.setupDeck();
+        while (true) {
+            int results = game.playGame();
+            if (results != -1) {
+                break;
+            }
+            String text = game.getInput();
+        }
     }
 }
