@@ -34,6 +34,8 @@ class Card {
 
 abstract class GameHandler {
 
+    abstract void displayRules(); // Displays the rules
+
     abstract void setupDeck(); // Establishes the current deck
 
     abstract int playGame(); // One game function/action
@@ -56,6 +58,13 @@ abstract class GameHandler {
 class War extends GameHandler {
     ArrayList<Card> player1Deck;
     ArrayList<Card> player2Deck;
+
+    @Override
+    void displayRules() {
+        System.out.println("Welcome to WAR!");
+        System.out.println("Win by stealling all of your opponents cards!");
+        System.out.println("Steal by drawing a higher card than your opponent!");
+    }
 
     @Override
     void setupDeck() {
@@ -94,10 +103,20 @@ class War extends GameHandler {
                     System.out.println("Player 1 won!");
                     return 1;
                 }
+            } else {
+                if (player1Deck.size() == 0) {
+                    System.out.println("Player 2 won!");
+                    return 2;
+                } else if (player2Deck.size() == 0) {
+                    System.out.println("Player 1 won!");
+                    return 1;
+                }
             }
 
             Card player1Card = player1Deck.get(useIndex);
             Card player2Card = player2Deck.get(useIndex);
+            System.out.println("Player1 has "+player1Deck.size()+" card(s)");
+            System.out.println("Player2 has "+player2Deck.size()+" card(s)");
             System.out.println("Player1 drew "+ player1Card.faceId + player1Card.suit);
             System.out.println("Player2 drew "+ player2Card.faceId + player2Card.suit);
             player1Deck.remove(useIndex);
@@ -163,14 +182,35 @@ class War extends GameHandler {
 public class Main {
 
     public static void main(String[] args) {
-        War game = new War();
-        game.setupDeck();
+        
         while (true) {
-            int results = game.playGame();
-            if (results != -1) {
-                break;
+            System.out.println("Select a game to play!");
+            System.out.println("1 - War");
+            System.out.println("2 - Go Fish");
+            System.out.println("3 - Black Jack");
+            System.out.println("4 - Crazy Eights");
+            Scanner input = new Scanner(System.in);
+            String nextGame = input.nextLine();
+
+            // Handles the game of War
+            if (nextGame.equals("1")) {
+                War game = new War();
+                game.displayRules();
+                game.setupDeck();
+                while (true) {
+                    int results = game.playGame();
+                    if (results != -1) {
+                        break;
+                    }
+                    String text = game.getInput();
+                    if (text.toLowerCase() == "stop") {
+                        System.out.println("Game Terminated!");
+                        break;
+                    }
+                }
+            } else {
+                System.out.println("Input 1 through 4!");
             }
-            String text = game.getInput();
         }
     }
 }
