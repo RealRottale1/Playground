@@ -203,7 +203,7 @@ public class Main {
                         break;
                     }
                     String text = game.getInput();
-                    if (text.toLowerCase() == "stop") {
+                    if (text.toLowerCase().equals("stop")) {
                         System.out.println("Game Terminated!");
                         break;
                     }
