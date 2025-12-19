@@ -194,255 +194,56 @@ class GUI {
     }
 }
 
-const tileConfigurations = {
-    standard: {"grass": {r: 1, s: 0.025}, "stone": {r: -1, s: 0, drownDamage: 999}, "sand": {r: 0, s: 0.020}, "shallowwater": {r: 5, s: 0.0125, drownDamage: 0.025}, "deepwater": {r: 100, s: 0.0025, drownDamage: 1}, "lava": {r: 1000, s: 0.00125, drownDamage: 3}},
-}
-
-const Soul = {
-    "warrior":  {
-        texture: "warrior",
-        sizeX: 0.5,
-        sizeY: 0.5,
-        maxHealth: 100,
-        isGood: true, 
-        pathConfigType: "standard"},
-    "goblin":  {
-        texture: "goblin",
-        sizeX: 0.5,
-        sizeY: 0.5,
-        maxHealth: 100,
-        isGood: false, 
-        pathConfigType: "standard"},
-}
-
-class FlowField {
-    static goodFlowFields = new Map();
-    static badFlowFields = new Map();
-
-    static getStartUnits(isGood) {
-        const start = [];
-        for (const instance of (isGood ? Creature.goodInstances : Creature.badInstances)) {
-            start.push([instance.x, instance.y]);
-        }
-        return start;
-    }
-
-    static makeFlowFields() {
-        for (let p = 0; p < 2; p++) {
-            const useFlowField = (p == 0 ? FlowField.badFlowFields : FlowField.goodFlowFields);
-            useFlowField.clear();
-            const usePathTypes = (p == 0 ? Creature.badPathTypes : Creature.goodPathTypes);
-            for (const pathType of usePathTypes.keys()) {
-                // Start up
-                const mappedData = new Map();
-                let closedData = new Set();
-                let openData = FlowField.getStartUnits(p != 0);
-                for (const data of openData) {
-                    const x = data[0];
-                    const y = data[1];
-                    closedData.add(x+","+y);
-                    if (!mappedData.has(y)) {
-                    mappedData.set(y, new Map());
-                    }
-                    mappedData.get(y).set(x, [0, 0]);
-                }
-                
-                // Pathing
-                let distance = 1;
-                while (openData.length > 0) {
-                    let nextOpenData = [];
-                    for (const data of openData) {
-                        const x = data[0];
-                        const y = data[1];
-                        for (let [xDir, yDir] of [[0, -1], [1, 0], [0, 1], [-1, 0], [-1, -1], [1, -1], [1, 1], [-1, 1]]) {
-                            const nX = xDir + x;
-                            const nY = yDir + y;
-                            if (!closedData.has(nX+","+nY)) {
-                                if (nX >= 0 && nX < BM.maxColumns && nY >= 0 && nY < BM.maxRows) {
-                                    closedData.add(nX+","+nY);
-                                    if (!mappedData.has(nY)) {
-                                        mappedData.set(nY, new Map());
-                                    }
-                                    const risk = tileConfigurations[pathType][BM.map[nY][nX]].r;
-                                    mappedData.get(nY).set(nX, [distance, (risk == -1 ? null : risk)]);
-                                    nextOpenData.push([nX, nY]);
-                                }
-                            }
-                        }
-                    }
-                    openData = nextOpenData;
-                    distance += 1;
-                }
-
-                // Direction
-                const directionData = new Map();
-                for (let y = 0; y < BM.maxRows; y++) {
-                    directionData.set(y, new Map());
-                    for (let x = 0; x < BM.maxColumns; x++) {
-                        if (mappedData.get(y).get(x)[1] == null) {
-                            directionData.get(y).set(x, null);
-                            continue;
-                        }
-                        let lowestPos = null;
-                        let lowestDistance = Number.MAX_VALUE;
-                        let lowestRisk = Number.MAX_VALUE;
-                        for (let [xDir, yDir] of [[0, -1], [1, 0], [0, 1], [-1, 0], [-1, -1], [1, -1], [1, 1], [-1, 1]]) {
-                            const nX = x + xDir;
-                            const nY = y + yDir;
-                            if (nX >= 0 && nX < BM.maxColumns && nY >= 0 && nY < BM.maxRows) {
-                                const data = mappedData.get(nY).get(nX);
-                                const distance = data[0];
-                                const risk = data[1];
-                                if (risk == null) {
-                                    continue;
-                                }
-                                if (distance < lowestDistance || (distance == lowestDistance && risk < lowestRisk)) {
-                                    lowestPos = [[nY, nX]];
-                                    lowestDistance = distance;
-                                    lowestRisk = risk;
-                                } else if (distance == lowestDistance && risk == lowestRisk) {
-                                    lowestPos.push([nY, nX]);
-                                }
-                            }
-                        }
-                        directionData.get(y).set(x, lowestPos);
-                    }
-                }
-                useFlowField.set(pathType, directionData);
-            }
-        }
-    }
-}
-
-/* Creatures */
 class Creature {
-    static goodInstances = new Set();
-    static badInstances = new Set();
+    
+    sizeX;  sizeY;
+    xPos;  fluidXPos;
+    yPos;  fluidYPos;
+    health;
 
-    static goodPathTypes = new Map();
-    static badPathTypes = new Map();
+    isSettled = false;
+    nextX; nextY;
 
-    static allCords = new Map();
+    static grid; // int: <int: <{int, int, [creature]}>>
+    static maxGridSize = 4;
 
-    x = 0;
-    y = 0;
-    fluidX = 0;
-    fluidY = 0;
-
-    pathConfigType = null;
-    width = 0;
-    height = 0;
-    health = 0;
-    isGood = false;
-
-    repathRange = 1;
-    attackRange = 2;
-
-    // Debug
-    returnCode = 0;
-    debugInfo = null;
-
-    constructor(x, y, soulType) {
-        this.x = x;
-        this.y = y;
-        this.fluidX = x;
-        this.fluidY = y;
-
-        const info = Soul[soulType];
-        this.width = info.sizeX;
-        this.height = info.sizeY;
-        this.texture = info.texture;
-        this.health = info.maxHealth;
-        this.isGood = info.isGood;
-
-        this.pathConfigType = info.pathConfigType;
-        const usePathTypes = (this.isGood ? Creature.goodPathTypes : Creature.badPathTypes);
-        usePathTypes.set(this.pathConfigType, (usePathTypes.has(this.pathConfigType) ? usePathTypes.get(this.pathConfigType) + 1: 1));    
-        
-        const useSet = (this.isGood ? Creature.goodInstances : Creature.badInstances);
-        useSet.add(this);
-        Creature.allCords.set(x+","+y, this);
-    }
-
-    static terminate(instance) {
-        if (instance.health <= 0) {
-            const usePathTypes = (instance.isGood ? Creature.goodPathTypes : Creature.badPathTypes);
-            usePathTypes.set(instance.pathConfigType, usePathTypes.get(instance.pathConfigType) - 1);
-            if (usePathTypes.get(instance.pathConfigType) <= 0) {
-                usePathTypes.delete(instance.pathConfigType);
-            }
-            Creature.allCords.delete(instance.x+","+instance.y);
-            const instanceType = instance.isGood ? Creature.goodInstances : Creature.badInstances;
-            instanceType.delete(instance);
-        }
-    }
-
-    static act(instance) {
-        const useFlowType = (instance.isGood ? FlowField.badFlowFields : FlowField.goodFlowFields);
-        const useFlowField = useFlowType.get(instance.pathConfigType);
-        const nextPositions = useFlowField.get(instance.y).get(instance.x);
-        if (nextPositions == null) {return};
-        for (const nextPosition of nextPositions) {
-            const x = nextPosition[1];
-            const y = nextPosition[0];
-            if (Creature.allCords.has(x+","+y)) {
-                continue;
-            }
-            const distance = getDistance(y, instance.fluidY, x, instance.fluidX);
-            if (distance < 0.1) {
-                Creature.allCords.delete(instance.x+","+instance.y);
-                instance.fluidX = x;
-                instance.fluidY = y;
-                instance.x = x;
-                instance.y = y;
-                Creature.allCords.set(instance.x+","+instance.y, instance);
-            } else {
-                const tileSpeed = tileConfigurations[instance.pathConfigType][BM.map[y][x]].s;
-                instance.fluidX += (x - instance.fluidX) * tileSpeed;
-                instance.fluidY += (y - instance.fluidY) * tileSpeed;
-                if (distance < 1) {
-                    Creature.allCords.delete(instance.x+","+instance.y);
-                    instance.x = x;
-                    instance.y = y;
-                    Creature.allCords.set(instance.x+","+instance.y, instance);
+    static resolveMovementIntentions() {
+        let force = [];
+        for (let y = 0; y < BM.maxRows; y++) {
+            for (let x = 0; x < BM.maxColumns; x++) {
+                let gridData = Creature.grid.get(y).get(x);
+                for (let i = gridData.length - 1; i >= 0; i--) {
+                    let instance = gridData[i];
+                    if (instance.isSettled) {
+                        continue;
+                    }
+                    let desiredGridData = Creature.grid.get(instance.nextY).get(instance.nextX);
+                    if (desiredGridData.size < Creature.maxGridSize) {
+                        
+                    }
                 }
             }
         }
     }
 
-    static renderInstances() {
-        const baseTileSize = WP.windowWidth / BM.maxColumns;
-        const tileSize = baseTileSize * BM.zoom;
-        const size = Math.ceil(tileSize);
-
-        const halfWidth = WP.windowWidth / 2;
-        const halfHeight = WP.windowHeight / 2;
-
-        for (const instances of [Creature.goodInstances, Creature.badInstances]) {
-            for (const instance of instances) {
-                const tileX = Math.floor((instance.x- BM.mouseX + 0.5) * tileSize + halfWidth);
-                const tileY = Math.floor((instance.y - BM.mouseY + 0.5) * tileSize + halfHeight);
-                const screenX = Math.floor((instance.fluidX - BM.mouseX + 0.5) * tileSize + halfWidth);
-                const screenY = Math.floor((instance.fluidY - BM.mouseY + 0.5) * tileSize + halfHeight);
-                const screenWidth = size*instance.width;
-                const screenHeight = size*instance.height;
-                
-                ctx.drawImage(
-                    gameTextures[instance.texture],
-                    screenX - screenWidth/2,
-                    screenY - screenHeight/2,
-                    screenWidth,
-                    screenHeight
-                );
-                ctx.drawImage(
-                    gameTextures.debugOutline,
-                    tileX - size/2,
-                    tileY - size/2,
-                    size,
-                    size
-                );
+    static setUp() {
+        let newGrid = new Map();
+        for (let y = 0; y < BM.maxRows; y++) {
+            let row = new Map();
+            for (let x = 0; x < BM.maxColumns; x++) {
+                row.set(x, {size: 0, pressure: 0, instances: []});
             }
+            newGrid.set(y, row);
         }
+        this.grid = newGrid;
+    }
+
+    constructor(x, y,) {
+        this.xPos = x; this.fluidXPos = x;
+        this.yPos = y; this.fluidYPos = y;
+        let gridData = Creature.grid.get(y).get(x);
+        gridData.size += 1;
+        gridData.instances.push(this);
     }
 }
 
@@ -456,6 +257,9 @@ function bootGame() {
     mainWindow.addEventListener("mouseleave", MKI.getMouseUp)
     mainWindow.addEventListener("wheel", MKI.getMouseScroll);
     mainWindow.addEventListener("contextmenu", MKI.getRightClick);
+
+    // Creature setup
+    Creature.setUp();
 
     /* Handles Tab Buttons */
     for (const tab of ["Warrior", "Fishling", "Elf", "Troll", "Fledgling", "Goblin"]) {
@@ -561,47 +365,13 @@ for (let y = 0; y < BM.maxRows; y++) {
 
 
     for (let i = 0; i < 50; i++) {
-        for (let o = 0; o < 10; o++) {
+        for (let o = 0; o < 2; o++) {
             new Creature(i, o, "warrior");
-            new Creature(i, 49-o, "goblin");
+            // new Creature(i, 49-o, "goblin");
         }
     }
 }
 bootGame();
-
-/* Unit Tab */
-function handleUnitTab() {
-    const tabs = ["warriorTab", "fishlingTab", "elfTab", "trollTab", "fledglingTab", "goblinTab"];
-    if (WP.windowHeight < 500) { for (let i = 0; i < 6; i++) { GUI.instances[tabs[i]].enabled = false }; return };
-    const x = WP.middle(600);
-    const y = WP.bottom(100);
-    const width = 600;
-    const height = 100;
-    ctx.drawImage(gameTextures.unitBar, x, y, width, height);
-    for (let i = 0; i < 6; i++) {
-        if (WP.resized) { GUI.instances[tabs[i]].update(x + 100 * i + 25, y + 25, 50, 50) };
-        GUI.instances[tabs[i]].render();
-    }
-}
-
-/* Map Tab */
-function handleMapTab() {
-    const x = 0;
-    const y = WP.center(0) - 300;
-    const width = 100;
-    const height = 600;
-    ctx.drawImage(gameTextures.mapBar, x, y, width, height);
-    const tiles = ["grassTab", "stoneTab", "shallowwaterTab", "deepwaterTab", "sandTab", "lavaTab"];
-    for (let i = 0; i < tiles.length; i++) {
-        if (WP.resized) {GUI.instances[tiles[i]].update(x + 25, y + 75 * i + 75, 50, 50)}
-        GUI.instances[tiles[i]].render();
-    }
-    if (WP.resized) {GUI.instances["uploadTab"].update(x + 25, y - 50, 50, 50)}
-    GUI.instances["uploadTab"].render();
-
-    if (WP.resized) {GUI.instances["saveTab"].update(x + 25, y + 600, 50, 50)}
-    GUI.instances["saveTab"].render();
-}
 
 /* Gets Tile From Mouse Position */
 function getSelectedTile() {
@@ -619,35 +389,7 @@ function getSelectedTile() {
     return [selectedX, selectedY];
 }
 
-let f = 0;
-async function gameLoop() {
-    // Background
-    mainWindow.width = WP.windowWidth;
-    mainWindow.height = WP.windowHeight;
-    ctx.fillStyle = "black";
-    ctx.fillRect(0, 0, WP.windowWidth, WP.windowHeight);
-    BM.render();
-
-    // Creatures
-    if (f <= 0) {
-        FlowField.makeFlowFields();
-        f = 20;
-    }
-    f -= 1;
-    const allCreatures = [...Creature.goodInstances, ...Creature.badInstances];
-    for (let i = allCreatures.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [allCreatures[i], allCreatures[j]] = [allCreatures[j], allCreatures[i]];
-    }
-    for (const instance of allCreatures) {
-        Creature.act(instance);
-    }
-    Creature.renderInstances();
-
-    // GUI
-    handleUnitTab();
-    handleMapTab();
-
+async function handleInputs() {
     // Mouse Input Of All Kind
     let overElement = false;
     for (const [key, element] of Object.entries(GUI.instances)) {
@@ -712,31 +454,71 @@ async function gameLoop() {
             if (MKI.currentMouse == 0 && BM.currentTile != null) {
                 BM.map[y][x] = BM.currentTile;
             }
-
-            // Debug Creatures
-            if (Creature.allCords.has(x+","+y)) {
-                const instance = Creature.allCords.get(x+","+y);
-                ctx.fillStyle = "blue";
-                ctx.font = "35px serif";
-                ctx.fillText(`Cords (x, y): ${x+","+y}`, 100, 100);
-            } else {
-            ctx.fillStyle = "orange";
-            ctx.font = "25px serif";
-            ctx.fillText(`X:${x}, Y:${y}`, 100, 100);
-            }
-
         }
     };
+}
+
+/* Unit Tab */
+function handleUnitTab() {
+    const tabs = ["warriorTab", "fishlingTab", "elfTab", "trollTab", "fledglingTab", "goblinTab"];
+    if (WP.windowHeight < 500) { for (let i = 0; i < 6; i++) { GUI.instances[tabs[i]].enabled = false }; return };
+    const x = WP.middle(600);
+    const y = WP.bottom(100);
+    const width = 600;
+    const height = 100;
+    ctx.drawImage(gameTextures.unitBar, x, y, width, height);
+    for (let i = 0; i < 6; i++) {
+        if (WP.resized) { GUI.instances[tabs[i]].update(x + 100 * i + 25, y + 25, 50, 50) };
+        GUI.instances[tabs[i]].render();
+    }
+}
+/* Map Tab */
+function handleMapTab() {
+    const x = 0;
+    const y = WP.center(0) - 300;
+    const width = 100;
+    const height = 600;
+    ctx.drawImage(gameTextures.mapBar, x, y, width, height);
+    const tiles = ["grassTab", "stoneTab", "shallowwaterTab", "deepwaterTab", "sandTab", "lavaTab"];
+    for (let i = 0; i < tiles.length; i++) {
+        if (WP.resized) {GUI.instances[tiles[i]].update(x + 25, y + 75 * i + 75, 50, 50)}
+        GUI.instances[tiles[i]].render();
+    }
+    if (WP.resized) {GUI.instances["uploadTab"].update(x + 25, y - 50, 50, 50)}
+    GUI.instances["uploadTab"].render();
+
+    if (WP.resized) {GUI.instances["saveTab"].update(x + 25, y + 600, 50, 50)}
+    GUI.instances["saveTab"].render();
+}
+
+async function handleRenders() {
+    // Background
+    mainWindow.width = WP.windowWidth;
+    mainWindow.height = WP.windowHeight;
+    ctx.fillStyle = "black";
+    ctx.fillRect(0, 0, WP.windowWidth, WP.windowHeight);
+    BM.render();
+
+    // GUI
+    handleUnitTab();
+    handleMapTab();
 
     WP.justReleased = false;
     WP.resized = false;
 
-    requestAnimationFrame(gameLoop);
+    requestAnimationFrame(handleRenders);
 }
 
 
-function startGame() {
-    requestAnimationFrame(gameLoop);
+async function startGame() {
+    requestAnimationFrame(handleRenders);
+    while (true) {
+        for (let tick = 0; tick < 25; tick++) {
+            await wait(0.1);
+            handleInputs();
+
+        }
+    }
 }
 
 startGame();
