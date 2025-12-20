@@ -307,8 +307,10 @@ class Creature {
                 continue;
             } else {
                 let chainSet = new Set();
-                for (const otherUnit of desiredGrid.instances) {
-                    chainSet.add(otherUnit);
+                for (const otherUnit of desiredGrid.instances.values()) {
+                    if (otherUnit !== null) {
+                        chainSet.add(otherUnit);
+                    }
                 }
                 chains.set(unit, chainSet);
                 continue;
@@ -318,8 +320,6 @@ class Creature {
         let hasOneStepSolve = true;
         while (hasOneStepSolve) {
             for (const [unit, position] of intentList) {
-            
-            }
         }
     }
 
