@@ -200,6 +200,7 @@ class Creature {
     xPos;  fluidXPos;
     yPos;  fluidYPos;
     health;
+    width = 0.5; height = 0.5;
 
     isGood; subClass;
 
@@ -216,7 +217,6 @@ class Creature {
     static makeFlowFields() {
         let flowFields = new Map();
         let intentList = new Map();
-        let allowedIntentList = new Map();
 
         // Makes flow field
         for (const [outerKey, subUnitMap] of Object.entries(Creature.units)) {
@@ -238,7 +238,7 @@ class Creature {
 
                 // Generates closedData which contains positional risk and distance
                 let visitedCount = 0;
-                while (openData.length >= visitedCount) {
+                while (visitedCount < openData.length) {
                     visitedCount += 1;
                     let useData = openData[visitedCount - 1];
                     let currentDistance = closedData.get(useData[0]).get(useData[1])[1];
@@ -260,22 +260,31 @@ class Creature {
                     flowData.set(y, new Map());
                     for (let x = 0; x < BM.maxColumns; x++) {
                         if (closedData.get(y).has(x)) {
-                            let currentValue = closedData.get(y).get(x)[0] + closedData.get(y).get(x)[1];
-                            let lowestTile = [y, x, currentValue]; // y, x, v
+                            
+                            let bestY = y;
+                            let bestX = x;
+                            let bestRisk = Number.MAX_VALUE;
+                            let bestDistance = Number.MAX_VALUE;
                             for (let [yDir, xDir] of [[0, 1], [1, 0], [0, -1], [-1, 0]]) {
                                 let neighborY = y + yDir;
                                 let neighborX = x + xDir;
                                 if (closedData.has(neighborY) && closedData.get(neighborY).has(neighborX)) {
                                     let neighborData = closedData.get(neighborY).get(neighborX);
-                                    let neighborValue = neighborData[0] + neighborData[1];
-                                    if (neighborValue < lowestTile[2]) {
-                                        lowestTile[0] = neighborY;
-                                        lowestTile[1] = neighborX;
-                                        lowestTile[2] = neighborValue;
+                                    let neighborRisk = neighborData[0];
+                                    let neighborDistance = neighborData[1];
+                                    let riskWeight = 1;
+                                    let distanceWeight = 25;
+                                    if (neighborDistance * distanceWeight < bestDistance * distanceWeight) {
+                                        if (neighborRisk * riskWeight < bestRisk * riskWeight) {
+                                        bestY = neighborY;
+                                        bestX = neighborX;
+                                        bestRisk = neighborRisk;
+                                        bestDistance = neighborDistance;
+                                        }
                                     }
                                 }
                             }
-                            flowData.get(y).set(x, [lowestTile[0], lowestTile[1]]);
+                            flowData.get(y).set(x, [bestY, bestX]);
                         }
                     }
                 }
@@ -286,40 +295,18 @@ class Creature {
 
         // Makes intentList
         for (const [outerKey, subUnitMap] of Object.entries(Creature.units)) {
-            for (const [innerKey, unit] of subUnitMap) {
-                let nextTile = flowFields.get(unit.yPos).get(unit.xPos)
-                intentList.set(unit, [nextTile[0], nextTile[1]]);
-            }
-        }
+            for (const [innerKey, units] of subUnitMap) {
+                for (const unit of units) {
+                    let flow = flowFields.get(innerKey);
+                    let nextTile = flow.get(unit.yPos).get(unit.xPos);
+                    intentList.set(unit, [nextTile[0], nextTile[1]]);
 
-        let resolvedUnits = new Map();
-        let chains = new Map();
-
-        // Creates chains and resolves one step units
-        for (const [unit, position] of intentList) {
-            if (unit.yPos == position[0] && unit.xPos == position[1]) {
-                resolvedUnits.set(unit, position);
-                continue;
-            }
-            let desiredGrid = Creature.grid.get(position[0]).get(position[1]);
-            if (desiredGrid.size == 0) {
-                resolvedUnits.set(unit, position);
-                continue;
-            } else {
-                let chainSet = new Set();
-                for (const otherUnit of desiredGrid.instances.values()) {
-                    if (otherUnit !== null) {
-                        chainSet.add(otherUnit);
-                    }
+                    unit.yPos = nextTile[0];
+                    unit.xPos = nextTile[1];
+                    unit.fluidYPos = nextTile[0];
+                    unit.fluidXPos = nextTile[1];
                 }
-                chains.set(unit, chainSet);
-                continue;
             }
-        } 
-
-        let hasOneStepSolve = true;
-        while (hasOneStepSolve) {
-            for (const [unit, position] of intentList) {
         }
     }
 
@@ -339,6 +326,42 @@ class Creature {
             newGrid.set(y, row);
         }
         this.grid = newGrid;
+    }
+
+    static renderInstances() {
+        const baseTileSize = WP.windowWidth / BM.maxColumns;
+        const tileSize = baseTileSize * BM.zoom;
+        const size = Math.ceil(tileSize);
+
+        const halfWidth = WP.windowWidth / 2;
+        const halfHeight = WP.windowHeight / 2;
+
+        for (const [_, subUnitMap] of Object.entries(Creature.units)) {
+            for (const [_, units] of subUnitMap) {
+                for (const unit of units) {
+                    const tileX = Math.floor((unit.xPos- BM.mouseX + 0.5) * tileSize + halfWidth);
+                    const tileY = Math.floor((unit.yPos - BM.mouseY + 0.5) * tileSize + halfHeight);
+                    const screenX = Math.floor((unit.fluidXPos - BM.mouseX + 0.5) * tileSize + halfWidth);
+                    const screenY = Math.floor((unit.fluidYPos - BM.mouseY + 0.5) * tileSize + halfHeight);
+                    const screenWidth = size*unit.width;
+                    const screenHeight = size*unit.height;
+                    ctx.drawImage(
+                        gameTextures[unit.subClass],
+                        screenX - screenWidth/2,
+                        screenY - screenHeight/2,
+                        screenWidth,
+                        screenHeight
+                    );
+                    ctx.drawImage(
+                        gameTextures.debugOutline,
+                        tileX - size/2,
+                        tileY - size/2,
+                        size,
+                        size
+                    );
+                }
+            }
+        }
     }
 
     constructor(x, y, isGood, subClass) {
@@ -615,6 +638,8 @@ async function handleRenders() {
     ctx.fillRect(0, 0, WP.windowWidth, WP.windowHeight);
     BM.render();
 
+    Creature.renderInstances();
+
     // GUI
     handleUnitTab();
     handleMapTab();
@@ -629,10 +654,10 @@ async function handleRenders() {
 async function startGame() {
     requestAnimationFrame(handleRenders);
     while (true) {
+        Creature.makeFlowFields();
         for (let tick = 0; tick < 25; tick++) {
             await wait(0.1);
             handleInputs();
-
         }
     }
 }
