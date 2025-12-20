@@ -215,7 +215,9 @@ class Creature {
 
     static makeFlowFields() {
         let flowFields = new Map();
-        
+        let intentList = new Map();
+        let allowedIntentList = new Map();
+
         // Makes flow field
         for (const [outerKey, subUnitMap] of Object.entries(Creature.units)) {
             const useOuterKey = outerKey === "true";
@@ -282,9 +284,41 @@ class Creature {
             }
         }
 
+        // Makes intentList
         for (const [outerKey, subUnitMap] of Object.entries(Creature.units)) {
             for (const [innerKey, unit] of subUnitMap) {
-                
+                let nextTile = flowFields.get(unit.yPos).get(unit.xPos)
+                intentList.set(unit, [nextTile[0], nextTile[1]]);
+            }
+        }
+
+        let resolvedUnits = new Map();
+        let chains = new Map();
+
+        // Creates chains and resolves one step units
+        for (const [unit, position] of intentList) {
+            if (unit.yPos == position[0] && unit.xPos == position[1]) {
+                resolvedUnits.set(unit, position);
+                continue;
+            }
+            let desiredGrid = Creature.grid.get(position[0]).get(position[1]);
+            if (desiredGrid.size == 0) {
+                resolvedUnits.set(unit, position);
+                continue;
+            } else {
+                let chainSet = new Set();
+                for (const otherUnit of desiredGrid.instances) {
+                    chainSet.add(otherUnit);
+                }
+                chains.set(unit, chainSet);
+                continue;
+            }
+        } 
+
+        let hasOneStepSolve = true;
+        while (hasOneStepSolve) {
+            for (const [unit, position] of intentList) {
+            
             }
         }
     }
