@@ -613,8 +613,8 @@ for (let y = 0; y < BM.maxRows; y++) {
         let r = Math.random();
         BM.map[y][x] = 
             (r < 0.25) ? "grass" :
-            (r < 0.5) ? "sand" :
-            (r < 0.75) ? "lava" :
+            (r < 0.5) ? "grass" :
+            (r < 0.75) ? "shallowwater" :
             (r < 1) ? "grass" : "lava";
     }
 }
