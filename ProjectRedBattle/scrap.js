@@ -249,3 +249,211 @@ class Creature {
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+class Creature {
+    
+    sizeX;  sizeY; gridSpace;
+    xPos;  fluidXPos;
+    yPos;  fluidYPos;
+    health;
+    width = 0.5; height = 0.5;
+
+    isGood; subClass;
+
+    static grid; // int: <int: <{int, [int], int<Creature>}>>
+    static maxGridSize = 4;
+
+    static units = { // {Boolean: String<Set(Creature)>}
+        true: new Map(),
+        false: new Map(),
+    };
+
+    static tileProps = {"grass": 1, "stone": Number.MAX_VALUE, "shallowwater": 5, "deepwater": 25, "sand": 2, "lava": 250};
+
+    static makeFlowFields() {
+        let flowFields = new Map();
+        let intentList = new Map();
+
+        // Makes flow field
+        for (const [outerKey, subUnitMap] of Object.entries(Creature.units)) {
+            const useOuterKey = outerKey === "true";
+
+            for (const [innerKey, _] of subUnitMap) {
+                // Gets starting positions
+                const closedData = new Map(); // int<int<[risk, distance]>>
+                for (let y = 0; y < BM.maxRows; y++) {
+                    closedData.set(y, new Map());
+                }
+                const openData = [];
+                for (const [_, enemySet] of Creature.units[useOuterKey ? "false" : "true"]) {
+                    for (const enemyCreature of enemySet) {
+                        openData.push([enemyCreature.yPos, enemyCreature.xPos]);
+                        closedData.get(enemyCreature.yPos).set(enemyCreature.xPos, [Creature.tileProps[BM.map[enemyCreature.yPos][enemyCreature.xPos]], 0]);
+                    }
+                }
+
+                // Generates closedData which contains positional risk and distance
+                let visitedCount = 0;
+                while (visitedCount < openData.length) {
+                    visitedCount += 1;
+                    let useData = openData[visitedCount - 1];
+                    let currentDistance = closedData.get(useData[0]).get(useData[1])[1];
+                    for (let [yDir, xDir] of [[0, 1], [1, 0], [0, -1], [-1, 0]]) {
+                        let nextY = useData[0] + yDir;
+                        let nextX = useData[1] + xDir;
+                        if (closedData.has(nextY) && nextX >= 0 && nextX < BM.maxColumns && !closedData.get(nextY).has(nextX)) {
+                            if (BM.map[nextY][nextX] != "stone") {
+                                openData.push([nextY, nextX]);
+                                closedData.get(nextY).set(nextX, [Creature.tileProps[BM.map[nextY][nextX]], currentDistance + 1]);
+                            }
+                        }
+                    }
+                }
+
+                // Generates flowData
+                let flowData = new Map();
+                for (let y = 0; y < BM.maxRows; y++) {
+                    flowData.set(y, new Map());
+                    for (let x = 0; x < BM.maxColumns; x++) {
+                        if (closedData.get(y).has(x)) {
+                            
+                            let bestY = y;
+                            let bestX = x;
+                            let bestRisk = Number.MAX_VALUE;
+                            let bestDistance = Number.MAX_VALUE;
+                            
+                            let directions = [[0, 1], [1, 0], [0, -1], [-1, 0]];
+                            for (let i = 3; i > 0; i--) {
+                                const j = Math.floor(Math.random() * (i + 1));
+                                [directions[i], directions[j]] = [directions[j], directions[i]]; 
+                            }
+
+                            for (let [yDir, xDir] of directions) {
+                                let neighborY = y + yDir;
+                                let neighborX = x + xDir;
+                                if (closedData.has(neighborY) && closedData.get(neighborY).has(neighborX)) {
+                                    let neighborData = closedData.get(neighborY).get(neighborX);
+                                    let neighborRisk = neighborData[0];
+                                    let neighborDistance = neighborData[1];
+                                    let riskWeight = 1;
+                                    let distanceWeight = 100;
+                                    if (neighborDistance * distanceWeight < bestDistance * distanceWeight) {
+                                        if (neighborRisk * riskWeight < bestRisk * riskWeight) {
+                                        bestY = neighborY;
+                                        bestX = neighborX;
+                                        bestRisk = neighborRisk;
+                                        bestDistance = neighborDistance;
+                                        }
+                                    }
+                                }
+                            }
+                            flowData.get(y).set(x, [bestY, bestX]);
+                        }
+                    }
+                }
+
+                flowFields.set(innerKey, flowData);
+            }
+        }
+
+        // Makes intentList
+        for (const [outerKey, subUnitMap] of Object.entries(Creature.units)) {
+            for (const [innerKey, units] of subUnitMap) {
+                for (const unit of units) {
+                    let flow = flowFields.get(innerKey);
+                    let nextTile = flow.get(unit.yPos).get(unit.xPos);
+                    intentList.set(unit, [nextTile[0], nextTile[1]]);
+
+                    unit.yPos = nextTile[0];
+                    unit.xPos = nextTile[1];
+                    unit.fluidYPos = nextTile[0];
+                    unit.fluidXPos = nextTile[1];
+                }
+            }
+        }
+    }
+
+    static setUp() {
+        let newGrid = new Map();
+        for (let y = 0; y < BM.maxRows; y++) {
+            let row = new Map();
+            for (let x = 0; x < BM.maxColumns; x++) {
+                let freeSpaces = [];
+                let instances = new Map();
+                for (let i = 0; i < Creature.maxGridSize; i++) {
+                    freeSpaces.push(i);
+                    instances.set(i, null);
+                }
+                row.set(x, {size: 0, freeSpaces: freeSpaces, instances: instances});
+            }
+            newGrid.set(y, row);
+        }
+        this.grid = newGrid;
+    }
+
+    static renderInstances() {
+        const baseTileSize = WP.windowWidth / BM.maxColumns;
+        const tileSize = baseTileSize * BM.zoom;
+        const size = Math.ceil(tileSize);
+
+        const halfWidth = WP.windowWidth / 2;
+        const halfHeight = WP.windowHeight / 2;
+
+        for (const [_, subUnitMap] of Object.entries(Creature.units)) {
+            for (const [_, units] of subUnitMap) {
+                for (const unit of units) {
+                    const tileX = Math.floor((unit.xPos- BM.mouseX + 0.5) * tileSize + halfWidth);
+                    const tileY = Math.floor((unit.yPos - BM.mouseY + 0.5) * tileSize + halfHeight);
+                    const screenX = Math.floor((unit.fluidXPos - BM.mouseX + 0.5) * tileSize + halfWidth);
+                    const screenY = Math.floor((unit.fluidYPos - BM.mouseY + 0.5) * tileSize + halfHeight);
+                    const screenWidth = size*unit.width;
+                    const screenHeight = size*unit.height;
+                    ctx.drawImage(
+                        gameTextures[unit.subClass],
+                        screenX - screenWidth/2,
+                        screenY - screenHeight/2,
+                        screenWidth,
+                        screenHeight
+                    );
+                    ctx.drawImage(
+                        gameTextures.debugOutline,
+                        tileX - size/2,
+                        tileY - size/2,
+                        size,
+                        size
+                    );
+                }
+            }
+        }
+    }
+
+    constructor(x, y, isGood, subClass) {
+        this.xPos = x; this.fluidXPos = x;
+        this.yPos = y; this.fluidYPos = y;
+
+        this.isGood = isGood;
+        this.subClass = subClass;
+        if (Creature.units[this.isGood].has(this.subClass)) {
+            Creature.units[this.isGood].get(this.subClass).add(this);
+        } else {
+            let newSet = new Set();
+            newSet.add(this);
+            Creature.units[this.isGood].set(this.subClass, newSet);
+        }
+
+        this.gridSpace = 1;
+        const gridData = Creature.grid.get(y).get(x);
+        gridData.size += this.gridSpace;
+        const instanceIndex = gridData.freeSpaces.pop();
+        gridData.instances.set(instanceIndex, this);
+    }
+}
