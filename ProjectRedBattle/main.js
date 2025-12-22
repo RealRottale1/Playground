@@ -212,6 +212,7 @@ const SoulData = {
 class Creature {
     static allUnits = new Set();
     static allUnitPositions = new Map(); // int<int<Set(Creature)>>
+    static allUnitDivisions = new Map(); // Boolean<String<Set(Creature)>>
     
     xPos;  fluidXPos;   oldXPos;
     yPos;  fluidYPos;   oldYPos;
@@ -220,7 +221,12 @@ class Creature {
 
     targets = new Set();
     knownTileMap = new Map(); // int<int<risk>>
+    flowFields = new Map(); // Boolean<String<Int<Int<[Int, Int]>
     moving = false;
+
+    static updateAllUnitDivisions(unit) {
+        if (!Creature.allUnitDivisions.get())
+    }
 
     static updateAllUnitPositions(unit) {
         if (!Creature.allUnitPositions.has(unit.yPos)) {
@@ -288,6 +294,9 @@ class Creature {
         return [currentPosition, allyUnits];
     }
 
+    static makeFlowFields() {
+    }
+
     static act() {
         // Prune dead units
         const deadUnits = new Set();
@@ -302,6 +311,8 @@ class Creature {
             Creature.allUnits.delete(unit);
             Creature.allUnitPositions.get(deadY).get(deadX).delete(unit);
         }
+
+        Creature.makeFlowFields();
 
         // Act for all units
         const visionData = new Map();
