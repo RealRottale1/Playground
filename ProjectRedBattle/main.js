@@ -249,11 +249,14 @@ class Creature {
                     // Adds targets
                     if (Creature.allUnitPositions.has(y) && Creature.allUnitPositions.get(y).has(x)) {
                         for (let target of Creature.allUnitPositions.get(y).get(x)) {
+                            if (target == unit) {
+                                continue;
+                            }
                             if (unit.isGood != target.isGood) {
                                 if (unit.targetChain.length > 0) {
                                     if (getDistance(target.yPos, unit.yPos, target.xPos, unit.xPos) < getDistance(unit.targetChain[0].yPos, unit.yPos, unit.targetChain[0].xPos, unit.xPos)) {
                                         unit.targetChain = [target];
-                                        unit.allTargets.delete(unit.targetChain[0]);
+                                        unit.allTargets.clear();
                                         unit.allTargets.add(target);
                                     }
                                 } else {
@@ -320,7 +323,10 @@ class Creature {
                 }
             }
         }
-
+        const startNode = validTiles.get(unit.yPos).get(unit.xPos);
+        startNode.h = (Math.abs(targetUnit.xPos - unit.xPos) + Math.abs(targetUnit.yPos - unit.yPos));
+        startNode.f = startNode.h;
+        
         const path = [];
         const openSet = [[unit.yPos, unit.xPos]];
         const openSetAsMap = new Map();
@@ -379,7 +385,18 @@ class Creature {
                             }
 
                             neighborData.g = possibleG;
-                            neighborData.h = (Math.abs(targetUnit.xPos - neighborData.x) + Math.abs(targetUnit.yPos - neighborData.y));
+                            function getMinRisk(soulType) {
+                                let min = Infinity;
+                                for (const tile in SoulData[soulType].tileProps) {
+                                    const risk = SoulData[soulType].tileProps[tile].risk;
+                                    if (risk > 0 && risk < min) min = risk;
+                                }
+                                return min;
+                            }
+                            const MIN_RISK = getMinRisk(unit.soulType);                 
+                            const dx = Math.abs(targetUnit.xPos - neighborData.x);
+                            const dy = Math.abs(targetUnit.yPos - neighborData.y);
+                            neighborData.h = (dx + dy) * MIN_RISK;
                             neighborData.f = neighborData.g + neighborData.h;
                             neighborData.pY = currentY;
                             neighborData.pX = currentX;
@@ -418,7 +435,7 @@ class Creature {
                 }
             }
             // Unit above broke chain
-            if (unit.targetChain.length > 0 && unit.targetChain[unit.targetChain.length - 1].targetChain.length <= 0) {
+            if (unit.targetChain.length > 0 && unit.targetChain[unit.targetChain.length - 1].targetChain.length <= 0 && unit.targetChain[unit.targetChain.length - 1].isGood == unit.isGood) {
                 unit.allTargets.clear();
                 unit.targetChain = [];
             }
@@ -446,8 +463,6 @@ class Creature {
 
                 const useY = (dist <= 0.5 ? unit.yPos : unit.oldYPos);
                 const useX = (dist <= 0.5 ? unit.xPos : unit.oldXPos);
-                console.log(unit.yPos +","+unit.oldYPos)
-                console.log(useY +","+ useX)
                 const speed = SoulData[unit.soulType].tileProps[BM.map[useY][useX]].speed * 0.05; // tune this
                 if (dist <= speed) {
                     unit.fluidXPos = unit.xPos;
@@ -476,11 +491,13 @@ class Creature {
             if (allyUnits.size > 0) {
                 for (const ally of allyUnits) {
                     if (ally.targetChain.length == 0) {
-                        let copiedChain = unit.targetChain.slice();
-                        ally.targetChain = copiedChain;
-                        ally.targetChain.push(unit);
-                        ally.allTargets = new Set(unit.allTargets);
-                        ally.allTargets.add(unit);
+                        if (unit.targetChain.length != 0) {
+                            let copiedChain = unit.targetChain.slice();
+                            ally.targetChain = copiedChain;
+                            ally.targetChain.push(unit);
+                            ally.allTargets = new Set(unit.allTargets);
+                            ally.allTargets.add(unit);
+                        }
                     }
                 }
             }
@@ -656,7 +673,7 @@ for (let y = 0; y < BM.maxRows; y++) {
 }
 
 
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 25; i++) {
         for (let o = 0; o < 2; o++) {
             new Creature(i, o, true, "warrior", "normal");
             new Creature(i, 49-o, false, "goblin", "normal");
