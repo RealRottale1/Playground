@@ -218,6 +218,8 @@ const SoulData = {
 class Creature {
     static allUnits = new Set();
     static allUnitPositions = new Map(); // int<int<Set(Creature)>>
+    static allUnitCapacity = new Map(); // int<int<Array(Creature)>>
+    static maxTileCapacity = 4;
 
     xPos; fluidXPos; oldXPos;
     yPos; fluidYPos; oldYPos;
@@ -231,6 +233,7 @@ class Creature {
     moving = false;
 
     static updateAllUnitPositions(unit) { // Helper
+        // Position
         if (!Creature.allUnitPositions.has(unit.yPos)) {
             Creature.allUnitPositions.set(unit.yPos, new Map());
         }
@@ -241,6 +244,15 @@ class Creature {
         } else {
             Creature.allUnitPositions.get(unit.yPos).get(unit.xPos).add(unit);
         }
+
+        // Capacity
+        if (!Creature.allUnitCapacity.has(unit.yPos)) {
+            Creature.allUnitCapacity.set(unit.yPos, new Map());
+        }
+        if (!Creature.allUnitCapacity.get(unit.yPos).has(unit.xPos)) {
+            Creature.allUnitCapacity.get(unit.yPos).set(unit.xPos, []);
+        }
+        Creature.allUnitCapacity.get(unit.yPos).get(unit.xPos).push(unit);
     }
 
     static makeUnitConnection(unit, y, x, alertVision) { // Helper
@@ -432,9 +444,16 @@ class Creature {
         return ([[], allyUnits]);
     }
 
-    static moveAllUnits(nextPositions) { // Main
+    static setNextPosition(nextPositions) { // Main
        for (const [unit, desiredPosition] of nextPositions) {
             Creature.allUnitPositions.get(unit.yPos).get(unit.xPos).delete(unit);
+            const tileCapacity = Creature.allUnitCapacity.get(unit.yPos).get(unit.xPos);
+            for (let i = 0; i < tileCapacity.length; i++) {
+                if (tileCapacity[i] == unit) {
+                    tileCapacity.splice(i, 1);
+                    break;
+                }
+            }
             unit.yPos = desiredPosition[0];
             unit.xPos = desiredPosition[1];
             Creature.updateAllUnitPositions(unit);
@@ -442,15 +461,45 @@ class Creature {
         }
     }
 
-    /*
-        for (const [unit, desiredPosition] of nextPositions) {
-            Creature.allUnitPositions.get(unit.yPos).get(unit.xPos).delete(unit);
-            unit.yPos = desiredPosition[0];
-            unit.xPos = desiredPosition[1];
-            Creature.updateAllUnitPositions(unit);
-            unit.moving = true;
+    static moveUnit(unit) { // Main
+        let dx = unit.xPos - unit.fluidXPos;
+        let dy = unit.yPos - unit.fluidYPos;
+        let dist = Math.hypot(dx, dy);
+
+        const useY = (dist <= 0.5 ? unit.yPos : unit.oldYPos);
+        const useX = (dist <= 0.5 ? unit.xPos : unit.oldXPos);
+        const speed = SoulData[unit.soulType].tileProps[BM.map[useY][useX]].speed * 0.05;
+
+        const tileCapacity = Creature.allUnitCapacity.get(unit.yPos).get(unit.xPos);
+        let overCapacity = true;
+        if (tileCapacity.length > Creature.maxTileCapacity) {
+            for (let i = 0; i < Creature.maxTileCapacity; i++) {
+                if (tileCapacity[i] == unit) {
+                    overCapacity = false;
+                    break;
+                }
+            }
+        } else {
+            overCapacity = false;
         }
-    */
+
+        if (overCapacity) {
+            return true;
+        }
+
+        if (dist <= speed) {
+            unit.fluidXPos = unit.xPos;
+            unit.fluidYPos = unit.yPos;
+            unit.oldYPos = unit.yPos;;
+            unit.oldXPos = unit.xPos;
+            unit.moving = false;
+        } else {
+            unit.fluidXPos += (dx / dist) * speed;
+            unit.fluidYPos += (dy / dist) * speed;
+        }
+        return false;
+    }
+
     static act() { // Main
         // Prune dead units
         const deadUnits = new Set();
@@ -493,14 +542,14 @@ class Creature {
                     const targetEnemy = unit.targetChain[0];
                     const distanceBetweenEnemy = getDistance(targetEnemy.yPos, unit.yPos, targetEnemy.xPos, unit.xPos);
                     if (distanceBetweenEnemy <= WeaponData[unit.weaponType].range) {
-                        nextPositions.set(unit, [unit.yPos, unit.xPos]);
+                        // Attack
                     } else {
                         const aStarData = Creature.aStar(unit);
                         const aStarPosition = aStarData[0];
                         const allyUnits = aStarData[1];
                         if (aStarPosition.length == 0) {
                             lostTarget.add(unit);
-                            nextPositions.set(unit, [unit.yPos, unit.xPos]);
+                            // No movement
                         } else {
                             nextPositions.set(unit, aStarPosition);
                             visionData.set(unit, allyUnits);
@@ -508,28 +557,15 @@ class Creature {
                     }
                 }
             } else { // Transition to spot
-                let dx = unit.xPos - unit.fluidXPos;
-                let dy = unit.yPos - unit.fluidYPos;
-                let dist = Math.hypot(dx, dy);
-
-                const useY = (dist <= 0.5 ? unit.yPos : unit.oldYPos);
-                const useX = (dist <= 0.5 ? unit.xPos : unit.oldXPos);
-                const speed = SoulData[unit.soulType].tileProps[BM.map[useY][useX]].speed * 0.05; // tune this
-                if (dist <= speed) {
-                    unit.fluidXPos = unit.xPos;
-                    unit.fluidYPos = unit.yPos;
-                    unit.oldYPos = unit.yPos;;
-                    unit.oldXPos = unit.xPos;
-                    unit.moving = false;
-                } else {
-                    unit.fluidXPos += (dx / dist) * speed;
-                    unit.fluidYPos += (dy / dist) * speed;
+                const overCapacity = Creature.moveUnit(unit);
+                if (overCapacity) {
+                    nextPositions.set(unit, [unit.oldYPos, unit.oldXPos])
                 }
             }
         }
 
         // Move all units
-        Creature.moveAllUnits(nextPositions);
+        Creature.setNextPosition(nextPositions);
 
         // Enemy recognition
         for (const [unit, allyUnits] of visionData) {
