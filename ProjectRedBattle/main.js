@@ -299,6 +299,98 @@ class Creature {
         return [currentPosition, allyUnits];
     }
 
+    static aStar(unit) {
+        const validTiles = new Map();
+        const detectVision = SoulData[unit.soulType].detectVision;
+        const targetUnit = unit.targetChain[unit.targetChain.length - 1];
+
+        // Gets tiles to use in path finding
+        for (let i = 0; i < 2; i++) {
+            const useUnit = (i == 0 ? unit : targetUnit)
+            for (let y = useUnit.yPos + detectVision; y >= useUnit.yPos - detectVision; y--) {
+                let ySpread = Math.abs(useUnit.yPos - y);
+                let xSpread = detectVision - ySpread;
+                for (let x = useUnit.xPos + xSpread; x >= useUnit.xPos - xSpread; x--) {
+                    if (y >= 0 && x >= 0 && y < BM.maxRows && x < BM.maxColumns) {
+                        if (!validTiles.has(y)) {
+                            validTiles.set(y, new Map());
+                        }
+                        validTiles.get(y).set(x, {y: y, x: x, f: 0, g: 0, h: 0, pY: null, pX: null});
+                    }
+                }
+            }
+        }
+
+        const path = [];
+        const openSet = [[unit.yPos, unit.xPos]];
+        const openSetAsMap = new Map();
+        openSetAsMap.set(unit.yPos, new Set());
+        openSetAsMap.get(unit.yPos).add(unit.xPos);
+        const closedMap = new Map();
+        while (openSet.length > 0) {
+            let lowestIndex = 0;
+            const openLength = openSet.length;
+            for (let i = 0; i < openLength; i++) {
+                if (openSet[i].f < openSet[lowestIndex].f) {
+                    lowestIndex = i;
+                }
+            }
+
+            let currentY = openSet[lowestIndex][0];
+            let currentX = openSet[lowestIndex][1];
+            if (currentY == targetUnit.yPos && currentX == targetUnit.xPos) {
+                let nextY = currentY;
+                let nextX = currentX;
+                path.push([nextY, nextX]);
+                while (nextY != null && nextX != null) {
+                    let nextData = validTiles.get(nextY).get(nextX);
+                    nextY = nextData.pY;
+                    nextX = nextData.pX;
+                    path.push([nextY, nextX]);
+                }
+                return (path.length >= 3? path[path.length - 3] : []);
+            }
+
+            openSetAsMap.get(openSet[lowestIndex][0]).delete(openSet[lowestIndex][1]);
+            openSet.splice(lowestIndex, 1);
+            if (!closedMap.has(currentY)) {
+                closedMap.set(currentY, new Set());
+            }
+            closedMap.get(currentY).add(currentX);
+
+            let neighboringTiles = shuffleArray([[0, 1], [1, 0], [0, -1], [-1, 0]]);
+            for (let d of neighboringTiles) {
+                let nY = currentY + d[0];
+                let nX = currentX + d[1];
+                if (validTiles.has(nY) && validTiles.get(nY).has(nX)) {
+                    if (BM.map[nY][nX] != "stone") {
+                        if (!closedMap.has(nY) || !closedMap.get(nY).has(nX)) {
+                            const possibleG = validTiles.get(currentY).get(currentX).g + SoulData[unit.soulType].tileProps[BM.map[nY][nX]].risk;
+                            const neighborData = validTiles.get(nY).get(nX);
+                            const missingYOnMap = !openSetAsMap.has(nY);
+                            if (missingYOnMap || !openSetAsMap.get(nY).has(nX)) {
+                                if (missingYOnMap) {
+                                    openSetAsMap.set(nY, new Set());
+                                }
+                                openSetAsMap.get(nY).add(nX);
+                                openSet.push([nY, nX]);
+                            } else if (possibleG >= neighborData.g) {
+                                continue;
+                            }
+
+                            neighborData.g = possibleG;
+                            neighborData.h = (Math.abs(targetUnit.xPos - neighborData.x) + Math.abs(targetUnit.yPos - neighborData.y));
+                            neighborData.f = neighborData.g + neighborData.h;
+                            neighborData.pY = currentY;
+                            neighborData.pX = currentX;
+                        }
+                    }
+                }
+            }
+        }
+        return([]);
+    }
+
     static act() {
         // Prune dead units
         const deadUnits = new Set();
@@ -317,12 +409,18 @@ class Creature {
         // Act for all units
         const visionData = new Map();
         const nextPositions = new Map();
+        const lostTarget = new Set();
         for (const unit of Creature.allUnits) {
             for (const target of deadUnits) {
                 if (unit.allTargets.has(target)) {
                     unit.allTargets.clear();
                     unit.targetChain = [];
                 }
+            }
+            // Unit above broke chain
+            if (unit.targetChain.length > 0 && unit.targetChain[unit.targetChain.length - 1].targetChain.length <= 0) {
+                unit.allTargets.clear();
+                unit.targetChain = [];
             }
             if (!unit.moving) {
                 if (unit.allTargets.size == 0) { // Wander
@@ -332,24 +430,25 @@ class Creature {
                     visionData.set(unit, allyUnits);
                     nextPositions.set(unit, wanderPosition);
                 } else { // A* towards target
-                    /*
-                    When a unit alerts an ally of an enemy the ally creates a chain
-                    [Enemy, unit, alertedUnit]
-                    When a unit alerts an ally of an enemy it has been alerted of take the chain and add the new unit
-                    [Enemy, unit, alertedUnit, alertedUnit]
-                    If vision*Math.ceil(1.5) is not within range of the next unit break the chain and wander
-                    Before any pathfind check if the next unit in the chain still has it's chain in tact.
-                        If not then break the chain (this will end the entire cycle)
-                        If it is in tact pathfind
-
-                        GO GET EM TIGER!!!
-                    */
+                    const aStarPath = Creature.aStar(unit);
+                    if (aStarPath.length == 0) {
+                        lostTarget.add(unit);
+                        nextPositions.set(unit, [unit.yPos, unit.xPos]);
+                    } else {
+                        console.log("ASTAR:"+aStarPath)
+                        nextPositions.set(unit, aStarPath);
+                    }
                 }
             } else { // Transition to spot
                 let dx = unit.xPos - unit.fluidXPos;
                 let dy = unit.yPos - unit.fluidYPos;
                 let dist = Math.hypot(dx, dy);
-                const speed = SoulData[unit.soulType].tileProps[BM.map[(dist <= 0.5 ? unit.yPos : unit.oldYPos)][(dist <= 0.5 ? unit.xPos : unit.oldXPos)]].speed * 0.05; // tune this
+
+                const useY = (dist <= 0.5 ? unit.yPos : unit.oldYPos);
+                const useX = (dist <= 0.5 ? unit.xPos : unit.oldXPos);
+                console.log(unit.yPos +","+unit.oldYPos)
+                console.log(useY +","+ useX)
+                const speed = SoulData[unit.soulType].tileProps[BM.map[useY][useX]].speed * 0.05; // tune this
                 if (dist <= speed) {
                     unit.fluidXPos = unit.xPos;
                     unit.fluidYPos = unit.yPos;
@@ -386,6 +485,12 @@ class Creature {
                 }
             }
         }
+
+        // Dismantles lost chains
+        for (let unit of lostTarget) {
+            unit.allTargets.clear();
+            unit.targetChain = [];
+        }
     }
     
     constructor(x, y, isGood, subClass, soulType) {
@@ -419,7 +524,7 @@ class Creature {
             const screenWidth = size * width;
             const screenHeight = size * height;
             ctx.drawImage(
-                gameTextures[(unit.targets.size ? "missingTexture" : unit.subClass)],
+                gameTextures[(unit.targetChain.length > 0 ? "missingTexture" : unit.subClass)],
                 screenX - screenWidth / 2,
                 screenY - screenHeight / 2,
                 screenWidth,
