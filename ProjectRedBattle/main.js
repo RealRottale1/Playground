@@ -432,6 +432,25 @@ class Creature {
         return ([[], allyUnits]);
     }
 
+    static moveAllUnits(nextPositions) { // Main
+       for (const [unit, desiredPosition] of nextPositions) {
+            Creature.allUnitPositions.get(unit.yPos).get(unit.xPos).delete(unit);
+            unit.yPos = desiredPosition[0];
+            unit.xPos = desiredPosition[1];
+            Creature.updateAllUnitPositions(unit);
+            unit.moving = true;
+        }
+    }
+
+    /*
+        for (const [unit, desiredPosition] of nextPositions) {
+            Creature.allUnitPositions.get(unit.yPos).get(unit.xPos).delete(unit);
+            unit.yPos = desiredPosition[0];
+            unit.xPos = desiredPosition[1];
+            Creature.updateAllUnitPositions(unit);
+            unit.moving = true;
+        }
+    */
     static act() { // Main
         // Prune dead units
         const deadUnits = new Set();
@@ -510,13 +529,7 @@ class Creature {
         }
 
         // Move all units
-        for (const [unit, desiredPosition] of nextPositions) {
-            Creature.allUnitPositions.get(unit.yPos).get(unit.xPos).delete(unit);
-            unit.yPos = desiredPosition[0];
-            unit.xPos = desiredPosition[1];
-            Creature.updateAllUnitPositions(unit);
-            unit.moving = true;
-        }
+        Creature.moveAllUnits(nextPositions);
 
         // Enemy recognition
         for (const [unit, allyUnits] of visionData) {
@@ -524,11 +537,13 @@ class Creature {
                 for (const ally of allyUnits) {
                     if (ally.targetChain.length == 0) {
                         if (unit.targetChain.length != 0) {
-                            let copiedChain = unit.targetChain.slice();
-                            ally.targetChain = copiedChain;
-                            ally.targetChain.push(unit);
-                            ally.allTargets = new Set(unit.allTargets);
-                            ally.allTargets.add(unit);
+                            if (unit.targetChain[0].isGood != ally.isGood) {
+                                let copiedChain = unit.targetChain.slice();
+                                ally.targetChain = copiedChain;
+                                ally.targetChain.push(unit);
+                                ally.allTargets = new Set(unit.allTargets);
+                                ally.allTargets.add(unit);
+                            }
                         }
                     }
                 }
@@ -699,7 +714,7 @@ function bootGame() {
             let r = Math.random();
             BM.map[y][x] =
                 (r < 0.25) ? "grass" :
-                    (r < 0.5) ? "stone" :
+                    (r < 0.5) ? "grass" :
                         (r < 0.75) ? "grass" :
                             (r < 1) ? "grass" : "lava";
         }
