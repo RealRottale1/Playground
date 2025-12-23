@@ -197,6 +197,12 @@ class GUI {
     }
 }
 
+const WeaponData = {
+    "ironSword": {
+        range: 2,
+    }
+}
+
 const SoulData = {
     "normal": {
         width: 0.5,
@@ -204,7 +210,7 @@ const SoulData = {
         health: 100,
         tileProps: {"grass": {risk: 1, speed: 1}, "stone": {risk: Number.MAX_VALUE, speed: 0}, "shallowwater": {risk: 5, speed: 0.25}, "deepwater": {risk: 25, speed: 0.125}, "sand": {risk: 2, speed: 0.9}, "lava": {risk: 250, speed: 0.1}},
         detectVision: 10,
-        alertVision: 3,
+        alertVision: 5,
         wanderChance: 1,
     }
 }
@@ -216,7 +222,7 @@ class Creature {
     xPos;  fluidXPos;   oldXPos;
     yPos;  fluidYPos;   oldYPos;
     health;
-    isGood; subClass; soulType;
+    isGood; subClass; soulType; weaponType;
 
     allTargets = new Set();
     targetChain = [];
@@ -447,13 +453,19 @@ class Creature {
                     visionData.set(unit, allyUnits);
                     nextPositions.set(unit, wanderPosition);
                 } else { // A* towards target
-                    const aStarPath = Creature.aStar(unit);
-                    if (aStarPath.length == 0) {
-                        lostTarget.add(unit);
+                    const targetEnemy = unit.targetChain[0];
+                    const distanceBetweenEnemy = getDistance(targetEnemy.yPos, unit.yPos, targetEnemy.xPos, unit.xPos);
+                    if (distanceBetweenEnemy <= WeaponData[unit.weaponType].range) {
+                        console.log("ATTACKING!");
                         nextPositions.set(unit, [unit.yPos, unit.xPos]);
                     } else {
-                        console.log("ASTAR:"+aStarPath)
-                        nextPositions.set(unit, aStarPath);
+                        const aStarPath = Creature.aStar(unit);
+                        if (aStarPath.length == 0) {
+                            lostTarget.add(unit);
+                            nextPositions.set(unit, [unit.yPos, unit.xPos]);
+                        } else {
+                            nextPositions.set(unit, aStarPath);
+                        }
                     }
                 }
             } else { // Transition to spot
@@ -510,13 +522,14 @@ class Creature {
         }
     }
     
-    constructor(x, y, isGood, subClass, soulType) {
+    constructor(x, y, isGood, subClass, soulType, weaponType) {
         this.xPos = x; this.fluidXPos = x;  this.oldXPos = x;
         this.yPos = y; this.fluidYPos = y;  this.oldYPos = y;
 
         this.isGood = isGood;
         this.subClass = subClass;
         this.soulType = soulType;
+        this.weaponType = weaponType;
         this.health = SoulData[soulType].health;
     
         Creature.allUnits.add(this);
@@ -667,16 +680,16 @@ for (let y = 0; y < BM.maxRows; y++) {
         BM.map[y][x] = 
             (r < 0.25) ? "grass" :
             (r < 0.5) ? "grass" :
-            (r < 0.75) ? "lava" :
+            (r < 0.75) ? "stone" :
             (r < 1) ? "grass" : "lava";
     }
 }
 
 
-    for (let i = 0; i < 25; i++) {
+    for (let i = 0; i < 50; i++) {
         for (let o = 0; o < 2; o++) {
-            new Creature(i, o, true, "warrior", "normal");
-            new Creature(i, 49-o, false, "goblin", "normal");
+            new Creature(i, o, true, "warrior", "normal", "ironSword");
+            new Creature(i, 49-o, false, "goblin", "normal", "ironSword");
         }
     }
 }
