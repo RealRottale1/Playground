@@ -1,22 +1,24 @@
 const tileConfigurations = {
-    standard: {"grass": {r: 1, s: 0.025}, "stone": {r: -1, s: 0, drownDamage: 999}, "sand": {r: 0, s: 0.020}, "shallowwater": {r: 5, s: 0.0125, drownDamage: 0.025}, "deepwater": {r: 100, s: 0.0025, drownDamage: 1}, "lava": {r: 1000, s: 0.00125, drownDamage: 3}},
+    standard: { "grass": { r: 1, s: 0.025 }, "stone": { r: -1, s: 0, drownDamage: 999 }, "sand": { r: 0, s: 0.020 }, "shallowwater": { r: 5, s: 0.0125, drownDamage: 0.025 }, "deepwater": { r: 100, s: 0.0025, drownDamage: 1 }, "lava": { r: 1000, s: 0.00125, drownDamage: 3 } },
 }
 
 const Soul = {
-    "warrior":  {
+    "warrior": {
         texture: "warrior",
         sizeX: 0.5,
         sizeY: 0.5,
         maxHealth: 100,
-        isGood: true, 
-        pathConfigType: "standard"},
-    "goblin":  {
+        isGood: true,
+        pathConfigType: "standard"
+    },
+    "goblin": {
         texture: "goblin",
         sizeX: 0.5,
         sizeY: 0.5,
         maxHealth: 100,
-        isGood: false, 
-        pathConfigType: "standard"},
+        isGood: false,
+        pathConfigType: "standard"
+    },
 }
 
 class FlowField {
@@ -44,13 +46,13 @@ class FlowField {
                 for (const data of openData) {
                     const x = data[0];
                     const y = data[1];
-                    closedData.add(x+","+y);
+                    closedData.add(x + "," + y);
                     if (!mappedData.has(y)) {
-                    mappedData.set(y, new Map());
+                        mappedData.set(y, new Map());
                     }
                     mappedData.get(y).set(x, [0, 0]);
                 }
-                
+
                 // Pathing
                 let distance = 1;
                 while (openData.length > 0) {
@@ -61,9 +63,9 @@ class FlowField {
                         for (let [xDir, yDir] of [[0, -1], [1, 0], [0, 1], [-1, 0], [-1, -1], [1, -1], [1, 1], [-1, 1]]) {
                             const nX = xDir + x;
                             const nY = yDir + y;
-                            if (!closedData.has(nX+","+nY)) {
+                            if (!closedData.has(nX + "," + nY)) {
                                 if (nX >= 0 && nX < BM.maxColumns && nY >= 0 && nY < BM.maxRows) {
-                                    closedData.add(nX+","+nY);
+                                    closedData.add(nX + "," + nY);
                                     if (!mappedData.has(nY)) {
                                         mappedData.set(nY, new Map());
                                     }
@@ -161,11 +163,11 @@ class Creature {
 
         this.pathConfigType = info.pathConfigType;
         const usePathTypes = (this.isGood ? Creature.goodPathTypes : Creature.badPathTypes);
-        usePathTypes.set(this.pathConfigType, (usePathTypes.has(this.pathConfigType) ? usePathTypes.get(this.pathConfigType) + 1: 1));    
-        
+        usePathTypes.set(this.pathConfigType, (usePathTypes.has(this.pathConfigType) ? usePathTypes.get(this.pathConfigType) + 1 : 1));
+
         const useSet = (this.isGood ? Creature.goodInstances : Creature.badInstances);
         useSet.add(this);
-        Creature.allCords.set(x+","+y, this);
+        Creature.allCords.set(x + "," + y, this);
     }
 
     static terminate(instance) {
@@ -175,7 +177,7 @@ class Creature {
             if (usePathTypes.get(instance.pathConfigType) <= 0) {
                 usePathTypes.delete(instance.pathConfigType);
             }
-            Creature.allCords.delete(instance.x+","+instance.y);
+            Creature.allCords.delete(instance.x + "," + instance.y);
             const instanceType = instance.isGood ? Creature.goodInstances : Creature.badInstances;
             instanceType.delete(instance);
         }
@@ -185,30 +187,30 @@ class Creature {
         const useFlowType = (instance.isGood ? FlowField.badFlowFields : FlowField.goodFlowFields);
         const useFlowField = useFlowType.get(instance.pathConfigType);
         const nextPositions = useFlowField.get(instance.y).get(instance.x);
-        if (nextPositions == null) {return};
+        if (nextPositions == null) { return };
         for (const nextPosition of nextPositions) {
             const x = nextPosition[1];
             const y = nextPosition[0];
-            if (Creature.allCords.has(x+","+y)) {
+            if (Creature.allCords.has(x + "," + y)) {
                 continue;
             }
             const distance = getDistance(y, instance.fluidY, x, instance.fluidX);
             if (distance < 0.1) {
-                Creature.allCords.delete(instance.x+","+instance.y);
+                Creature.allCords.delete(instance.x + "," + instance.y);
                 instance.fluidX = x;
                 instance.fluidY = y;
                 instance.x = x;
                 instance.y = y;
-                Creature.allCords.set(instance.x+","+instance.y, instance);
+                Creature.allCords.set(instance.x + "," + instance.y, instance);
             } else {
                 const tileSpeed = tileConfigurations[instance.pathConfigType][BM.map[y][x]].s;
                 instance.fluidX += (x - instance.fluidX) * tileSpeed;
                 instance.fluidY += (y - instance.fluidY) * tileSpeed;
                 if (distance < 1) {
-                    Creature.allCords.delete(instance.x+","+instance.y);
+                    Creature.allCords.delete(instance.x + "," + instance.y);
                     instance.x = x;
                     instance.y = y;
-                    Creature.allCords.set(instance.x+","+instance.y, instance);
+                    Creature.allCords.set(instance.x + "," + instance.y, instance);
                 }
             }
         }
@@ -224,24 +226,24 @@ class Creature {
 
         for (const instances of [Creature.goodInstances, Creature.badInstances]) {
             for (const instance of instances) {
-                const tileX = Math.floor((instance.x- BM.mouseX + 0.5) * tileSize + halfWidth);
+                const tileX = Math.floor((instance.x - BM.mouseX + 0.5) * tileSize + halfWidth);
                 const tileY = Math.floor((instance.y - BM.mouseY + 0.5) * tileSize + halfHeight);
                 const screenX = Math.floor((instance.fluidX - BM.mouseX + 0.5) * tileSize + halfWidth);
                 const screenY = Math.floor((instance.fluidY - BM.mouseY + 0.5) * tileSize + halfHeight);
-                const screenWidth = size*instance.width;
-                const screenHeight = size*instance.height;
-                
+                const screenWidth = size * instance.width;
+                const screenHeight = size * instance.height;
+
                 ctx.drawImage(
                     gameTextures[instance.texture],
-                    screenX - screenWidth/2,
-                    screenY - screenHeight/2,
+                    screenX - screenWidth / 2,
+                    screenY - screenHeight / 2,
                     screenWidth,
                     screenHeight
                 );
                 ctx.drawImage(
                     gameTextures.debugOutline,
-                    tileX - size/2,
-                    tileY - size/2,
+                    tileX - size / 2,
+                    tileY - size / 2,
                     size,
                     size
                 );
@@ -260,10 +262,10 @@ class Creature {
 
 
 class Creature {
-    
-    sizeX;  sizeY; gridSpace;
-    xPos;  fluidXPos;
-    yPos;  fluidYPos;
+
+    sizeX; sizeY; gridSpace;
+    xPos; fluidXPos;
+    yPos; fluidYPos;
     health;
     width = 0.5; height = 0.5;
 
@@ -277,7 +279,7 @@ class Creature {
         false: new Map(),
     };
 
-    static tileProps = {"grass": 1, "stone": Number.MAX_VALUE, "shallowwater": 5, "deepwater": 25, "sand": 2, "lava": 250};
+    static tileProps = { "grass": 1, "stone": Number.MAX_VALUE, "shallowwater": 5, "deepwater": 25, "sand": 2, "lava": 250 };
 
     static makeFlowFields() {
         let flowFields = new Map();
@@ -325,16 +327,16 @@ class Creature {
                     flowData.set(y, new Map());
                     for (let x = 0; x < BM.maxColumns; x++) {
                         if (closedData.get(y).has(x)) {
-                            
+
                             let bestY = y;
                             let bestX = x;
                             let bestRisk = Number.MAX_VALUE;
                             let bestDistance = Number.MAX_VALUE;
-                            
+
                             let directions = [[0, 1], [1, 0], [0, -1], [-1, 0]];
                             for (let i = 3; i > 0; i--) {
                                 const j = Math.floor(Math.random() * (i + 1));
-                                [directions[i], directions[j]] = [directions[j], directions[i]]; 
+                                [directions[i], directions[j]] = [directions[j], directions[i]];
                             }
 
                             for (let [yDir, xDir] of directions) {
@@ -348,10 +350,10 @@ class Creature {
                                     let distanceWeight = 100;
                                     if (neighborDistance * distanceWeight < bestDistance * distanceWeight) {
                                         if (neighborRisk * riskWeight < bestRisk * riskWeight) {
-                                        bestY = neighborY;
-                                        bestX = neighborX;
-                                        bestRisk = neighborRisk;
-                                        bestDistance = neighborDistance;
+                                            bestY = neighborY;
+                                            bestX = neighborX;
+                                            bestRisk = neighborRisk;
+                                            bestDistance = neighborDistance;
                                         }
                                     }
                                 }
@@ -393,7 +395,7 @@ class Creature {
                     freeSpaces.push(i);
                     instances.set(i, null);
                 }
-                row.set(x, {size: 0, freeSpaces: freeSpaces, instances: instances});
+                row.set(x, { size: 0, freeSpaces: freeSpaces, instances: instances });
             }
             newGrid.set(y, row);
         }
@@ -411,23 +413,23 @@ class Creature {
         for (const [_, subUnitMap] of Object.entries(Creature.units)) {
             for (const [_, units] of subUnitMap) {
                 for (const unit of units) {
-                    const tileX = Math.floor((unit.xPos- BM.mouseX + 0.5) * tileSize + halfWidth);
+                    const tileX = Math.floor((unit.xPos - BM.mouseX + 0.5) * tileSize + halfWidth);
                     const tileY = Math.floor((unit.yPos - BM.mouseY + 0.5) * tileSize + halfHeight);
                     const screenX = Math.floor((unit.fluidXPos - BM.mouseX + 0.5) * tileSize + halfWidth);
                     const screenY = Math.floor((unit.fluidYPos - BM.mouseY + 0.5) * tileSize + halfHeight);
-                    const screenWidth = size*unit.width;
-                    const screenHeight = size*unit.height;
+                    const screenWidth = size * unit.width;
+                    const screenHeight = size * unit.height;
                     ctx.drawImage(
                         gameTextures[unit.subClass],
-                        screenX - screenWidth/2,
-                        screenY - screenHeight/2,
+                        screenX - screenWidth / 2,
+                        screenY - screenHeight / 2,
                         screenWidth,
                         screenHeight
                     );
                     ctx.drawImage(
                         gameTextures.debugOutline,
-                        tileX - size/2,
-                        tileY - size/2,
+                        tileX - size / 2,
+                        tileY - size / 2,
                         size,
                         size
                     );
@@ -472,8 +474,8 @@ const ctx = mainWindow.getContext("2d");
 async function wait(duration) { return new Promise((complete) => { setTimeout(() => { complete(); }, duration); }) }
 function halt(duration) { return new Promise((complete) => { setTimeout(() => { complete(); }, duration); }) }
 function makeImage(url) { const image = new Image(); try { image.src = ("textures/" + url + ".png"); } catch { image.src = 'textures/missing.png'; } return image; }
-function getDistance(y2, y1, x2, x1) {return Math.abs(x2 - x1) + Math.abs(y2 - y1)};
-function shuffleArray(array) {for (let i = array.length - 1; i > 0; i--) {const j = Math.floor(Math.random() * (i + 1));[array[i], array[j]] = [array[j], array[i]];}return array;}
+function getDistance(y2, y1, x2, x1) { return Math.abs(x2 - x1) + Math.abs(y2 - y1) };
+function shuffleArray(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[array[i], array[j]] = [array[j], array[i]]; } return array; }
 
 const tickRate = 1;
 
@@ -550,7 +552,7 @@ const MKI = {
         MKI.currentMouse = null;
         MKI.wentUp = true;
     },
-    getRightClick: function(event) {
+    getRightClick: function (event) {
         event.preventDefault();
     },
     getMouseScroll: function (event) {
@@ -669,7 +671,7 @@ const SoulData = {
         width: 0.5,
         height: 0.5,
         health: 100,
-        tileProps: {"grass": {risk: 1, speed: 1}, "stone": {risk: Number.MAX_VALUE, speed: 0}, "shallowwater": {risk: 5, speed: 0.25}, "deepwater": {risk: 25, speed: 0.125}, "sand": {risk: 2, speed: 0.9}, "lava": {risk: 250, speed: 0.1}},
+        tileProps: { "grass": { risk: 1, speed: 1 }, "stone": { risk: Number.MAX_VALUE, speed: 0 }, "shallowwater": { risk: 5, speed: 0.25 }, "deepwater": { risk: 25, speed: 0.125 }, "sand": { risk: 2, speed: 0.9 }, "lava": { risk: 250, speed: 0.1 } },
         detectVision: 10,
         alertVision: 3,
         wanderChance: 1,
@@ -680,9 +682,9 @@ class Creature {
     static allUnits = new Set();
     static allUnitPositions = new Map(); // int<int<Set(Creature)>>
     static allUnitDivisions = new Map(); // Boolean<String<Set(Creature)>>
-    
-    xPos;  fluidXPos;   oldXPos;
-    yPos;  fluidYPos;   oldYPos;
+
+    xPos; fluidXPos; oldXPos;
+    yPos; fluidYPos; oldYPos;
     health;
     isGood; subClass; soulType;
 
@@ -878,7 +880,7 @@ class Creature {
                     nextPositions.set(unit, wanderPosition);
                 } else { // Flow toward targets
                     const flowPosition = Creature.flowFields.get(unit.isGood).get(unit.soulType).get(unit.yPos).get(unit.xPos);
-                    console.log(flowPosition[0]+","+unit.yPos+" , "+flowPosition[1]+","+unit.xPos);
+                    console.log(flowPosition[0] + "," + unit.yPos + " , " + flowPosition[1] + "," + unit.xPos);
                     nextPositions.set(unit, flowPosition);
                 }
             } else { // Transition to spot
@@ -922,16 +924,16 @@ class Creature {
             }
         }
     }
-    
+
     constructor(x, y, isGood, subClass, soulType) {
-        this.xPos = x; this.fluidXPos = x;  this.oldXPos = x;
-        this.yPos = y; this.fluidYPos = y;  this.oldYPos = y;
+        this.xPos = x; this.fluidXPos = x; this.oldXPos = x;
+        this.yPos = y; this.fluidYPos = y; this.oldYPos = y;
 
         this.isGood = isGood;
         this.subClass = subClass;
         this.soulType = soulType;
         this.health = SoulData[soulType].health;
-    
+
         Creature.allUnits.add(this);
         Creature.updateAllUnitPositions(this);
         Creature.updateAllUnitDivisions(this);
@@ -948,7 +950,7 @@ class Creature {
         for (const unit of Creature.allUnits) {
             const width = SoulData[unit.soulType].width;
             const height = SoulData[unit.soulType].height;
-            const tileX = Math.floor((unit.xPos- BM.mouseX + 0.5) * tileSize + halfWidth);
+            const tileX = Math.floor((unit.xPos - BM.mouseX + 0.5) * tileSize + halfWidth);
             const tileY = Math.floor((unit.yPos - BM.mouseY + 0.5) * tileSize + halfHeight);
             const screenX = Math.floor((unit.fluidXPos - BM.mouseX + 0.5) * tileSize + halfWidth);
             const screenY = Math.floor((unit.fluidYPos - BM.mouseY + 0.5) * tileSize + halfHeight);
@@ -1002,7 +1004,7 @@ function bootGame() {
 
     /* Handles Tile Buttons */
     for (const tile of BM.tiles) {
-        const tileName = tile.toLowerCase().replaceAll(" ","");
+        const tileName = tile.toLowerCase().replaceAll(" ", "");
         const element = new GUI(tileName + "Tab", tileName, 0, 0, 0, 0, 0);
         const length = tile.length * 20 + 50;
         element.hover = () => {
@@ -1013,13 +1015,13 @@ function bootGame() {
             ctx.font = "35px serif";
             ctx.textAlign = "center";
             ctx.textBaseLine = "middle";
-            ctx.fillText(tile, x - length/2, y);
+            ctx.fillText(tile, x - length / 2, y);
         }
         element.click = () => {
             const alreadyUsing = BM.currentTile == tileName;
             if (!alreadyUsing) {
                 for (const otherTile of BM.tiles) {
-                    const otherElement = GUI.instances[otherTile.toLowerCase().replaceAll(" ","")+"Tab"];
+                    const otherElement = GUI.instances[otherTile.toLowerCase().replaceAll(" ", "") + "Tab"];
                     if (otherElement.darkness != 0) {
                         otherElement.darkness = 0;
                         break;
@@ -1034,7 +1036,7 @@ function bootGame() {
     /* Save And Upload Buttons */
     const uploadIcon = new GUI("uploadTab", "uploadIcon", 0, 0, 0, 0, 0);
     uploadIcon.click = () => {
-        if (!BM.canEdit) {return};
+        if (!BM.canEdit) { return };
         const data = prompt("Insert World File");
         if (data && data.length > 0) {
             const worldFile = data.split(" ");
@@ -1061,7 +1063,7 @@ function bootGame() {
     };
     const saveIcon = new GUI("saveTab", "saveIcon", 0, 0, 0, 0, 0);
     saveIcon.click = async () => {
-        if (!BM.canEdit) {return};
+        if (!BM.canEdit) { return };
         try {
             const worldFile = BM.map.flat().map(
                 t => t.toLowerCase().replace(/\s+/g, "")
@@ -1073,24 +1075,24 @@ function bootGame() {
     };
 
     /* Default World Tiles */
-BM.map = [];
-for (let y = 0; y < BM.maxRows; y++) {
-    BM.map[y] = [];
-    for (let x = 0; x < BM.maxColumns; x++) {
-        let r = Math.random();
-        BM.map[y][x] = 
-            (r < 0.25) ? "grass" :
-            (r < 0.5) ? "grass" :
-            (r < 0.75) ? "lava" :
-            (r < 1) ? "grass" : "lava";
+    BM.map = [];
+    for (let y = 0; y < BM.maxRows; y++) {
+        BM.map[y] = [];
+        for (let x = 0; x < BM.maxColumns; x++) {
+            let r = Math.random();
+            BM.map[y][x] =
+                (r < 0.25) ? "grass" :
+                    (r < 0.5) ? "grass" :
+                        (r < 0.75) ? "lava" :
+                            (r < 1) ? "grass" : "lava";
+        }
     }
-}
 
 
     for (let i = 0; i < 50; i++) {
         for (let o = 0; o < 2; o++) {
             new Creature(i, o, true, "warrior", "normal");
-            new Creature(i, 49-o, false, "goblin", "normal");
+            new Creature(i, 49 - o, false, "goblin", "normal");
         }
     }
 }
@@ -1106,9 +1108,9 @@ function getSelectedTile() {
 
     const tileX = Math.floor(BM.mouseX + (MKI.x - halfWidth) / tileSize);
     const tileY = Math.floor(BM.mouseY + (MKI.y - halfHeight) / tileSize);
-    
-    const selectedX = (tileX > (BM.maxColumns-1) || tileX < 0) ? null : tileX;
-    const selectedY = (tileY > (BM.maxRows-1) || tileY < 0) ? null : tileY;
+
+    const selectedX = (tileX > (BM.maxColumns - 1) || tileX < 0) ? null : tileX;
+    const selectedY = (tileY > (BM.maxRows - 1) || tileY < 0) ? null : tileY;
     return [selectedX, selectedY];
 }
 
@@ -1119,7 +1121,7 @@ async function handleInputs() {
         if (element.enabled) {
             if (MKI.x >= element.x && MKI.x <= element.x + element.width && MKI.y >= element.y && MKI.y <= element.y + element.height) {
                 overElement = true;
-                if (element.hover) {element.hover()};
+                if (element.hover) { element.hover() };
                 MKI.hoveringOver = key;
                 if (MKI.wentDown) {
                     MKI.wentDown = false;
@@ -1129,7 +1131,7 @@ async function handleInputs() {
                 if (MKI.wentUp) {
                     MKI.wentUp = false;
                     if (MKI.initialTarget == key && MKI.hoveringOver == key) {
-                        if (element.click) {element.click()};
+                        if (element.click) { element.click() };
                         console.log(`You clicked the ${element.name}`);
                         MKI.downX = 0;
                         MKI.downY = 0;
@@ -1171,7 +1173,7 @@ async function handleInputs() {
             MKI.changeX = 0;
             MKI.changeY = 0;
         }
-        
+
         const [x, y] = getSelectedTile();
         if (x != null && y != null) {
             if (MKI.currentMouse == 0 && BM.currentTile != null) {
@@ -1204,13 +1206,13 @@ function handleMapTab() {
     ctx.drawImage(gameTextures.mapBar, x, y, width, height);
     const tiles = ["grassTab", "stoneTab", "shallowwaterTab", "deepwaterTab", "sandTab", "lavaTab"];
     for (let i = 0; i < tiles.length; i++) {
-        if (WP.resized) {GUI.instances[tiles[i]].update(x + 25, y + 75 * i + 75, 50, 50)}
+        if (WP.resized) { GUI.instances[tiles[i]].update(x + 25, y + 75 * i + 75, 50, 50) }
         GUI.instances[tiles[i]].render();
     }
-    if (WP.resized) {GUI.instances["uploadTab"].update(x + 25, y - 50, 50, 50)}
+    if (WP.resized) { GUI.instances["uploadTab"].update(x + 25, y - 50, 50, 50) }
     GUI.instances["uploadTab"].render();
 
-    if (WP.resized) {GUI.instances["saveTab"].update(x + 25, y + 600, 50, 50)}
+    if (WP.resized) { GUI.instances["saveTab"].update(x + 25, y + 600, 50, 50) }
     GUI.instances["saveTab"].render();
 }
 
@@ -1247,3 +1249,16 @@ async function startGame() {
 }
 
 startGame();
+
+/*
+                    When a unit alerts an ally of an enemy the ally creates a chain
+                    [Enemy, unit, alertedUnit]
+                    When a unit alerts an ally of an enemy it has been alerted of take the chain and add the new unit
+                    [Enemy, unit, alertedUnit, alertedUnit]
+                    If vision*Math.ceil(1.5) is not within range of the next unit break the chain and wander
+                    Before any pathfind check if the next unit in the chain still has it's chain in tact.
+                        If not then break the chain (this will end the entire cycle)
+                        If it is in tact pathfind
+
+
+*/

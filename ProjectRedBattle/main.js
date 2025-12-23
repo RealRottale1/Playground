@@ -218,7 +218,8 @@ class Creature {
     health;
     isGood; subClass; soulType;
 
-    targets = new Set();
+    allTargets = new Set();
+    targetChain = [];
 
     knownTileMap = new Map(); // int<int<risk>>
     moving = false;
@@ -249,7 +250,16 @@ class Creature {
                     if (Creature.allUnitPositions.has(y) && Creature.allUnitPositions.get(y).has(x)) {
                         for (let target of Creature.allUnitPositions.get(y).get(x)) {
                             if (unit.isGood != target.isGood) {
-                                unit.targets.add(target);
+                                if (unit.targetChain.length > 0) {
+                                    if (getDistance(target.yPos, unit.yPos, target.xPos, unit.xPos) < getDistance(unit.targetChain[0].yPos, unit.yPos, unit.targetChain[0].xPos, unit.xPos)) {
+                                        unit.targetChain = [target];
+                                        unit.allTargets.delete(unit.targetChain[0]);
+                                        unit.allTargets.add(target);
+                                    }
+                                } else {
+                                    unit.targetChain = [target];
+                                    unit.allTargets.add(target);
+                                }
                             } else {
                                 const distanceFromAlly = getDistance(unit.yPos, y, unit.xPos, x);
                                 if (distanceFromAlly <= alertVision) {
@@ -309,10 +319,13 @@ class Creature {
         const nextPositions = new Map();
         for (const unit of Creature.allUnits) {
             for (const target of deadUnits) {
-                unit.targets.delete(target);
+                if (unit.allTargets.has(target)) {
+                    unit.allTargets.clear();
+                    unit.targetChain = [];
+                }
             }
             if (!unit.moving) {
-                if (unit.targets.size == 0) { // Wander
+                if (unit.allTargets.size == 0) { // Wander
                     const wanderData = Creature.wander(unit);
                     const wanderPosition = wanderData[0];
                     const allyUnits = wanderData[1];
@@ -329,7 +342,7 @@ class Creature {
                         If not then break the chain (this will end the entire cycle)
                         If it is in tact pathfind
 
-
+                        GO GET EM TIGER!!!
                     */
                 }
             } else { // Transition to spot
@@ -363,11 +376,12 @@ class Creature {
         for (const [unit, allyUnits] of visionData) {
             if (allyUnits.size > 0) {
                 for (const ally of allyUnits) {
-                    for (const target of unit.targets) {
-                        ally.targets.add(target);
-                    }
-                    for (const target of ally.targets) {
-                        unit.targets.add(target);
+                    if (ally.targetChain.length == 0) {
+                        let copiedChain = unit.targetChain.slice();
+                        ally.targetChain = copiedChain;
+                        ally.targetChain.push(unit);
+                        ally.allTargets = new Set(unit.allTargets);
+                        ally.allTargets.add(unit);
                     }
                 }
             }
