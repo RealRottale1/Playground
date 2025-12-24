@@ -1262,3 +1262,15 @@ startGame();
 
 
 */
+    attackTick = 0;
+    attacking = false;
+
+const WeaponData = {
+    "ironSword": {
+        range: 2,
+        damage: 5,
+        attackRate: 3,
+        coolDownTime: 2,
+        isMelee: true,
+    }
+}

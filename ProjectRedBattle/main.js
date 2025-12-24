@@ -202,6 +202,8 @@ const WeaponData = {
         range: 2,
         damage: 5,
         attackRate: 3,
+        coolDownTime: 2,
+        isMelee: true,
     }
 }
 
@@ -210,7 +212,7 @@ const SoulData = {
         width: 0.5,
         height: 0.5,
         health: 100,
-        tileProps: { "grass": { risk: 1, speed: 1 }, "stone": { risk: Number.MAX_VALUE, speed: 0 }, "shallowwater": { risk: 5, speed: 0.25 }, "deepwater": { risk: 25, speed: 0.125 }, "sand": { risk: 2, speed: 0.9 }, "lava": { risk: 250, speed: 0.1 } },
+        tileProps: { "grass": { risk: 1, speed: 1 }, "stone": { risk: Number.MAX_VALUE, speed: 0 }, "shallowwater": { risk: 5, speed: 0.25 }, "deepwater": { risk: 25, speed: 0.125 }, "sand": { risk: 2, speed: 0.9 }, "lava": { risk: Number.MAX_VALUE, speed: 0 } },
         detectVision: 15,
         alertVision: 7,
         wanderChance: 1,
@@ -218,8 +220,11 @@ const SoulData = {
 }
 
 class Creature {
+    static debugMode = false;
+
     static allUnits = new Set();
     static allUnitPositions = new Map(); // int<int<Set(Creature)>>
+    static tileCapacity = 4;
 
     xPos; fluidXPos; oldXPos;
     yPos; fluidYPos; oldYPos;
@@ -233,6 +238,7 @@ class Creature {
     moving = false;
 
     attackTick = 0;
+    attacking = false;
 
     static updateAllUnitPositions(unit) { // Helper
         // Position
@@ -314,9 +320,11 @@ class Creature {
             if (unit.knownTileMap.has(nY) && unit.knownTileMap.get(nY).has(nX)) {
                 let knownRisk = unit.knownTileMap.get(nY).get(nX);
                 if (knownRisk <= currentRisk * 5 && Math.random() <= wanderChange) {
-                    currentRisk = knownRisk;
-                    currentPosition[0] = nY;
-                    currentPosition[1] = nX;
+                    if (!Creature.allUnitPositions.has(nY) || !Creature.allUnitPositions.get(nY).has(nX) || Creature.allUnitPositions.get(nY).get(nX).size <= Creature.tileCapacity) {
+                        currentRisk = knownRisk;
+                        currentPosition[0] = nY;
+                        currentPosition[1] = nX;
+                    }
                 }
             }
         }
@@ -363,7 +371,6 @@ class Creature {
         const startNode = validTiles.get(unit.yPos).get(unit.xPos);
         startNode.h = (Math.abs(targetUnit.xPos - unit.xPos) + Math.abs(targetUnit.yPos - unit.yPos));
         startNode.f = startNode.h;
-
         const path = [];
         const openSet = [[unit.yPos, unit.xPos]];
         const openSetAsMap = new Map();
@@ -406,37 +413,39 @@ class Creature {
                 let nY = currentY + d[0];
                 let nX = currentX + d[1];
                 if (validTiles.has(nY) && validTiles.get(nY).has(nX)) {
-                    if (BM.map[nY][nX] != "stone") {
-                        if (!closedMap.has(nY) || !closedMap.get(nY).has(nX)) {
-                            const possibleG = validTiles.get(currentY).get(currentX).g + validTiles.get(nY).get(nX).r;
-                            const neighborData = validTiles.get(nY).get(nX);
-                            const missingYOnMap = !openSetAsMap.has(nY);
-                            if (missingYOnMap || !openSetAsMap.get(nY).has(nX)) {
-                                if (missingYOnMap) {
-                                    openSetAsMap.set(nY, new Set());
+                    if (SoulData[unit.soulType].tileProps[BM.map[nY][nX]].speed != 0) {
+                        if (!Creature.allUnitPositions.has(nY) || !Creature.allUnitPositions.get(nY).has(nX) || Creature.allUnitPositions.get(nY).get(nX).size <= Creature.tileCapacity) {
+                            if (!closedMap.has(nY) || !closedMap.get(nY).has(nX)) {
+                                const possibleG = validTiles.get(currentY).get(currentX).g + validTiles.get(nY).get(nX).r;
+                                const neighborData = validTiles.get(nY).get(nX);
+                                const missingYOnMap = !openSetAsMap.has(nY);
+                                if (missingYOnMap || !openSetAsMap.get(nY).has(nX)) {
+                                    if (missingYOnMap) {
+                                        openSetAsMap.set(nY, new Set());
+                                    }
+                                    openSetAsMap.get(nY).add(nX);
+                                    openSet.push([nY, nX]);
+                                } else if (possibleG >= neighborData.g) {
+                                    continue;
                                 }
-                                openSetAsMap.get(nY).add(nX);
-                                openSet.push([nY, nX]);
-                            } else if (possibleG >= neighborData.g) {
-                                continue;
-                            }
 
-                            neighborData.g = possibleG;
-                            function getMinRisk(soulType) {
-                                let min = Infinity;
-                                for (const tile in SoulData[soulType].tileProps) {
-                                    const risk = SoulData[soulType].tileProps[tile].risk;
-                                    if (risk > 0 && risk < min) min = risk;
+                                neighborData.g = possibleG;
+                                function getMinRisk(soulType) {
+                                    let min = Infinity;
+                                    for (const tile in SoulData[soulType].tileProps) {
+                                        const risk = SoulData[soulType].tileProps[tile].risk;
+                                        if (risk > 0 && risk < min) min = risk;
+                                    }
+                                    return min;
                                 }
-                                return min;
+                                const MIN_RISK = getMinRisk(unit.soulType);
+                                const dx = Math.abs(targetUnit.xPos - neighborData.x);
+                                const dy = Math.abs(targetUnit.yPos - neighborData.y);
+                                neighborData.h = (dx + dy) * MIN_RISK;
+                                neighborData.f = neighborData.g + neighborData.h;
+                                neighborData.pY = currentY;
+                                neighborData.pX = currentX;
                             }
-                            const MIN_RISK = getMinRisk(unit.soulType);
-                            const dx = Math.abs(targetUnit.xPos - neighborData.x);
-                            const dy = Math.abs(targetUnit.yPos - neighborData.y);
-                            neighborData.h = (dx + dy) * MIN_RISK;
-                            neighborData.f = neighborData.g + neighborData.h;
-                            neighborData.pY = currentY;
-                            neighborData.pX = currentX;
                         }
                     }
                 }
@@ -455,13 +464,17 @@ class Creature {
             let neighborY = unit.yPos + yDir;
             let neighborX = unit.xPos + xDir;
             if (validTiles.has(neighborY) && validTiles.get(neighborY).has(neighborX)) {
-                let neighborDistance = validTiles.get(neighborY).get(neighborX).d;
-                let neighborRisk = validTiles.get(neighborY).get(neighborX).r;
-                if (neighborDistance < bestDistance || (neighborDistance === bestDistance && neighborRisk < bestRisk)) {
-                    bestY = neighborY;
-                    bestX = neighborX;
-                    bestRisk = neighborRisk;
-                    bestDistance = neighborDistance;
+                if (SoulData[unit.soulType].tileProps[BM.map[neighborY][neighborX]].speed != 0) {
+                    if (!Creature.allUnitPositions.has(neighborY) || !Creature.allUnitPositions.get(neighborY).has(neighborX) || Creature.allUnitPositions.get(neighborY).get(neighborX).size <= Creature.tileCapacity) {
+                        let neighborDistance = validTiles.get(neighborY).get(neighborX).d;
+                        let neighborRisk = validTiles.get(neighborY).get(neighborX).r;
+                        if (neighborDistance < bestDistance || (neighborDistance === bestDistance && neighborRisk < bestRisk)) {
+                            bestY = neighborY;
+                            bestX = neighborX;
+                            bestRisk = neighborRisk;
+                            bestDistance = neighborDistance;
+                        }
+                    }
                 }
             }
         }
@@ -523,6 +536,20 @@ class Creature {
         return false;
     }
 
+    static attack(unit, targetUnit) { // Main
+        const attackRate = WeaponData[unit.weaponType].attackRate;
+        unit.attackTick += 1;
+        if (unit.attackTick == attackRate) {
+            unit.attacking = true;
+            targetUnit.health -= WeaponData[unit.weaponType].damage;
+        } else {
+            unit.attacking = false;
+            if (unit.attackTick >= attackRate + WeaponData[unit.weaponType].coolDownTime) {
+                unit.attackTick = 0;
+            }
+        }
+    }
+
     static act() { // Main
         // Prune dead units
         const deadUnits = new Set();
@@ -565,7 +592,7 @@ class Creature {
                     const targetEnemy = unit.targetChain[0];
                     const distanceBetweenEnemy = getDistance(targetEnemy.yPos, unit.yPos, targetEnemy.xPos, unit.xPos);
                     if (distanceBetweenEnemy <= WeaponData[unit.weaponType].range) {
-                        targetEnemy.health -= 5
+                        Creature.attack(unit, targetEnemy);
                     } else {
                         const moveData = Creature.smartMove(unit);
                         const nextMove = moveData[0];
@@ -657,19 +684,21 @@ class Creature {
             const screenWidth = size * width;
             const screenHeight = size * height;
             ctx.drawImage(
-                gameTextures[(unit.targetChain.length > 0 ? "missingTexture" : unit.subClass)],
+                gameTextures[(Creature.debugMode ? (unit.allTargets.size != 0? "missingTexture":unit.subClass) : unit.subClass)],
                 screenX - screenWidth / 2,
                 screenY - screenHeight / 2,
                 screenWidth,
                 screenHeight
             );
-            ctx.drawImage(
-                gameTextures.debugOutline,
-                tileX - size / 2,
-                tileY - size / 2,
-                size,
-                size
-            );
+            if (Creature.debugMode) {
+                ctx.drawImage(
+                    gameTextures.debugOutline,
+                    tileX - size / 2,
+                    tileY - size / 2,
+                    size,
+                    size
+                );
+            }
         }
     }
 }
@@ -781,10 +810,11 @@ function bootGame() {
         for (let x = 0; x < BM.maxColumns; x++) {
             let r = Math.random();
             BM.map[y][x] =
-                (r < 0.25) ? "grass" :
-                    (r < 0.5) ? "grass" :
-                        (r < 0.75) ? "lava" :
-                            (r < 1) ? "grass" : "lava";
+                (r < 0.40) ? "grass" :
+                (r < 0.65) ? "sand" :
+                (r < 0.85) ? "shallowwater" :
+                (r < 0.95) ? "deepwater" :
+                (r < 1) ? "lava" : "lava";
         }
     }
 
