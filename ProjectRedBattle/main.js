@@ -338,10 +338,12 @@ class Creature {
                         if (!validTiles.has(y)) {
                             validTiles.set(y, new Map());
                         }
+
+                        const risk = SoulData[unit.soulType].tileProps[BM.map[y][x]].risk;
                         if (pathFindingConfig == 1) { // Astar
-                            validTiles.get(y).set(x, { y: y, x: x, f: 0, g: 0, h: 0, pY: null, pX: null });
+                            validTiles.get(y).set(x, { y: y, x: x, f: 0, g: 0, h: 0, pY: null, pX: null, r: risk});
                         } else { // Flow Field
-                            validTiles.get(y).set(x, 0);
+                            validTiles.get(y).set(x, {r: risk, d: getDistance(y, targetUnit.yPos, x, targetUnit.xPos)});
                         }
                     }
                 }
@@ -351,7 +353,7 @@ class Creature {
     }
 
     /* SMART MOVES */
-    static aStar(unit, validTiles) { // Helper
+    static aStar(unit, targetUnit, validTiles) { // Helper
         const startNode = validTiles.get(unit.yPos).get(unit.xPos);
         startNode.h = (Math.abs(targetUnit.xPos - unit.xPos) + Math.abs(targetUnit.yPos - unit.yPos));
         startNode.f = startNode.h;
@@ -400,7 +402,7 @@ class Creature {
                 if (validTiles.has(nY) && validTiles.get(nY).has(nX)) {
                     if (BM.map[nY][nX] != "stone") {
                         if (!closedMap.has(nY) || !closedMap.get(nY).has(nX)) {
-                            const possibleG = validTiles.get(currentY).get(currentX).g + SoulData[unit.soulType].tileProps[BM.map[nY][nX]].risk;
+                            const possibleG = validTiles.get(currentY).get(currentX).g + validTiles.get(nY).get(nX).r;
                             const neighborData = validTiles.get(nY).get(nX);
                             const missingYOnMap = !openSetAsMap.has(nY);
                             if (missingYOnMap || !openSetAsMap.get(nY).has(nX)) {
@@ -437,7 +439,27 @@ class Creature {
         return ([]);
     }
     static flowField(unit, validTiles) { // Helper
-        const closedMap = new Map(); // int<int>
+        // Get next tile
+        let bestY = unit.yPos;
+        let bestX = unit.xPos;
+        let bestRisk = Number.MAX_VALUE;
+        let bestDistance = Number.MAX_VALUE;
+        let directions = shuffleArray([[0, 1], [1, 0], [0, -1], [-1, 0]]);
+        for (let [yDir, xDir] of directions) {
+            let neighborY = unit.yPos + yDir;
+            let neighborX = unit.xPos + xDir;
+            if (validTiles.has(neighborY) && validTiles.get(neighborY).has(neighborX)) {
+                let neighborDistance = validTiles.get(neighborY).get(neighborX).d;
+                let neighborRisk = validTiles.get(neighborY).get(neighborX).r;
+                if (neighborDistance < bestDistance || (neighborDistance === bestDistance && neighborRisk < bestRisk)) {
+                    bestY = neighborY;
+                    bestX = neighborX;
+                    bestRisk = neighborRisk;
+                    bestDistance = neighborDistance;
+                }
+            }
+        }
+        return([bestY, bestX]);
     }
     static smartMove(unit) {
         const detectVision = SoulData[unit.soulType].detectVision;
@@ -448,11 +470,15 @@ class Creature {
         const data = Creature.getValidTiles(unit, targetUnit, detectVision, alertVision);
         const validTiles = data[0];
         const allyUnits = data[1];
+        
+        // Decides what algorithm to use
+        let useAstar = true;
 
-        let useAstar = false;
+
+        // Gets best next move
         let nextMove;
         if (useAstar) {
-            nextMove = Creature.aStar(unit, validTiles);
+            nextMove = Creature.aStar(unit, targetUnit, validTiles);
         } else {
             nextMove = Creature.flowField(unit, validTiles);
         }
@@ -757,7 +783,7 @@ function bootGame() {
 
 
     for (let i = 0; i < 50; i++) {
-        for (let o = 0; o < 15; o++) {
+        for (let o = 0; o < 25; o++) {
             new Creature(i, o, true, "warrior", "normal", "ironSword");
             new Creature(i, 49 - o, false, "goblin", "normal", "ironSword");
         }
