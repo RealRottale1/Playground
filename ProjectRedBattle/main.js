@@ -202,9 +202,10 @@ class GUI {
 const WeaponData = {
     "ironSword": {
         range: 2,
-        damage: 5,
-        attackRate: 3,
-        coolDownTime: 2,
+        damage: 33,
+        attackRate: 20, // 1 = 0.1 * tickRate
+        attackDuration: 12,
+        coolDownTime: 8,
         isMelee: true,
         texture: "ironSword",
         width: 1,
@@ -540,16 +541,26 @@ class Creature {
         return false;
     }
 
+    /*
+Sometimes it does not get turned off because attack stops being called!
+    */
     static attack(unit, targetUnit) { // Main
-        const attackRate = WeaponData[unit.weaponType].attackRate;
+        const currentWeapon = WeaponData[unit.weaponType];
+        const attackRate = currentWeapon.attackRate;
+        const attackDuration = currentWeapon.attackDuration;
+        const coolDownTime = currentWeapon.coolDownTime;
+
         unit.attackTick += 1;
         if (unit.attackTick == attackRate) {
             unit.attacking = true;
-            targetUnit.health -= WeaponData[unit.weaponType].damage;
+            targetUnit.health -= currentWeapon.damage;
         } else {
-            unit.attacking = false;
-            if (unit.attackTick >= attackRate + WeaponData[unit.weaponType].coolDownTime) {
-                unit.attackTick = 0;
+            if (unit.attackTick == attackRate + attackDuration) {
+                unit.attacking = false;
+            } else {
+                if (unit.attackTick >= attackRate + attackDuration + coolDownTime) {
+                    unit.attackTick = 0;
+                }
             }
         }
     }
@@ -700,13 +711,19 @@ class Creature {
             const currentWeapon = WeaponData[unit.weaponType];
             const weaponWidth = currentWeapon.width;
             const weaponHeight = currentWeapon.height;
+            ctx.save();
+            ctx.translate(screenX, screenY);
+            ctx.rotate(0);
             ctx.drawImage(
                 gameTextures[currentWeapon.texture],
-                screenX - screenWidth / 2,
-                screenY - screenHeight / 2,
-                screenWidth,
-                screenHeight
-            )
+                -size * weaponWidth / 2,
+                -(size * weaponHeight * 2.5 + (unit.attacking ? size : 0)) / 2,
+                size * weaponWidth,
+                size * weaponHeight
+            );
+            ctx.restore();
+
+
             if (Creature.debugMode) {
                 const tileX = Math.floor((unit.xPos - BM.mouseX + 0.5) * tileSize + halfWidth);
                 const tileY = Math.floor((unit.yPos - BM.mouseY + 0.5) * tileSize + halfHeight);
@@ -828,20 +845,20 @@ function bootGame() {
         BM.map[y] = [];
         for (let x = 0; x < BM.maxColumns; x++) {
             let r = Math.random();
-            BM.map[y][x] =
-                (r < 0.40) ? "grass" :
-                (r < 0.65) ? "sand" :
-                (r < 0.85) ? "shallowwater" :
-                (r < 0.95) ? "deepwater" :
-                (r < 1) ? "lava" : "lava";
+            BM.map[y][x] ="grass"
+                // (r < 0.40) ? "grass" :
+                // (r < 0.65) ? "sand" :
+                // (r < 0.85) ? "shallowwater" :
+                // (r < 0.95) ? "deepwater" :
+                // (r < 1) ? "lava" : "lava";
         }
     }
 
 
-    for (let i = 0; i < 50; i++) {
-        for (let o = 0; o < 15; o++) {
-            new Creature(i, o, true, "warrior", "normal", "ironSword");
-            new Creature(i, 49 - o, false, "goblin", "normal", "ironSword");
+    for (let i = 0; i < 5; i++) {
+        for (let o = 0; o < 1; o++) {
+            new Creature(i + 25, o + 25, true, "warrior", "normal", "ironSword");
+            new Creature(i + 25, 5 - o + 25, false, "goblin", "normal", "ironSword");
         }
     }
 }
