@@ -200,6 +200,8 @@ class GUI {
 const WeaponData = {
     "ironSword": {
         range: 2,
+        damage: 5,
+        attackRate: 3,
     }
 }
 
@@ -209,8 +211,8 @@ const SoulData = {
         height: 0.5,
         health: 100,
         tileProps: { "grass": { risk: 1, speed: 1 }, "stone": { risk: Number.MAX_VALUE, speed: 0 }, "shallowwater": { risk: 5, speed: 0.25 }, "deepwater": { risk: 25, speed: 0.125 }, "sand": { risk: 2, speed: 0.9 }, "lava": { risk: 250, speed: 0.1 } },
-        detectVision: 10,
-        alertVision: 5,
+        detectVision: 15,
+        alertVision: 7,
         wanderChance: 1,
     }
 }
@@ -229,6 +231,8 @@ class Creature {
 
     knownTileMap = new Map(); // int<int<risk>>
     moving = false;
+
+    attackTick = 0;
 
     static updateAllUnitPositions(unit) { // Helper
         // Position
@@ -585,6 +589,7 @@ class Creature {
 
         // Enemy recognition
         for (const [unit, allyUnits] of visionData) {
+            // Break invalid chains
             let validChain = true;
             for (const target of unit.allTargets) {
                 if (target.health <= 0) {
@@ -595,7 +600,7 @@ class Creature {
             if (!validChain || (unit.targetChain[0] && unit.targetChain[0].isGood == unit.isGood)) {
                 continue;
             }
-
+            // Set chains
             if (allyUnits.size > 0) {
                 for (const ally of allyUnits) {
                     if (ally.targetChain.length == 0) {
@@ -777,8 +782,8 @@ function bootGame() {
             let r = Math.random();
             BM.map[y][x] =
                 (r < 0.25) ? "grass" :
-                    (r < 0.5) ? "sand" :
-                        (r < 0.75) ? "shallowwater" :
+                    (r < 0.5) ? "grass" :
+                        (r < 0.75) ? "lava" :
                             (r < 1) ? "grass" : "lava";
         }
     }
