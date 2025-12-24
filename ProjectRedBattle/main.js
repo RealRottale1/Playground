@@ -283,9 +283,11 @@ class Creature {
             for (let x = unit.xPos + xSpread; x >= unit.xPos - xSpread; x--) {
                 if (y >= 0 && x >= 0 && y < BM.maxRows && x < BM.maxColumns) {
                     // Adds targets
-                    const newAllies = Creature.makeUnitConnection(unit, y, x, alertVision);
-                    for (const ally of newAllies) {
-                        allyUnits.add(ally);
+                    if (unit.targetChain.length < 3) {
+                        const newAllies = Creature.makeUnitConnection(unit, y, x, alertVision);
+                        for (const ally of newAllies) {
+                            allyUnits.add(ally);
+                        }
                     }
 
                     // Expands known tiles
@@ -328,7 +330,7 @@ class Creature {
                 let xSpread = detectVision - ySpread;
                 for (let x = useUnit.xPos + xSpread; x >= useUnit.xPos - xSpread; x--) {
                     if (y >= 0 && x >= 0 && y < BM.maxRows && x < BM.maxColumns) {
-                        if (useUnit == unit) {
+                        if (unit.targetChain.length < 3 && useUnit == unit) {
                             // Adds targets
                             const newAllies = Creature.makeUnitConnection(unit, y, x, alertVision);
                             for (const ally of newAllies) {
@@ -590,7 +592,7 @@ class Creature {
                     break;
                 }
             }
-            if (!validChain) {
+            if (!validChain || (unit.targetChain[0] && unit.targetChain[0].isGood == unit.isGood)) {
                 continue;
             }
 
@@ -775,15 +777,15 @@ function bootGame() {
             let r = Math.random();
             BM.map[y][x] =
                 (r < 0.25) ? "grass" :
-                    (r < 0.5) ? "grass" :
-                        (r < 0.75) ? "grass" :
+                    (r < 0.5) ? "sand" :
+                        (r < 0.75) ? "shallowwater" :
                             (r < 1) ? "grass" : "lava";
         }
     }
 
 
     for (let i = 0; i < 50; i++) {
-        for (let o = 0; o < 25; o++) {
+        for (let o = 0; o < 15; o++) {
             new Creature(i, o, true, "warrior", "normal", "ironSword");
             new Creature(i, 49 - o, false, "goblin", "normal", "ironSword");
         }
