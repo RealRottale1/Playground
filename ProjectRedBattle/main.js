@@ -218,8 +218,6 @@ const SoulData = {
 class Creature {
     static allUnits = new Set();
     static allUnitPositions = new Map(); // int<int<Set(Creature)>>
-    static allUnitCapacity = new Map(); // int<int<Array(Creature)>>
-    static maxTileCapacity = 4;
 
     xPos; fluidXPos; oldXPos;
     yPos; fluidYPos; oldYPos;
@@ -244,15 +242,6 @@ class Creature {
         } else {
             Creature.allUnitPositions.get(unit.yPos).get(unit.xPos).add(unit);
         }
-
-        // Capacity
-        if (!Creature.allUnitCapacity.has(unit.yPos)) {
-            Creature.allUnitCapacity.set(unit.yPos, new Map());
-        }
-        if (!Creature.allUnitCapacity.get(unit.yPos).has(unit.xPos)) {
-            Creature.allUnitCapacity.get(unit.yPos).set(unit.xPos, []);
-        }
-        Creature.allUnitCapacity.get(unit.yPos).get(unit.xPos).push(unit);
     }
 
     static makeUnitConnection(unit, y, x, alertVision) { // Helper
@@ -447,13 +436,6 @@ class Creature {
     static setNextPosition(nextPositions) { // Main
        for (const [unit, desiredPosition] of nextPositions) {
             Creature.allUnitPositions.get(unit.yPos).get(unit.xPos).delete(unit);
-            const tileCapacity = Creature.allUnitCapacity.get(unit.yPos).get(unit.xPos);
-            for (let i = 0; i < tileCapacity.length; i++) {
-                if (tileCapacity[i] == unit) {
-                    tileCapacity.splice(i, 1);
-                    break;
-                }
-            }
             unit.yPos = desiredPosition[0];
             unit.xPos = desiredPosition[1];
             Creature.updateAllUnitPositions(unit);
@@ -469,23 +451,6 @@ class Creature {
         const useY = (dist <= 0.5 ? unit.yPos : unit.oldYPos);
         const useX = (dist <= 0.5 ? unit.xPos : unit.oldXPos);
         const speed = SoulData[unit.soulType].tileProps[BM.map[useY][useX]].speed * 0.05;
-
-        const tileCapacity = Creature.allUnitCapacity.get(unit.yPos).get(unit.xPos);
-        let overCapacity = true;
-        if (tileCapacity.length > Creature.maxTileCapacity) {
-            for (let i = 0; i < Creature.maxTileCapacity; i++) {
-                if (tileCapacity[i] == unit) {
-                    overCapacity = false;
-                    break;
-                }
-            }
-        } else {
-            overCapacity = false;
-        }
-
-        if (overCapacity) {
-            return true;
-        }
 
         if (dist <= speed) {
             unit.fluidXPos = unit.xPos;
@@ -542,7 +507,7 @@ class Creature {
                     const targetEnemy = unit.targetChain[0];
                     const distanceBetweenEnemy = getDistance(targetEnemy.yPos, unit.yPos, targetEnemy.xPos, unit.xPos);
                     if (distanceBetweenEnemy <= WeaponData[unit.weaponType].range) {
-                        // Attack
+                        targetEnemy.health -= 5
                     } else {
                         const aStarData = Creature.aStar(unit);
                         const aStarPosition = aStarData[0];
@@ -557,10 +522,7 @@ class Creature {
                     }
                 }
             } else { // Transition to spot
-                const overCapacity = Creature.moveUnit(unit);
-                if (overCapacity) {
-                    nextPositions.set(unit, [unit.oldYPos, unit.oldXPos])
-                }
+                Creature.moveUnit(unit);
             }
         }
 
@@ -569,6 +531,17 @@ class Creature {
 
         // Enemy recognition
         for (const [unit, allyUnits] of visionData) {
+            let validChain = true;
+            for (const target of unit.allTargets) {
+                if (target.health <= 0) {
+                    validChain = false;
+                    break;
+                }
+            }
+            if (!validChain) {
+                continue;
+            }
+
             if (allyUnits.size > 0) {
                 for (const ally of allyUnits) {
                     if (ally.targetChain.length == 0) {
