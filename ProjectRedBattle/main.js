@@ -318,14 +318,9 @@ class Creature {
         return [currentPosition, allyUnits];
     }
 
-    static aStar(unit) { // Main
+    static getValidTiles(unit, targetUnit, detectVision, alertVision, pathFindingConfig) { // Helper
         const validTiles = new Map();
-        const detectVision = SoulData[unit.soulType].detectVision;
-        const alertVision = SoulData[unit.soulType].alertVision;
         let allyUnits = new Set();
-        const targetUnit = unit.targetChain[unit.targetChain.length - 1];
-
-        // Gets tiles to use in path finding
         for (let i = 0; i < 2; i++) {
             const useUnit = (i == 0 ? unit : targetUnit)
             for (let y = useUnit.yPos + detectVision; y >= useUnit.yPos - detectVision; y--) {
@@ -343,11 +338,20 @@ class Creature {
                         if (!validTiles.has(y)) {
                             validTiles.set(y, new Map());
                         }
-                        validTiles.get(y).set(x, { y: y, x: x, f: 0, g: 0, h: 0, pY: null, pX: null });
+                        if (pathFindingConfig == 1) { // Astar
+                            validTiles.get(y).set(x, { y: y, x: x, f: 0, g: 0, h: 0, pY: null, pX: null });
+                        } else { // Flow Field
+                            validTiles.get(y).set(x, 0);
+                        }
                     }
                 }
             }
         }
+        return [validTiles, allyUnits];
+    }
+
+    /* SMART MOVES */
+    static aStar(unit, validTiles) { // Helper
         const startNode = validTiles.get(unit.yPos).get(unit.xPos);
         startNode.h = (Math.abs(targetUnit.xPos - unit.xPos) + Math.abs(targetUnit.yPos - unit.yPos));
         startNode.f = startNode.h;
@@ -379,7 +383,7 @@ class Creature {
                     nextX = nextData.pX;
                     path.push([nextY, nextX]);
                 }
-                return [(path.length >= 3 ? path[path.length - 3] : []), allyUnits];
+                return (path.length >= 3 ? path[path.length - 3] : []);
             }
 
             openSetAsMap.get(openSet[lowestIndex][0]).delete(openSet[lowestIndex][1]);
@@ -430,7 +434,29 @@ class Creature {
                 }
             }
         }
-        return ([[], allyUnits]);
+        return ([]);
+    }
+    static flowField(unit, validTiles) { // Helper
+        const closedMap = new Map(); // int<int>
+    }
+    static smartMove(unit) {
+        const detectVision = SoulData[unit.soulType].detectVision;
+        const alertVision = SoulData[unit.soulType].alertVision;
+        const targetUnit = unit.targetChain[unit.targetChain.length - 1];
+
+        // Gets tiles to use in path finding
+        const data = Creature.getValidTiles(unit, targetUnit, detectVision, alertVision);
+        const validTiles = data[0];
+        const allyUnits = data[1];
+
+        let useAstar = false;
+        let nextMove;
+        if (useAstar) {
+            nextMove = Creature.aStar(unit, validTiles);
+        } else {
+            nextMove = Creature.flowField(unit, validTiles);
+        }
+        return ([nextMove, allyUnits]);
     }
 
     static setNextPosition(nextPositions) { // Main
@@ -503,20 +529,20 @@ class Creature {
                     const allyUnits = wanderData[1];
                     visionData.set(unit, allyUnits);
                     nextPositions.set(unit, wanderPosition);
-                } else { // A* towards target
+                } else { // Pathfind towards target
                     const targetEnemy = unit.targetChain[0];
                     const distanceBetweenEnemy = getDistance(targetEnemy.yPos, unit.yPos, targetEnemy.xPos, unit.xPos);
                     if (distanceBetweenEnemy <= WeaponData[unit.weaponType].range) {
                         targetEnemy.health -= 5
                     } else {
-                        const aStarData = Creature.aStar(unit);
-                        const aStarPosition = aStarData[0];
-                        const allyUnits = aStarData[1];
-                        if (aStarPosition.length == 0) {
+                        const moveData = Creature.smartMove(unit);
+                        const nextMove = moveData[0];
+                        const allyUnits = moveData[1];
+                        if (nextMove.length == 0) {
                             lostTarget.add(unit);
                             // No movement
                         } else {
-                            nextPositions.set(unit, aStarPosition);
+                            nextPositions.set(unit, nextMove);
                             visionData.set(unit, allyUnits);
                         }
                     }

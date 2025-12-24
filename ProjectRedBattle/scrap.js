@@ -769,82 +769,82 @@ class Creature {
         return [currentPosition, allyUnits];
     }
 
-    // static makeFlowFields() {
-    //     for (const [team, soulData] of Creature.allUnitDivisions) {
-    //         for (const [soulClassType, soulClass] of soulData) {
-    //             // Gets starting positions
-    //             const closedData = new Map(); // int<int<[risk, distance]>>
-    //             for (let y = 0; y < BM.maxRows; y++) {
-    //                 closedData.set(y, new Map());
-    //             }
-    //             const openData = [];
-    //             for (const [_, enemySoulClass] of Creature.allUnitDivisions.get(!team)) {
-    //                 for (const enemySoul of enemySoulClass) {
-    //                     openData.push([enemySoul.yPos, enemySoul.xPos]);
-    //                     closedData.get(enemySoul.yPos).set(enemySoul.xPos, [SoulData[soulClassType].tileProps[BM.map[enemySoul.yPos][enemySoul.xPos]].risk, 0]);
-    //                 }
-    //             }
-    //             // Generates closedData which contains positional risk and distance
-    //             let visitedCount = 0;
-    //             while (visitedCount < openData.length) {
-    //                 visitedCount += 1;
-    //                 let useData = openData[visitedCount - 1];
-    //                 let currentData = closedData.get(useData[0]).get(useData[1]);
-    //                 let currentRisk = currentData[0];
-    //                 let currentDistance = currentData[1];
-    //                 for (let [yDir, xDir] of [[0, 1], [1, 0], [0, -1], [-1, 0]]) {
-    //                     let nextY = useData[0] + yDir;
-    //                     let nextX = useData[1] + xDir;
-    //                     if (closedData.has(nextY) && nextX >= 0 && nextX < BM.maxColumns && !closedData.get(nextY).has(nextX)) {
-    //                         if (BM.map[nextY][nextX] != "stone") {
-    //                             openData.push([nextY, nextX]);
-    //                             closedData.get(nextY).set(nextX, [currentRisk + SoulData[soulClassType].tileProps[BM.map[nextY][nextX]].risk, currentDistance + 1]);
-    //                         }
-    //                     }
-    //                 }
-    //             }
-    //             // Generates flowData
-    //             let flowData = new Map();
-    //             for (let y = 0; y < BM.maxRows; y++) {
-    //                 flowData.set(y, new Map());
-    //                 for (let x = 0; x < BM.maxColumns; x++) {
-    //                     if (closedData.get(y).has(x)) {
-    //                         let bestY = y;
-    //                         let bestX = x;
-    //                         let bestRisk = Number.MAX_VALUE;
-    //                         let bestDistance = Number.MAX_VALUE;
-    //                         let directions = shuffleArray([[0, 1], [1, 0], [0, -1], [-1, 0]]);
+    static makeFlowFields() {
+        for (const [team, soulData] of Creature.allUnitDivisions) {
+            for (const [soulClassType, soulClass] of soulData) {
+                // Gets starting positions
+                const closedData = new Map(); // int<int<[risk, distance]>>
+                for (let y = 0; y < BM.maxRows; y++) {
+                    closedData.set(y, new Map());
+                }
+                const openData = [];
+                for (const [_, enemySoulClass] of Creature.allUnitDivisions.get(!team)) {
+                    for (const enemySoul of enemySoulClass) {
+                        openData.push([enemySoul.yPos, enemySoul.xPos]);
+                        closedData.get(enemySoul.yPos).set(enemySoul.xPos, [SoulData[soulClassType].tileProps[BM.map[enemySoul.yPos][enemySoul.xPos]].risk, 0]);
+                    }
+                }
+                // Generates closedData which contains positional risk and distance
+                let visitedCount = 0;
+                while (visitedCount < openData.length) {
+                    visitedCount += 1;
+                    let useData = openData[visitedCount - 1];
+                    let currentData = closedData.get(useData[0]).get(useData[1]);
+                    let currentRisk = currentData[0];
+                    let currentDistance = currentData[1];
+                    for (let [yDir, xDir] of [[0, 1], [1, 0], [0, -1], [-1, 0]]) {
+                        let nextY = useData[0] + yDir;
+                        let nextX = useData[1] + xDir;
+                        if (closedData.has(nextY) && nextX >= 0 && nextX < BM.maxColumns && !closedData.get(nextY).has(nextX)) {
+                            if (BM.map[nextY][nextX] != "stone") {
+                                openData.push([nextY, nextX]);
+                                closedData.get(nextY).set(nextX, [currentRisk + SoulData[soulClassType].tileProps[BM.map[nextY][nextX]].risk, currentDistance + 1]);
+                            }
+                        }
+                    }
+                }
+                // Generates flowData
+                let flowData = new Map();
+                for (let y = 0; y < BM.maxRows; y++) {
+                    flowData.set(y, new Map());
+                    for (let x = 0; x < BM.maxColumns; x++) {
+                        if (closedData.get(y).has(x)) {
+                            let bestY = y;
+                            let bestX = x;
+                            let bestRisk = Number.MAX_VALUE;
+                            let bestDistance = Number.MAX_VALUE;
+                            let directions = shuffleArray([[0, 1], [1, 0], [0, -1], [-1, 0]]);
 
-    //                         for (let [yDir, xDir] of directions) {
-    //                             let neighborY = y + yDir;
-    //                             let neighborX = x + xDir;
-    //                             if (closedData.has(neighborY) && closedData.get(neighborY).has(neighborX)) {
-    //                                 let neighborData = closedData.get(neighborY).get(neighborX);
-    //                                 let neighborRisk = neighborData[0];
-    //                                 let neighborDistance = neighborData[1];
-    //                                 if (
-    //                                     neighborDistance < bestDistance ||
-    //                                     (neighborDistance === bestDistance && neighborRisk < bestRisk)
-    //                                 ) {
-    //                                     bestY = neighborY;
-    //                                     bestX = neighborX;
-    //                                     bestRisk = neighborRisk;
-    //                                     bestDistance = neighborDistance;
-    //                                 }
-    //                             }
-    //                         }
-    //                         flowData.get(y).set(x, [bestY, bestX]);
-    //                     }
-    //                 }
-    //             }
+                            for (let [yDir, xDir] of directions) {
+                                let neighborY = y + yDir;
+                                let neighborX = x + xDir;
+                                if (closedData.has(neighborY) && closedData.get(neighborY).has(neighborX)) {
+                                    let neighborData = closedData.get(neighborY).get(neighborX);
+                                    let neighborRisk = neighborData[0];
+                                    let neighborDistance = neighborData[1];
+                                    if (
+                                        neighborDistance < bestDistance ||
+                                        (neighborDistance === bestDistance && neighborRisk < bestRisk)
+                                    ) {
+                                        bestY = neighborY;
+                                        bestX = neighborX;
+                                        bestRisk = neighborRisk;
+                                        bestDistance = neighborDistance;
+                                    }
+                                }
+                            }
+                            flowData.get(y).set(x, [bestY, bestX]);
+                        }
+                    }
+                }
 
-    //             if (!Creature.flowFields.has(team)) {
-    //                 Creature.flowFields.set(team, new Map());
-    //             }
-    //             Creature.flowFields.get(team).set(soulClassType, flowData);
-    //         } 
-    //     }
-    // }
+                if (!Creature.flowFields.has(team)) {
+                    Creature.flowFields.set(team, new Map());
+                }
+                Creature.flowFields.get(team).set(soulClassType, flowData);
+            } 
+        }
+    }
 
     static act() {
         // Prune dead units
