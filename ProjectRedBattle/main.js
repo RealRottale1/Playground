@@ -21,6 +21,8 @@ const gameTextures = {
     fledgling: makeImage("fledgling"),
     goblin: makeImage("goblin"),
 
+    ironSword: makeImage("ironSword"),
+
     unitBar: makeImage("tabUnitBar"),
     mapBar: makeImage("mapBar"),
 
@@ -204,6 +206,9 @@ const WeaponData = {
         attackRate: 3,
         coolDownTime: 2,
         isMelee: true,
+        texture: "ironSword",
+        width: 1,
+        height: 1,
     }
 }
 
@@ -220,23 +225,23 @@ const SoulData = {
 }
 
 class Creature {
+    // Debug
     static debugMode = false;
-
+    // Positional
     static allUnits = new Set();
     static allUnitPositions = new Map(); // int<int<Set(Creature)>>
     static tileCapacity = 4;
-
+    // Core
     xPos; fluidXPos; oldXPos;
     yPos; fluidYPos; oldYPos;
     health;
     isGood; subClass; soulType; weaponType;
-
+    // Movement
     allTargets = new Set();
     targetChain = [];
-
     knownTileMap = new Map(); // int<int<risk>>
     moving = false;
-
+    // Attack
     attackTick = 0;
     attacking = false;
 
@@ -366,7 +371,6 @@ class Creature {
         return [validTiles, allyUnits];
     }
 
-    /* SMART MOVES */
     static aStar(unit, targetUnit, validTiles) { // Helper
         const startNode = validTiles.get(unit.yPos).get(unit.xPos);
         startNode.h = (Math.abs(targetUnit.xPos - unit.xPos) + Math.abs(targetUnit.yPos - unit.yPos));
@@ -652,7 +656,7 @@ class Creature {
         }
     }
 
-    constructor(x, y, isGood, subClass, soulType, weaponType) {
+    constructor(x, y, isGood, subClass, soulType, weaponType) { // Core
         this.xPos = x; this.fluidXPos = x; this.oldXPos = x;
         this.yPos = y; this.fluidYPos = y; this.oldYPos = y;
 
@@ -673,14 +677,16 @@ class Creature {
 
         const halfWidth = WP.windowWidth / 2;
         const halfHeight = WP.windowHeight / 2;
+        
+        function getScreenPosition(z, mZ, halfZ) {
+            return Math.floor((z - mZ + 0.5) * tileSize + halfZ);
+        }
 
         for (const unit of Creature.allUnits) {
             const width = SoulData[unit.soulType].width;
             const height = SoulData[unit.soulType].height;
-            const tileX = Math.floor((unit.xPos - BM.mouseX + 0.5) * tileSize + halfWidth);
-            const tileY = Math.floor((unit.yPos - BM.mouseY + 0.5) * tileSize + halfHeight);
-            const screenX = Math.floor((unit.fluidXPos - BM.mouseX + 0.5) * tileSize + halfWidth);
-            const screenY = Math.floor((unit.fluidYPos - BM.mouseY + 0.5) * tileSize + halfHeight);
+            const screenX = getScreenPosition(unit.fluidXPos, BM.mouseX, halfWidth);
+            const screenY = getScreenPosition(unit.fluidYPos, BM.mouseY, halfHeight);
             const screenWidth = size * width;
             const screenHeight = size * height;
             ctx.drawImage(
@@ -690,7 +696,20 @@ class Creature {
                 screenWidth,
                 screenHeight
             );
+            
+            const currentWeapon = WeaponData[unit.weaponType];
+            const weaponWidth = currentWeapon.width;
+            const weaponHeight = currentWeapon.height;
+            ctx.drawImage(
+                gameTextures[currentWeapon.texture],
+                screenX - screenWidth / 2,
+                screenY - screenHeight / 2,
+                screenWidth,
+                screenHeight
+            )
             if (Creature.debugMode) {
+                const tileX = Math.floor((unit.xPos - BM.mouseX + 0.5) * tileSize + halfWidth);
+                const tileY = Math.floor((unit.yPos - BM.mouseY + 0.5) * tileSize + halfHeight);
                 ctx.drawImage(
                     gameTextures.debugOutline,
                     tileX - size / 2,
