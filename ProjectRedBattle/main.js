@@ -615,7 +615,7 @@ class Creature {
         }
     }
 
-    static handleArrows() {
+    static handleArrows() { // Main
         const deadArrows = new Set();
         for (const arrow of Creature.allArrows) {
             const arrowInfo = ArrowData[arrow.type];
@@ -628,6 +628,13 @@ class Creature {
             
             // Damage units
             function getHitUnits() {
+                // Hit stone
+                const closestY = Math.round(arrow.y);
+                const closestX = Math.round(arrow.x);
+                if (BM.map[closestY] && BM.map[closestY][closestX] == "stone") {
+                    return true;
+                } 
+
                 const touchingY = new Set();
                 touchingY.add(Math.floor(arrow.y));
                 touchingY.add(Math.ceil(arrow.y));
@@ -1009,9 +1016,9 @@ function bootGame() {
         BM.map[y] = [];
         for (let x = 0; x < BM.maxColumns; x++) {
             let r = Math.random();
-            BM.map[y][x] ="grass"
-                // (r < 0.40) ? "grass" :
-                // (r < 0.65) ? "sand" :
+            BM.map[y][x] =
+                (r < 0.8) ? "grass" :
+                (r < 1) ? "stone" : "lava"
                 // (r < 0.85) ? "shallowwater" :
                 // (r < 0.95) ? "deepwater" :
                 // (r < 1) ? "lava" : "lava";
