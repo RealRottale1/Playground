@@ -8,6 +8,7 @@ function makeImage(url) { const image = new Image(); try { image.src = ("texture
 function getDistance(y2, y1, x2, x1) { return Math.abs(x2 - x1) + Math.abs(y2 - y1) };
 function shuffleArray(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[array[i], array[j]] = [array[j], array[i]]; } return array; }
 
+let GAMEPaused = true;
 const tickRate = 2;
 
 /* Game Textures */
@@ -38,8 +39,10 @@ const gameTextures = {
     sand: makeImage("sand"),
     lava: makeImage("lava"),
 
-    saveIcon: makeImage("saveIcon"),
-    uploadIcon: makeImage("uploadIcon"),
+    saveIcon: makeImage("hud/saveIcon"),
+    uploadIcon: makeImage("hud/uploadIcon"),
+    playButton: makeImage("hud/playButton"),
+    pauseButton: makeImage("hud/pauseButton"),
 }
 
 /* Canvas Variables */
@@ -271,7 +274,6 @@ class Creature {
     // Movement
     allTargets = new Set();
     targetChain = [];
-    knownTileMap = new Map(); // int<int<risk>>
     moving = false;
     // Attack
     attackTick = 0;
@@ -291,7 +293,6 @@ class Creature {
             Creature.allUnitPositions.get(unit.yPos).get(unit.xPos).add(unit);
         }
     }
-
     static makeUnitConnection(unit, y, x, alertVision) { // Helper
         const allyUnits = new Set();
         if (Creature.allUnitPositions.has(y) && Creature.allUnitPositions.get(y).has(x)) {
@@ -320,8 +321,8 @@ class Creature {
         }
         return allyUnits;
     }
-
     static wander(unit) { // Main
+        const knownTileMap = new Map();
         let detectVision = SoulData[unit.soulType].detectVision;
         let alertVision = SoulData[unit.soulType].alertVision;
         let allyUnits = new Set();
@@ -339,11 +340,11 @@ class Creature {
                     }
 
                     // Expands known tiles
-                    if (!unit.knownTileMap.has(y)) {
-                        unit.knownTileMap.set(y, new Map());
+                    if (!knownTileMap.has(y)) {
+                        knownTileMap.set(y, new Map());
                     }
-                    if (!unit.knownTileMap.get(y).has(x)) {
-                        unit.knownTileMap.get(y).set(x, SoulData[unit.soulType].tileProps[BM.map[y][x]].risk);
+                    if (!knownTileMap.get(y).has(x)) {
+                        knownTileMap.get(y).set(x, SoulData[unit.soulType].tileProps[BM.map[y][x]].risk);
                     }
                 }
             }
@@ -355,8 +356,8 @@ class Creature {
         for (let d of touchingTiles) {
             let nY = unit.yPos + d[0];
             let nX = unit.xPos + d[1];
-            if (unit.knownTileMap.has(nY) && unit.knownTileMap.get(nY).has(nX)) {
-                let knownRisk = unit.knownTileMap.get(nY).get(nX);
+            if (knownTileMap.has(nY) && knownTileMap.get(nY).has(nX) && BM.map[nY][nX] != "stone") {
+                let knownRisk = knownTileMap.get(nY).get(nX);
                 if (knownRisk <= currentRisk * 5 && Math.random() <= wanderChange) {
                     if (!Creature.allUnitPositions.has(nY) || !Creature.allUnitPositions.get(nY).has(nX) || Creature.allUnitPositions.get(nY).get(nX).size <= Creature.tileCapacity) {
                         currentRisk = knownRisk;
@@ -370,6 +371,7 @@ class Creature {
         return [currentPosition, allyUnits];
     }
 
+    /* Smart Movement */
     static getValidTiles(unit, targetUnit, detectVision, alertVision, pathFindingConfig) { // Helper
         const validTiles = new Map();
         let allyUnits = new Set();
@@ -403,7 +405,6 @@ class Creature {
         }
         return [validTiles, allyUnits];
     }
-
     static aStar(unit, targetUnit, validTiles) { // Helper
         const startNode = validTiles.get(unit.yPos).get(unit.xPos);
         startNode.h = (Math.abs(targetUnit.xPos - unit.xPos) + Math.abs(targetUnit.yPos - unit.yPos));
@@ -541,6 +542,7 @@ class Creature {
         return ([nextMove, allyUnits]);
     }
 
+    /* Updates Position */
     static setNextPosition(nextPositions) { // Main
        for (const [unit, desiredPosition] of nextPositions) {
             if (unit.health <= 0) {
@@ -553,7 +555,6 @@ class Creature {
             unit.moving = true;
         }
     }
-
     static moveUnit(unit) { // Main
         let dx = unit.xPos - unit.fluidXPos;
         let dy = unit.yPos - unit.fluidYPos;
@@ -576,6 +577,52 @@ class Creature {
         return false;
     }
 
+    /* Weapons */
+    static isClearPath(y1, x1, y2, x2) { // Helper
+        // Math stuff
+        let cx = Math.floor(x1);
+        let cy = Math.floor(y1);
+        const endX = Math.floor(x2);
+        const endY = Math.floor(y2);
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const stepX = Math.sign(dx);
+        const stepY = Math.sign(dy);
+        const tDeltaX = dx !== 0 ? Math.abs(1/dx) : Infinity;
+        const tDeltaY = dy != 0 ? Math.abs(1/dy) : Infinity;
+        // More math stuff
+        function getTMax(z, dz) {
+            if (dz > 0) {
+                return (Math.floor(z) + 1 - z) / dz;
+            } else if (dz < 0) {
+                return (z - Math.floor(z)) / -dz;
+            } else {
+                return Infinity;
+            }
+        }
+        let tMaxX = getTMax(x1, dx);
+        let tMaxY = getTMax(y1, dy);
+        // Loop
+        while (true) {
+            if (cy >= 0 && cy < BM.maxRows && cx >= 0 && cx < BM.maxColumns) {
+                if (BM.map[cy][cx] == "stone") {
+                    return false;
+                }
+                if (cx == endX && cy == endY) {
+                    return true;
+                }
+                if (tMaxX < tMaxY) {
+                    tMaxX += tDeltaX;
+                    cx += stepX;
+                } else {
+                    tMaxY += tDeltaY;
+                    cy += stepY;
+                }
+            } else {
+                return false;
+            }
+        }
+    }
     static attack(unit, targetUnit) { // Main
         const currentWeapon = WeaponData[unit.weaponType];
         const attackRate = currentWeapon.attackRate;
@@ -614,7 +661,6 @@ class Creature {
             }
         }
     }
-
     static handleArrows() { // Main
         const deadArrows = new Set();
         for (const arrow of Creature.allArrows) {
@@ -740,7 +786,8 @@ class Creature {
                 } else { // Pathfind towards target
                     const targetEnemy = unit.targetChain[0];
                     const distanceBetweenEnemy = getDistance(targetEnemy.yPos, unit.yPos, targetEnemy.xPos, unit.xPos);
-                    if (distanceBetweenEnemy <= WeaponData[unit.weaponType].range) {
+                    const currentWeapon = WeaponData[unit.weaponType];
+                    if (distanceBetweenEnemy <= currentWeapon.range && (currentWeapon.isMelee || Creature.isClearPath(unit.fluidYPos, unit.fluidXPos, targetEnemy.fluidYPos, targetEnemy.fluidXPos))) {
                         if (unit.attackTick == 0) {
                             unit.attackTick = 1;
                         }
@@ -938,6 +985,13 @@ function bootGame() {
         }
     }
 
+    /* Handles Control Buttons */
+    const pausePlayButton = new GUI("pausePlay", "playButton", 0, 0, 0, 0, 0);
+    pausePlayButton.click = () => {
+        GAMEPaused = !GAMEPaused;
+        pausePlayButton.content = (GAMEPaused ? "playButton" : "pauseButton");
+    }
+
     /* Handles Tile Buttons */
     for (const tile of BM.tiles) {
         const tileName = tile.toLowerCase().replaceAll(" ", "");
@@ -1017,8 +1071,8 @@ function bootGame() {
         for (let x = 0; x < BM.maxColumns; x++) {
             let r = Math.random();
             BM.map[y][x] =
-                (r < 0.8) ? "grass" :
-                (r < 1) ? "stone" : "lava"
+                (r < 1) ? "grass" :
+                (r < 1.1) ? "stone" : "lava"
                 // (r < 0.85) ? "shallowwater" :
                 // (r < 0.95) ? "deepwater" :
                 // (r < 1) ? "lava" : "lava";
@@ -1112,7 +1166,7 @@ async function handleInputs() {
         }
 
         const [x, y] = getSelectedTile();
-        if (x != null && y != null) {
+        if (GAMEPaused && x != null && y != null) {
             if (MKI.currentMouse == 0 && BM.currentTile != null) {
                 BM.map[y][x] = BM.currentTile;
             }
@@ -1134,6 +1188,16 @@ function handleUnitTab() {
         GUI.instances[tabs[i]].render();
     }
 }
+/* Play Pause Speed Slow */
+function handleControlTab() {
+    const width = 50;
+    const height = 50;
+    const x = WP.right(width + 25);
+    const y = height/2;
+    if (WP.resized) { GUI.instances["pausePlay"].update(x, y, 50, 50) }
+    GUI.instances["pausePlay"].render()
+}
+
 /* Map Tab */
 function handleMapTab() {
     const x = 0;
@@ -1166,6 +1230,7 @@ async function handleRenders() {
     // GUI
     handleUnitTab();
     handleMapTab();
+    handleControlTab();
 
     WP.justReleased = false;
     WP.resized = false;
@@ -1177,7 +1242,9 @@ async function handleRenders() {
 async function startGame() {
     requestAnimationFrame(handleRenders);
     while (true) {
-        Creature.act();
+        if (!GAMEPaused) {
+            Creature.act();
+        }
         for (let tick = 0; tick < tickRate; tick++) {
             await wait(0.1);
             handleInputs();
