@@ -9,7 +9,8 @@ function getDistance(y2, y1, x2, x1) { return Math.abs(x2 - x1) + Math.abs(y2 - 
 function shuffleArray(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[array[i], array[j]] = [array[j], array[i]]; } return array; }
 
 let GAMEPaused = true;
-const tickRate = 2;
+let GAMESpeed = 1;
+let GAMEtickRate = 2;
 
 /* Game Textures */
 const gameTextures = {
@@ -43,6 +44,9 @@ const gameTextures = {
     uploadIcon: makeImage("hud/uploadIcon"),
     playButton: makeImage("hud/playButton"),
     pauseButton: makeImage("hud/pauseButton"),
+    halfSpeedButton: makeImage("hud/halfSpeed"),
+    normalSpeedButton: makeImage("hud/normalSpeed"),
+    doubleSpeedButton: makeImage("hud/doubleSpeed"),
 }
 
 /* Canvas Variables */
@@ -986,10 +990,19 @@ function bootGame() {
     }
 
     /* Handles Control Buttons */
-    const pausePlayButton = new GUI("pausePlay", "playButton", 0, 0, 0, 0, 0);
+    const pausePlayButton = new GUI("pausePlayButton", "playButton", 0, 0, 0, 0, 0);
     pausePlayButton.click = () => {
         GAMEPaused = !GAMEPaused;
         pausePlayButton.content = (GAMEPaused ? "playButton" : "pauseButton");
+    }
+    const speedButton = new GUI("speedButton", "normalSpeedButton", 0, 0, 0, 0, 0);
+    speedButton.click = () => {
+        GAMESpeed += 1;
+        if (GAMESpeed == 3) {
+            GAMESpeed = 0;
+        }
+        GAMEtickRate = Math.max(3 - (2 * GAMESpeed), 0) + 1;
+        speedButton.content = (GAMESpeed == 0 ? "halfSpeedButton" : (GAMESpeed == 1 ? "normalSpeedButton" : "doubleSpeedButton"));
     }
 
     /* Handles Tile Buttons */
@@ -1192,10 +1205,11 @@ function handleUnitTab() {
 function handleControlTab() {
     const width = 50;
     const height = 50;
-    const x = WP.right(width + 25);
-    const y = height/2;
-    if (WP.resized) { GUI.instances["pausePlay"].update(x, y, 50, 50) }
-    GUI.instances["pausePlay"].render()
+    if (WP.resized) { GUI.instances["pausePlayButton"].update(WP.right(width + 25), height/2, 50, 50) }
+    GUI.instances["pausePlayButton"].render()
+
+    if (WP.resized) { GUI.instances["speedButton"].update(WP.right(width*2 + 25), height/2, 50, 50) }
+    GUI.instances["speedButton"].render()
 }
 
 /* Map Tab */
@@ -1245,7 +1259,7 @@ async function startGame() {
         if (!GAMEPaused) {
             Creature.act();
         }
-        for (let tick = 0; tick < tickRate; tick++) {
+        for (let tick = 0; tick < GAMEtickRate; tick++) {
             await wait(0.1);
             handleInputs();
         }
