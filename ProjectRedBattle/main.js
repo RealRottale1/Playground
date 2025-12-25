@@ -21,7 +21,12 @@ const gameTextures = {
     fledgling: makeImage("fledgling"),
     goblin: makeImage("goblin"),
 
-    ironSword: makeImage("ironSword"),
+    ironSword: makeImage("weapons/ironSword"),
+
+    bow: makeImage("weapons/bow"),
+    loadedBow: makeImage("weapons/loadedBow"),
+
+    arrow: makeImage("arrows/arrow"),
 
     unitBar: makeImage("tabUnitBar"),
     mapBar: makeImage("mapBar"),
@@ -199,6 +204,19 @@ class GUI {
     }
 }
 
+const ArrowData = {
+    "normal": {
+        texture: "arrow",
+        damage: 15,
+        speed: 0.125,
+        lifeTime: 100,
+        size: 2,
+        hitboxSize: 0.125,
+        piercing: false,
+        maxPierces: 0,
+    }
+}
+
 const WeaponData = {
     "ironSword": {
         range: 2,
@@ -208,6 +226,18 @@ const WeaponData = {
         coolDownTime: 8,
         isMelee: true,
         texture: "ironSword",
+        width: 1,
+        height: 1,
+    },
+    "bow": {
+        range: 10,
+        attackRate: 50,
+        attackDuration: 10,
+        coolDownTime: 20,
+        isMelee: false,
+        texture: "bow",
+        loadedTexture: "loadedBow",
+        arrowType: "normal",
         width: 1,
         height: 1,
     }
@@ -231,6 +261,7 @@ class Creature {
     // Positional
     static allUnits = new Set();
     static allUnitPositions = new Map(); // int<int<Set(Creature)>>
+    static allArrows = new Set(); // {x, y, type, lifeTime, direction, isGood, allPierced}
     static tileCapacity = 4;
     // Core
     xPos; fluidXPos; oldXPos;
@@ -245,6 +276,7 @@ class Creature {
     // Attack
     attackTick = 0;
     attacking = false;
+    lastAttackAngle = 0;
 
     static updateAllUnitPositions(unit) { // Helper
         // Position
@@ -511,6 +543,9 @@ class Creature {
 
     static setNextPosition(nextPositions) { // Main
        for (const [unit, desiredPosition] of nextPositions) {
+            if (unit.health <= 0) {
+                continue;
+            }
             Creature.allUnitPositions.get(unit.yPos).get(unit.xPos).delete(unit);
             unit.yPos = desiredPosition[0];
             unit.xPos = desiredPosition[1];
@@ -541,9 +576,6 @@ class Creature {
         return false;
     }
 
-    /*
-Sometimes it does not get turned off because attack stops being called!
-    */
     static attack(unit, targetUnit) { // Main
         const currentWeapon = WeaponData[unit.weaponType];
         const attackRate = currentWeapon.attackRate;
@@ -552,8 +584,26 @@ Sometimes it does not get turned off because attack stops being called!
 
         unit.attackTick += 1;
         if (unit.attackTick == attackRate) {
+            // Lost target
+            if (!targetUnit) {
+                unit.attackTick = 0;
+                return;
+            }
             unit.attacking = true;
-            targetUnit.health -= currentWeapon.damage;
+            if (currentWeapon.isMelee) { // Melee attack
+                targetUnit.health -= currentWeapon.damage;
+            } else { // Ranged attack
+                const arrow = {
+                    x: unit.fluidXPos,
+                    y: unit.fluidYPos,
+                    type: currentWeapon.arrowType,
+                    lifeTime: 0,
+                    direction: Math.atan2(unit.fluidYPos - targetUnit.fluidYPos, unit.fluidXPos - targetUnit.fluidXPos),
+                    isGood: unit.isGood,
+                    allPierced: new Set(),
+                };
+                Creature.allArrows.add(arrow);
+            }
         } else {
             if (unit.attackTick == attackRate + attackDuration) {
                 unit.attacking = false;
@@ -562,6 +612,77 @@ Sometimes it does not get turned off because attack stops being called!
                     unit.attackTick = 0;
                 }
             }
+        }
+    }
+
+    static handleArrows() {
+        const deadArrows = new Set();
+        for (const arrow of Creature.allArrows) {
+            const arrowInfo = ArrowData[arrow.type];
+            // Remove old arrows
+            if (arrow.lifeTime >= arrowInfo.lifeTime) {
+                deadArrows.add(arrow);
+                continue;
+            }
+            arrow.lifeTime += 1;
+            
+            // Damage units
+            function getHitUnits() {
+                const touchingY = new Set();
+                touchingY.add(Math.floor(arrow.y));
+                touchingY.add(Math.ceil(arrow.y));
+                const touchingX = new Set();
+                touchingX.add(Math.floor(arrow.x));
+                touchingX.add(Math.ceil(arrow.x));
+                const surroundingTiles = new Map(); // int<Set(int)>>
+                for (const y of touchingY) {
+                    for (const x of touchingX) {
+                        for (let [yDir, xDir] of [[0, 1], [1, 0], [0, -1], [-1, 0]]) {
+                            const ny = y + yDir;
+                            const nx = x + xDir;
+                            if (!surroundingTiles.has(ny)) {
+                                surroundingTiles.set(ny, new Set());
+                            } else {
+                                if (surroundingTiles.get(ny).has(nx)) {
+                                    continue;
+                                }
+                            }
+                            surroundingTiles.get(ny).add(nx);
+                            if (!Creature.allUnitPositions.has(ny) || !Creature.allUnitPositions.get(ny).has(nx)) {
+                                continue;
+                            }
+                            for (const unit of Creature.allUnitPositions.get(ny).get(nx)) {
+                                const dx = unit.fluidXPos - arrow.x;
+                                const dy = unit.fluidYPos - arrow.y;
+                                if (unit.isGood != arrow.isGood && (dx * dx + dy * dy) <= arrowInfo.hitboxSize/2) {
+                                    unit.health -= arrowInfo.damage;
+                                    if (!arrowInfo.piercing) {
+                                        return(true);
+                                    } else if (!arrow.allPierced.has(unit)) {
+                                        arrow.totalPierced += 1;
+                                        arrow.allPierced.add(unit);
+                                        if (arrow.allPierced.length >= arrowInfo.maxPierces) {
+                                            return(true);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                return(false);
+            }
+            const arrowDestroyed = getHitUnits();
+            if (arrowDestroyed) {
+                deadArrows.add(arrow);
+            } else {
+                // Move arrow in direction
+                arrow.x += Math.cos(arrow.direction + Math.PI) * arrowInfo.speed; 
+                arrow.y += Math.sin(arrow.direction + Math.PI) * arrowInfo.speed;
+            }
+        }
+        for (const arrow of deadArrows) {
+            Creature.allArrows.delete(arrow);
         }
     }
 
@@ -596,6 +717,12 @@ Sometimes it does not get turned off because attack stops being called!
                 unit.allTargets.clear();
                 unit.targetChain = [];
             }
+
+            // Progress attack
+            if (unit.attackTick != 0) {
+                Creature.attack(unit, unit.targetChain[0]);
+            }
+
             if (!unit.moving) {
                 if (unit.allTargets.size == 0) { // Wander
                     const wanderData = Creature.wander(unit);
@@ -607,7 +734,9 @@ Sometimes it does not get turned off because attack stops being called!
                     const targetEnemy = unit.targetChain[0];
                     const distanceBetweenEnemy = getDistance(targetEnemy.yPos, unit.yPos, targetEnemy.xPos, unit.xPos);
                     if (distanceBetweenEnemy <= WeaponData[unit.weaponType].range) {
-                        Creature.attack(unit, targetEnemy);
+                        if (unit.attackTick == 0) {
+                            unit.attackTick = 1;
+                        }
                     } else {
                         const moveData = Creature.smartMove(unit);
                         const nextMove = moveData[0];
@@ -625,6 +754,9 @@ Sometimes it does not get turned off because attack stops being called!
                 Creature.moveUnit(unit);
             }
         }
+
+        // Handles all arrows
+        Creature.handleArrows();
 
         // Move all units
         Creature.setNextPosition(nextPositions);
@@ -693,6 +825,28 @@ Sometimes it does not get turned off because attack stops being called!
             return Math.floor((z - mZ + 0.5) * tileSize + halfZ);
         }
 
+        // Render arrows
+        for (const arrow of Creature.allArrows) {
+            const arrowInfo = ArrowData[arrow.type];
+            const arrowSize = arrowInfo.size;
+            const screenX = getScreenPosition(arrow.x, BM.mouseX, halfWidth);
+            const screenY = getScreenPosition(arrow.y, BM.mouseY, halfHeight);
+            const screenWidth = size * arrowSize;
+            const screenHeight = size * arrowSize;
+            ctx.save();
+            ctx.translate(screenX, screenY);
+            ctx.rotate(arrow.direction - Math.PI/2);
+            ctx.drawImage(
+                gameTextures[arrowInfo.texture],
+                -screenWidth / 2,
+                -screenHeight / 2,
+                screenWidth,
+                screenHeight
+            );
+            ctx.restore();
+        }
+
+        // Render creatures
         for (const unit of Creature.allUnits) {
             const width = SoulData[unit.soulType].width;
             const height = SoulData[unit.soulType].height;
@@ -713,17 +867,27 @@ Sometimes it does not get turned off because attack stops being called!
             const weaponHeight = currentWeapon.height;
             ctx.save();
             ctx.translate(screenX, screenY);
-            ctx.rotate(0);
+            let rotation = 0;
+            const targetEnemy = unit.targetChain[0];
+            if (targetEnemy) {
+                rotation = Math.atan2(unit.fluidYPos - targetEnemy.fluidYPos, unit.fluidXPos - targetEnemy.fluidXPos) - Math.PI/2;
+            } else {
+                if (unit.fluidYPos == unit.yPos && unit.fluidXPos == unit.xPos) {
+                    rotation = unit.lastAttackAngle;
+                } else {
+                    rotation = Math.atan2(unit.fluidYPos - unit.yPos, unit.fluidXPos - unit.xPos) - Math.PI/2;
+                    unit.lastAttackAngle = rotation;
+                }
+            }
+            ctx.rotate(rotation);
             ctx.drawImage(
-                gameTextures[currentWeapon.texture],
-                -size * weaponWidth / 2,
-                -(size * weaponHeight * 2.5 + (unit.attacking ? size : 0)) / 2,
+                gameTextures[(!currentWeapon.isMelee && unit.attackTick < currentWeapon.attackRate ? currentWeapon.loadedTexture : currentWeapon.texture)],
+                -(size * weaponWidth + (targetEnemy ? 0 : (currentWeapon.isMelee ? size/2 : 0))) / 2,
+                -(size * weaponHeight * (targetEnemy ? 2.5 : 2) + (targetEnemy ? (unit.attacking && currentWeapon.isMelee ? size : 0) : 0)) / 2,
                 size * weaponWidth,
                 size * weaponHeight
             );
             ctx.restore();
-
-
             if (Creature.debugMode) {
                 const tileX = Math.floor((unit.xPos - BM.mouseX + 0.5) * tileSize + halfWidth);
                 const tileY = Math.floor((unit.yPos - BM.mouseY + 0.5) * tileSize + halfHeight);
@@ -855,10 +1019,10 @@ function bootGame() {
     }
 
 
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 25; i++) {
         for (let o = 0; o < 1; o++) {
-            new Creature(i + 25, o + 25, true, "warrior", "normal", "ironSword");
-            new Creature(i + 25, 5 - o + 25, false, "goblin", "normal", "ironSword");
+            new Creature(i + 25, o + 25, true, "warrior", "normal", (Math.random() < 0.5 ? "ironSword" : "bow"));
+            new Creature(i + 25, 5 - o + 40, false, "goblin", "normal", (Math.random() < 0.5 ? "ironSword" : "bow"));
         }
     }
 }
