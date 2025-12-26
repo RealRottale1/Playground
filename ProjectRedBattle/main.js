@@ -267,22 +267,23 @@ const WeaponData = {
 }
 const SoulData = {
     "normal": {
-        width: 0.5,
-        height: 0.5,
-        health: 100,
         tileProps: { "grass": { risk: 1, speed: 1 }, "stone": { risk: Number.MAX_VALUE, speed: 0 }, "shallowwater": { risk: 5, speed: 0.25 }, "deepwater": { risk: 25, speed: 0.125 }, "sand": { risk: 2, speed: 0.9 }, "lava": { risk: Number.MAX_VALUE, speed: 0 } },
         detectVision: 15,
         alertVision: 7,
         wanderChance: 1,
     },
     "swimmer": {
-        width: 0.5,
-        height: 0.5,
-        health: 100,
         tileProps: { "grass": { risk: 8, speed: 0.5 }, "stone": { risk: Number.MAX_VALUE, speed: 0 }, "shallowwater": { risk: 1, speed: 1}, "deepwater": { risk: 2, speed: 0.8 }, "sand": { risk: 4, speed: 0.75 }, "lava": { risk: Number.MAX_VALUE, speed: 0 } },
         detectVision: 15,
         alertVision: 7,
         wanderChance: 1,
+    }
+}
+const ApparelData = {
+    "warriorFootSoldier": {
+        width: 0.5,
+        height: 0.5,
+        health: 100,
     }
 }
 class Creature {
@@ -981,6 +982,11 @@ class Creature {
                 );
             }
         }
+    }
+}
+const CreatureData = {
+    "warrior": {
+        
     }
 }
 
