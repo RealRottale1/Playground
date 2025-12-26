@@ -8,14 +8,15 @@ function makeImage(url) { const image = new Image(); try { image.src = ("texture
 function getDistance(y2, y1, x2, x1) { return Math.abs(x2 - x1) + Math.abs(y2 - y1) };
 function shuffleArray(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[array[i], array[j]] = [array[j], array[i]]; } return array; }
 
-let GAMEsavedUnits = new Map(); // Creature<[info]>
+let GAMEsavedUnits = [];
 let GAMEsavedMap;
 let GAMEStarted = false;
 let GAMEPaused = true;
 let GAMESpeed = 1;
 let GAMEtickRate = 2;
+let GAMEselectedUnitType;
 
-/* Game Textures */
+/* TEXTURES */
 const gameTextures = {
     missingTexture: makeImage("missing"),
     debugOutline: makeImage("debugOutline"),
@@ -34,6 +35,7 @@ const gameTextures = {
     arrow: makeImage("arrows/arrow"),
 
     unitBar: makeImage("tabUnitBar"),
+    unitSelectBar: makeImage("tabUnitSelect"),
     mapBar: makeImage("mapBar"),
 
     grass: makeImage("grass"),
@@ -53,7 +55,7 @@ const gameTextures = {
     resetButton: makeImage("hud/resetButton"),
 }
 
-/* Canvas Variables */
+/* CANVAS VARIABLES */
 const WP = {
     windowWidth: 0,
     windowHeight: 0,
@@ -69,7 +71,7 @@ const WP = {
     center: function (y) { return (WP.windowHeight - y) / 2; },
 }
 
-/* User Input Variables */
+/* INPUT VARIABLES */
 const MKI = {
     x: 0,
     y: 0,
@@ -142,7 +144,7 @@ const MKI = {
     }
 }
 
-/* Battle Map */
+/* BATTLE MAP */
 class BM {
     static canEdit = true;
     static currentTile = null;
@@ -181,7 +183,7 @@ class BM {
     }
 }
 
-/* Graphical User Interface */
+/* GUI */
 class GUI {
     static instances = {};
     enabled = false;
@@ -199,7 +201,7 @@ class GUI {
         this.y = y;
         this.width = width;
         this.height = height;
-        this.zindex = zindex;
+        this.zindex = zindex
         GUI.instances[name] = this;
     }
     update(x, y, width, height, zindex) {
@@ -207,10 +209,10 @@ class GUI {
         this.y = y;
         this.width = width;
         this.height = height;
-        this.zindex = zindex;
-        this.enabled = true;
+        this.zindex = zindex ? zindex : this.zindex;
     }
     render() {
+        this.enabled = true;
         const baseTileSize = WP.windowWidth / BM.maxColumns;
         const tileSize = baseTileSize * BM.zoom;
         const size = Math.ceil(tileSize);
@@ -225,6 +227,7 @@ class GUI {
     }
 }
 
+/* CREATURE */
 const ArrowData = {
     "normal": {
         texture: "arrow",
@@ -237,7 +240,6 @@ const ArrowData = {
         maxPierces: 0,
     }
 }
-
 const WeaponData = {
     "ironSword": {
         range: 2,
@@ -263,7 +265,6 @@ const WeaponData = {
         height: 1,
     }
 }
-
 const SoulData = {
     "normal": {
         width: 0.5,
@@ -273,9 +274,17 @@ const SoulData = {
         detectVision: 15,
         alertVision: 7,
         wanderChance: 1,
+    },
+    "swimmer": {
+        width: 0.5,
+        height: 0.5,
+        health: 100,
+        tileProps: { "grass": { risk: 8, speed: 0.5 }, "stone": { risk: Number.MAX_VALUE, speed: 0 }, "shallowwater": { risk: 1, speed: 1}, "deepwater": { risk: 2, speed: 0.8 }, "sand": { risk: 4, speed: 0.75 }, "lava": { risk: Number.MAX_VALUE, speed: 0 } },
+        detectVision: 15,
+        alertVision: 7,
+        wanderChance: 1,
     }
 }
-
 class Creature {
     // Debug
     static debugMode = false;
@@ -975,7 +984,7 @@ class Creature {
     }
 }
 
-/* Boot Up */
+/* BOOT */
 function bootGame() {
     window.addEventListener("resize", WP.getWindowResize);
     WP.getWindowResize();
@@ -988,120 +997,164 @@ function bootGame() {
 
 
     /* Handles Tab Buttons */
-    for (const tab of ["Warrior", "Fishling", "Elf", "Troll", "Fledgling", "Goblin"]) {
-        const tabName = tab.toLowerCase()
-        const element = new GUI(tabName + "Tab", tabName, 0, 0, 0, 0, 0);
-        element.hover = () => {
-            const x = WP.middle(0);
-            const y = WP.bottom(120);
-            ctx.drawImage(gameTextures.unitBar, x - 90, y - 35, 180, 50);
-            ctx.fillStyle = "rgba(255, 255, 255, 1)";
-            ctx.font = "35px serif";
-            ctx.textAlign = "center";
-            ctx.textBaseLine = "middle";
-            ctx.fillText(tab, x, y);
+    function loadUnitTab() {
+        for (const tab of ["Warrior", "Fishling", "Elf", "Troll", "Fledgling", "Goblin"]) {
+            const tabName = tab.toLowerCase();
+            const guiName = tabName + "Tab";
+            const element = new GUI(guiName, tabName, 0, 0, 0, 0, 0);
+            element.hover = () => {
+                const x = WP.middle(0);
+                const y = WP.bottom(120);
+                ctx.drawImage(gameTextures.unitBar, x - 90, y - 35, 180, 50);
+                ctx.fillStyle = "rgba(255, 255, 255, 1)";
+                ctx.font = "35px serif";
+                ctx.textAlign = "center";
+                ctx.textBaseLine = "middle";
+                ctx.fillText(tab, x, y);
+            }
+            element.click = () => {
+                if (GAMEselectedUnitType) {
+                    GUI.instances[GAMEselectedUnitType].darkness = 0;
+                }
+                const deselected = GAMEselectedUnitType == guiName;
+                GAMEselectedUnitType = (deselected ? null : guiName);
+                if (!deselected) {
+                    GUI.instances[GAMEselectedUnitType].darkness = 0.65;
+                }
+            }
         }
+        const unitSelectBar = new GUI("unitSelectBar", "unitSelectBar", 0, 0, 0, 0, 1);
     }
 
     /* Handles Control Buttons */
-    const pausePlayButton = new GUI("pausePlayButton", "playButton", 0, 0, 0, 0, 0);
-    pausePlayButton.click = () => {
-        if (GAMEPaused && !GAMEStarted) {
-            GAMEsavedMap = structuredClone(BM.map);
-            GAMEStarted = true;
+    function loadPlayButton() {
+        const pausePlayButton = new GUI("pausePlayButton", "playButton", 0, 0, 0, 0, 0);
+        pausePlayButton.click = () => {
+            if (GAMEPaused && !GAMEStarted) {
+                GAMEsavedMap = structuredClone(BM.map);
+                GAMEsavedUnits = [];
+                for (const unit of Creature.allUnits) {
+                    GAMEsavedUnits.push([unit.xPos, unit.yPos, unit.isGood, unit.subClass, unit.soulType, unit.weaponType]);
+                }
+                GAMEStarted = true;
+            }
+            GAMEPaused = !GAMEPaused;
+            pausePlayButton.content = (GAMEPaused ? "playButton" : "pauseButton");
         }
-        GAMEPaused = !GAMEPaused;
-        pausePlayButton.content = (GAMEPaused ? "playButton" : "pauseButton");
     }
-    const speedButton = new GUI("speedButton", "normalSpeedButton", 0, 0, 0, 0, 0);
-    speedButton.click = () => {
-        GAMESpeed += 1;
-        if (GAMESpeed == 3) {
-            GAMESpeed = 0;
+    function loadSpeedButton() {
+        const speedButton = new GUI("speedButton", "normalSpeedButton", 0, 0, 0, 0, 0);
+        speedButton.click = () => {
+            GAMESpeed += 1;
+            if (GAMESpeed == 3) {
+                GAMESpeed = 0;
+            }
+            GAMEtickRate = Math.max(3 - (2 * GAMESpeed), 0) + 1;
+            speedButton.content = (GAMESpeed == 0 ? "halfSpeedButton" : (GAMESpeed == 1 ? "normalSpeedButton" : "doubleSpeedButton"));
         }
-        GAMEtickRate = Math.max(3 - (2 * GAMESpeed), 0) + 1;
-        speedButton.content = (GAMESpeed == 0 ? "halfSpeedButton" : (GAMESpeed == 1 ? "normalSpeedButton" : "doubleSpeedButton"));
     }
-    const resetButton = new GUI("resetButton", "resetButton", 0, 0, 0, 0, 0);
-    resetButton.click = () => {
-        if (GAMEPaused && GAMEStarted) {
-            GAMEStarted = false;
-            BM.map = GAMEsavedMap;
-            // Load Save
+    function loadResetButton() {
+        const resetButton = new GUI("resetButton", "resetButton", 0, 0, 0, 0, 0);
+        resetButton.click = () => {
+            if (GAMEPaused && GAMEStarted) {
+                GAMEStarted = false;
+                console.log(GAMEsavedMap)
+                BM.map = GAMEsavedMap;
+                Creature.allUnits.clear();
+                Creature.allUnitPositions.clear();
+                Creature.allArrows.clear();
+                for (const unitData of GAMEsavedUnits) {
+                    new Creature(unitData[0], unitData[1], unitData[2], unitData[3], unitData[4], unitData[5]);
+                }
+            }
         }
     }
 
     /* Handles Tile Buttons */
-    for (const tile of BM.tiles) {
-        const tileName = tile.toLowerCase().replaceAll(" ", "");
-        const element = new GUI(tileName + "Tab", tileName, 0, 0, 0, 0, 0);
-        const length = tile.length * 20 + 50;
-        element.hover = () => {
-            const x = length + 15;
-            const y = WP.center(0) - 300;
-            ctx.drawImage(gameTextures.unitBar, x - length, y - 35, length, 50);
-            ctx.fillStyle = "rgba(255, 255, 255, 1)";
-            ctx.font = "35px serif";
-            ctx.textAlign = "center";
-            ctx.textBaseLine = "middle";
-            ctx.fillText(tile, x - length / 2, y);
-        }
-        element.click = () => {
-            const alreadyUsing = BM.currentTile == tileName;
-            if (!alreadyUsing) {
-                for (const otherTile of BM.tiles) {
-                    const otherElement = GUI.instances[otherTile.toLowerCase().replaceAll(" ", "") + "Tab"];
-                    if (otherElement.darkness != 0) {
-                        otherElement.darkness = 0;
-                        break;
+    function loadTileButtons() {
+        for (const tile of BM.tiles) {
+            const tileName = tile.toLowerCase().replaceAll(" ", "");
+            const element = new GUI(tileName + "Tab", tileName, 0, 0, 0, 0, 0);
+            const length = tile.length * 20 + 50;
+            element.hover = () => {
+                const x = length + 15;
+                const y = WP.center(0) - 300;
+                ctx.drawImage(gameTextures.unitBar, x - length, y - 35, length, 50);
+                ctx.fillStyle = "rgba(255, 255, 255, 1)";
+                ctx.font = "35px serif";
+                ctx.textAlign = "center";
+                ctx.textBaseLine = "middle";
+                ctx.fillText(tile, x - length / 2, y);
+            }
+            element.click = () => {
+                const alreadyUsing = BM.currentTile == tileName;
+                if (!alreadyUsing) {
+                    for (const otherTile of BM.tiles) {
+                        const otherElement = GUI.instances[otherTile.toLowerCase().replaceAll(" ", "") + "Tab"];
+                        if (otherElement.darkness != 0) {
+                            otherElement.darkness = 0;
+                            break;
+                        }
                     }
                 }
+                element.darkness = (alreadyUsing ? 0 : 0.65);
+                BM.currentTile = (alreadyUsing ? null : tileName);
             }
-            element.darkness = (alreadyUsing ? 0 : 0.65);
-            BM.currentTile = (alreadyUsing ? null : tileName);
         }
     }
 
     /* Save And Upload Buttons */
-    const uploadIcon = new GUI("uploadTab", "uploadIcon", 0, 0, 0, 0, 0);
-    uploadIcon.click = () => {
-        if (!BM.canEdit) { return };
-        const data = prompt("Insert World File");
-        if (data && data.length > 0) {
-            const worldFile = data.split(" ");
-            if (worldFile.length === BM.maxRows * BM.maxColumns) {
-                const validTiles = new Set(BM.tiles.map(s => s.toLowerCase().replace(/\s+/g, "")));
-                let hasInvalidTile = false;
-                for (const tile of worldFile) {
-                    if (!validTiles.has(tile)) {
-                        hasInvalidTile = true;
-                        break;
-                    }
-                }
-                if (!hasInvalidTile) {
-                    for (let y = 0; y < BM.maxRows; y++) {
-                        for (let x = 0; x < BM.maxColumns; x++) {
-                            BM.map[y][x] = worldFile[y * BM.maxColumns + x];
+    function loadUploadButton() {
+        const uploadIcon = new GUI("uploadTab", "uploadIcon", 0, 0, 0, 0, 0);
+        uploadIcon.click = () => {
+            if (!BM.canEdit) { return };
+            const data = prompt("Insert World File");
+            if (data && data.length > 0) {
+                const worldFile = data.split(" ");
+                if (worldFile.length === BM.maxRows * BM.maxColumns) {
+                    const validTiles = new Set(BM.tiles.map(s => s.toLowerCase().replace(/\s+/g, "")));
+                    let hasInvalidTile = false;
+                    for (const tile of worldFile) {
+                        if (!validTiles.has(tile)) {
+                            hasInvalidTile = true;
+                            break;
                         }
                     }
-                    return;
+                    if (!hasInvalidTile) {
+                        for (let y = 0; y < BM.maxRows; y++) {
+                            for (let x = 0; x < BM.maxColumns; x++) {
+                                BM.map[y][x] = worldFile[y * BM.maxColumns + x];
+                            }
+                        }
+                        return;
+                    }
                 }
             }
+            alert("Invalid World File");
         }
-        alert("Invalid World File");
-    };
-    const saveIcon = new GUI("saveTab", "saveIcon", 0, 0, 0, 0, 0);
-    saveIcon.click = async () => {
-        if (!BM.canEdit) { return };
-        try {
-            const worldFile = BM.map.flat().map(
-                t => t.toLowerCase().replace(/\s+/g, "")
-            ).join(" ");
-            await navigator.clipboard.writeText(worldFile);
-        } catch {
-            alert("Something Went Wrong Please Try Again");
-        }
-    };
+    }
+    function loadSaveButton() {
+        const saveIcon = new GUI("saveTab", "saveIcon", 0, 0, 0, 0, 0);
+        saveIcon.click = async () => {
+            if (!BM.canEdit) { return };
+            try {
+                const worldFile = BM.map.flat().map(
+                    t => t.toLowerCase().replace(/\s+/g, "")
+                ).join(" ");
+                await navigator.clipboard.writeText(worldFile);
+            } catch {
+                alert("Something Went Wrong Please Try Again");
+            }
+        };
+    }
+
+    loadUnitTab();
+    loadPlayButton();
+    loadSpeedButton();
+    loadResetButton();
+    loadTileButtons();
+    loadUploadButton();
+    loadSaveButton();
 
     /* Default World Tiles */
     BM.map = [];
@@ -1121,14 +1174,14 @@ function bootGame() {
 
     for (let i = 0; i < 25; i++) {
         for (let o = 0; o < 1; o++) {
-            new Creature(i + 25, o + 25, true, "warrior", "normal", (Math.random() < 0.5 ? "ironSword" : "bow"));
+            new Creature(i + 25, o + 25, true, "fishling", "swimmer", (Math.random() < 0.5 ? "ironSword" : "bow"));
             new Creature(i + 25, 5 - o + 40, false, "goblin", "normal", (Math.random() < 0.5 ? "ironSword" : "bow"));
         }
     }
 }
 bootGame();
 
-/* Gets Tile From Mouse Position */
+/* INPUT */
 function getSelectedTile() {
     const baseTileSize = WP.windowWidth / BM.maxColumns;
     const tileSize = baseTileSize * BM.zoom;
@@ -1143,38 +1196,43 @@ function getSelectedTile() {
     const selectedY = (tileY > (BM.maxRows - 1) || tileY < 0) ? null : tileY;
     return [selectedX, selectedY];
 }
-
 async function handleInputs() {
-    // Mouse Input Of All Kind
-    let overElement = false;
+    // Gets interacted gui
+    let highestZindex = -1;
+    let highestElement = null;
+    let highestKey = null;
     for (const [key, element] of Object.entries(GUI.instances)) {
         if (element.enabled) {
             if (MKI.x >= element.x && MKI.x <= element.x + element.width && MKI.y >= element.y && MKI.y <= element.y + element.height) {
-                overElement = true;
-                if (element.hover) { element.hover() };
-                MKI.hoveringOver = key;
-                if (MKI.wentDown) {
-                    MKI.wentDown = false;
-                    MKI.initialTarget = key;
-                    break;
+                if (element.zindex > highestZindex) {
+                    highestZindex = element.zindex;
+                    highestElement = element;
+                    highestKey = key;
                 }
-                if (MKI.wentUp) {
-                    MKI.wentUp = false;
-                    if (MKI.initialTarget == key && MKI.hoveringOver == key) {
-                        if (element.click) { element.click() };
-                        console.log(`You clicked the ${element.name}`);
-                        MKI.downX = 0;
-                        MKI.downY = 0;
-                    }
-                    MKI.initialTarget = null;
-                }
-                break;
             }
         }
     }
 
-    /* Handles Moving The Screen */
-    if (!overElement) {
+    if (highestElement) {
+        if (highestElement.hover) { highestElement.hover() };
+        MKI.hoveringOver = highestKey;
+        if (MKI.wentDown) {
+            MKI.wentDown = false;
+            MKI.initialTarget = highestKey;
+            return;
+        }
+        if (MKI.wentUp) {
+            MKI.wentUp = false;
+            if (MKI.initialTarget == highestKey && MKI.hoveringOver == highestKey) {
+                if (highestElement.click) { highestElement.click() };
+                console.log(`You clicked the ${highestElement.name}`);
+                MKI.downX = 0;
+                MKI.downY = 0;
+            }
+            MKI.initialTarget = null;
+        }   
+    } 
+    if (!highestElement){
         MKI.hoveringOver = null
         if (MKI.currentMouse == 2) {
             if (MKI.wentDown) {
@@ -1213,7 +1271,7 @@ async function handleInputs() {
     };
 }
 
-/* Unit Tab */
+/* RENDERING */
 function handleUnitTab() {
     const tabs = ["warriorTab", "fishlingTab", "elfTab", "trollTab", "fledglingTab", "goblinTab"];
     if (WP.windowHeight < 500) { for (let i = 0; i < 6; i++) { GUI.instances[tabs[i]].enabled = false }; return };
@@ -1227,7 +1285,18 @@ function handleUnitTab() {
         GUI.instances[tabs[i]].render();
     }
 }
-/* Play Pause Speed Slow */
+function handleUnitSelectionTab() {
+    const width = 600;
+    const height = 600;
+    const x = WP.middle(0);
+    const y = WP.center(120);
+    if (WP.resized) { GUI.instances["unitSelectBar"].update(x - width/2, y - height/2, width, height) };
+    if (GAMEselectedUnitType) {
+        GUI.instances["unitSelectBar"].render();
+    } else {
+        GUI.instances["unitSelectBar"].enabled = false;
+    }
+}
 function handleControlTab() {
     const width = 50;
     const height = 50;
@@ -1244,8 +1313,6 @@ function handleControlTab() {
     if (WP.resized) { GUI.instances["resetButton"].update(WP.right(width*3 + 75), height/2, 50, 50) }
     GUI.instances["resetButton"].render()
 }
-
-/* Map Tab */
 function handleMapTab() {
     const x = 0;
     const y = WP.center(0) - 300;
@@ -1257,13 +1324,12 @@ function handleMapTab() {
         if (WP.resized) { GUI.instances[tiles[i]].update(x + 25, y + 75 * i + 75, 50, 50) }
         GUI.instances[tiles[i]].render();
     }
-    if (WP.resized) { GUI.instances["uploadTab"].update(x + 25, y - 50, 50, 50) }
+    if (WP.resized) { GUI.instances["uploadTab"].update(x + 25, y + 600, 50, 50) }
     GUI.instances["uploadTab"].render();
 
-    if (WP.resized) { GUI.instances["saveTab"].update(x + 25, y + 600, 50, 50) }
+    if (WP.resized) { GUI.instances["saveTab"].update(x + 100, y + 600, 50, 50) }
     GUI.instances["saveTab"].render();
 }
-
 async function handleRenders() {
     // Background
     mainWindow.width = WP.windowWidth;
@@ -1277,7 +1343,10 @@ async function handleRenders() {
     // GUI
     handleUnitTab();
     handleMapTab();
+    handleUnitSelectionTab();
     handleControlTab();
+
+    handleInputs();
 
     WP.justReleased = false;
     WP.resized = false;
@@ -1286,6 +1355,7 @@ async function handleRenders() {
 }
 
 
+/* CORE */
 async function startGame() {
     requestAnimationFrame(handleRenders);
     while (true) {
@@ -1294,7 +1364,6 @@ async function startGame() {
         }
         for (let tick = 0; tick < GAMEtickRate; tick++) {
             await wait(0.1);
-            handleInputs();
         }
     }
 }
