@@ -8,6 +8,9 @@ function makeImage(url) { const image = new Image(); try { image.src = ("texture
 function getDistance(y2, y1, x2, x1) { return Math.abs(x2 - x1) + Math.abs(y2 - y1) };
 function shuffleArray(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[array[i], array[j]] = [array[j], array[i]]; } return array; }
 
+let GAMEsavedUnits = new Map(); // Creature<[info]>
+let GAMEsavedMap;
+let GAMEStarted = false;
 let GAMEPaused = true;
 let GAMESpeed = 1;
 let GAMEtickRate = 2;
@@ -47,6 +50,7 @@ const gameTextures = {
     halfSpeedButton: makeImage("hud/halfSpeed"),
     normalSpeedButton: makeImage("hud/normalSpeed"),
     doubleSpeedButton: makeImage("hud/doubleSpeed"),
+    resetButton: makeImage("hud/resetButton"),
 }
 
 /* Canvas Variables */
@@ -80,10 +84,20 @@ const MKI = {
     lastScroll: 0,
     getMouseMove: function (event) {
         const rect = mainWindow.getBoundingClientRect();
-        MKI.x = event.clientX - rect.left;
-        MKI.y = event.clientY - rect.top;
+        const scaleX = mainWindow.width / rect.width;
+        const scaleY = mainWindow.height / rect.height;
+
+        MKI.x = (event.clientX - rect.left) * scaleX;
+        MKI.y = (event.clientY - rect.top) * scaleY;
     },
     getMouseDown: function (event) {
+        const rect = mainWindow.getBoundingClientRect();
+        const scaleX = mainWindow.width / rect.width;
+        const scaleY = mainWindow.height / rect.height;
+
+        MKI.x = (event.clientX - rect.left) * scaleX;
+        MKI.y = (event.clientY - rect.top) * scaleY;
+
         MKI.currentMouse = event.button;
         if (event.button == 2) {
             MKI.downX = MKI.x;
@@ -992,6 +1006,10 @@ function bootGame() {
     /* Handles Control Buttons */
     const pausePlayButton = new GUI("pausePlayButton", "playButton", 0, 0, 0, 0, 0);
     pausePlayButton.click = () => {
+        if (GAMEPaused && !GAMEStarted) {
+            GAMEsavedMap = structuredClone(BM.map);
+            GAMEStarted = true;
+        }
         GAMEPaused = !GAMEPaused;
         pausePlayButton.content = (GAMEPaused ? "playButton" : "pauseButton");
     }
@@ -1003,6 +1021,14 @@ function bootGame() {
         }
         GAMEtickRate = Math.max(3 - (2 * GAMESpeed), 0) + 1;
         speedButton.content = (GAMESpeed == 0 ? "halfSpeedButton" : (GAMESpeed == 1 ? "normalSpeedButton" : "doubleSpeedButton"));
+    }
+    const resetButton = new GUI("resetButton", "resetButton", 0, 0, 0, 0, 0);
+    resetButton.click = () => {
+        if (GAMEPaused && GAMEStarted) {
+            GAMEStarted = false;
+            BM.map = GAMEsavedMap;
+            // Load Save
+        }
     }
 
     /* Handles Tile Buttons */
@@ -1205,11 +1231,18 @@ function handleUnitTab() {
 function handleControlTab() {
     const width = 50;
     const height = 50;
-    if (WP.resized) { GUI.instances["pausePlayButton"].update(WP.right(width + 25), height/2, 50, 50) }
+    if (WP.resized) { GUI.instances["pausePlayButton"].update(
+        WP.right(width + 25),
+        height/2,
+        50,
+        50) }
     GUI.instances["pausePlayButton"].render()
 
-    if (WP.resized) { GUI.instances["speedButton"].update(WP.right(width*2 + 25), height/2, 50, 50) }
+    if (WP.resized) { GUI.instances["speedButton"].update(WP.right(width*2 + 50), height/2, 50, 50) }
     GUI.instances["speedButton"].render()
+
+    if (WP.resized) { GUI.instances["resetButton"].update(WP.right(width*3 + 75), height/2, 50, 50) }
+    GUI.instances["resetButton"].render()
 }
 
 /* Map Tab */
