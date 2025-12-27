@@ -279,11 +279,21 @@ const SoulData = {
         wanderChance: 1,
     }
 }
-const ApparelData = {
-    "warriorFootSoldier": {
-        width: 0.5,
-        height: 0.5,
-        health: 100,
+const CreatureTypes = {
+    "warrior": {
+        "warriorFootSoldier": {
+            width: 0.5,
+            height: 0.5,
+            health: 100,
+            normal: "warrior",
+        }
+    },
+    "goblin": {
+        "goblinFootSoldier": {
+            width: 0.5,
+            height: 0.5,
+            health: 100,
+        }
     }
 }
 class Creature {
@@ -982,11 +992,6 @@ class Creature {
                 );
             }
         }
-    }
-}
-const CreatureData = {
-    "warrior": {
-        
     }
 }
 
