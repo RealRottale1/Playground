@@ -378,7 +378,7 @@ class Creature {
                 }
                 if (unit.isGood != target.isGood) {
                     if (unit.targetChain.length > 0) {
-                        if (getDistance(target.yPos, unit.yPos, target.xPos, unit.xPos) < getDistance(unit.targetChain[0].yPos, unit.yPos, unit.targetChain[0].xPos, unit.xPos)) {
+                        if (unit.targetChain[0] == target || getDistance(target.yPos, unit.yPos, target.xPos, unit.xPos) < getDistance(unit.targetChain[0].yPos, unit.yPos, unit.targetChain[0].xPos, unit.xPos)) {
                             unit.targetChain = [target];
                             unit.allTargets.clear();
                             unit.allTargets.add(target);
@@ -743,6 +743,10 @@ class Creature {
         const validTiles = data[0];
         const allyUnits = data[1];
 
+        if (unit.justLostTarget) {
+            return ([[unit.yPos, unit.xPos], allyUnits]);
+        }
+
         // Adjusts Wander to AStar if nearby enemy found
         if (movementType == 2 && unit.targetChain[0]) {
             targetUnit = unit.targetChain[unit.targetChain.length - 1];
@@ -1004,7 +1008,7 @@ class Creature {
                 size * weaponHeight
             );
             ctx.restore();
-            if (unit.debugMode) {
+            if (unit.debugMode || unit.debugEnemy || unit.debugAlly) {
                 const tileX = Math.floor((unit.xPos - BM.mouseX + 0.5) * tileSize + halfWidth);
                 const tileY = Math.floor((unit.yPos - BM.mouseY + 0.5) * tileSize + halfHeight);
                 ctx.drawImage(
@@ -1388,10 +1392,11 @@ async function handleRenders() {
                 unit.debugMode = true;
                 console.log(unit.targetChain)
                 for (let i = 0; i < unit.targetChain.length; i++) {
+                    const target = unit.targetChain[i];
                     if (i == 0) {
-                        unit.debugEnemy = true;
+                        target.debugEnemy = true;
                     } else {
-                        unit.debugAlly = true;
+                        target.debugAlly = true;
                     }
                 }
             }
