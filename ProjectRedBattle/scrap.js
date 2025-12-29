@@ -1274,3 +1274,40 @@ const WeaponData = {
         isMelee: true,
     }
 }
+    static renderInstances() { // Main
+        
+        function getScreenPosition(z, mZ, halfZ) {
+            return Math.floor((z - mZ + 0.5) * tileSize + halfZ);
+        }
+
+
+        // Render creatures
+        for (const unit of Creature.allUnits) {
+            const creatureData = CreatureTypes[unit.subClass][unit.classType];
+            const width = creatureData.width;
+            const height = creatureData.height;
+            const screenX = getScreenPosition(unit.fluidXPos, BM.mouseX, halfWidth);
+            const screenY = getScreenPosition(unit.fluidYPos, BM.mouseY, halfHeight);
+            const screenWidth = size * width;
+            const screenHeight = size * height;
+            const healthPercentage = unit.health/unit.maxHealth;
+            
+        }
+    }
+
+        const baseTileSize = WP.windowWidth / BM.maxColumns;
+        const tileSize = baseTileSize * BM.zoom;
+        const size = Math.ceil(tileSize);
+
+        const halfWidth = WP.windowWidth / 2;
+        const halfHeight = WP.windowHeight / 2;
+
+const tileX = Math.floor((x - BM.mouseX + 0.5) * tileSize + halfWidth);
+const tileY = Math.floor((y - BM.mouseY + 0.5) * tileSize + halfHeight);
+ctx.drawImage(
+    gameTextures.debugOutline,
+    tileX - size / 2,
+    tileY - size / 2,
+    size,
+    size
+);

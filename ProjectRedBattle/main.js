@@ -289,7 +289,7 @@ const SoulData = {
         wanderChance: 1,
     },
     "swimmer": {
-        tileProps: { "grass": { risk: 8, speed: 0.5 }, "stone": { risk: Number.MAX_VALUE, speed: 0 }, "shallowwater": { risk: 1, speed: 1}, "deepwater": { risk: 2, speed: 0.8 }, "sand": { risk: 4, speed: 0.75 }, "lava": { risk: Number.MAX_VALUE, speed: 0 } },
+        tileProps: { "grass": { risk: 8, speed: 0.5 }, "stone": { risk: Number.MAX_VALUE, speed: 0 }, "shallowwater": { risk: 1, speed: 1 }, "deepwater": { risk: 2, speed: 0.8 }, "sand": { risk: 4, speed: 0.75 }, "lava": { risk: Number.MAX_VALUE, speed: 0 } },
         detectVision: 15,
         alertVision: 7,
         wanderChance: 1,
@@ -334,8 +334,6 @@ const CreatureTypes = {
     }
 }
 class Creature {
-    // Debug
-    static debugMode = false;
     // Positional
     static allUnits = new Set();
     static allUnitPositions = new Map(); // int<int<Set(Creature)>>
@@ -346,6 +344,8 @@ class Creature {
     yPos; fluidYPos; oldYPos;
     health; maxHealth;
     isGood; subClass; classType; soulType; weaponType;
+    // Debug
+    debugMode; debugEnemy;  debugAlly;
     // Movement
     allTargets = new Set();
     targetChain = [];
@@ -398,240 +398,6 @@ class Creature {
         return allyUnits;
     }
 
-    /* Smart Movement */
-    static getValidTiles(unit, targetUnit, detectVision, alertVision, pathFindingConfig) { // Helper
-        const validTiles = new Map();
-        let allyUnits = new Set();
-        for (let i = 0; i < 2; i++) {
-            const useUnit = (i == 0 ? unit : targetUnit)
-            if (!useUnit) {break};
-            for (let y = useUnit.yPos + detectVision; y >= useUnit.yPos - detectVision; y--) {
-                let ySpread = Math.abs(useUnit.yPos - y);
-                let xSpread = detectVision - ySpread;
-                for (let x = useUnit.xPos + xSpread; x >= useUnit.xPos - xSpread; x--) {
-                    if (y >= 0 && x >= 0 && y < BM.maxRows && x < BM.maxColumns) {
-                        if (unit.targetChain.length < 3 && useUnit == unit) {
-                            // Adds targets
-                            const newAllies = Creature.makeUnitConnection(unit, y, x, alertVision);
-                            for (const ally of newAllies) {
-                                allyUnits.add(ally);
-                            }
-                        }
-                        if (!validTiles.has(y)) {
-                            validTiles.set(y, new Map());
-                        }
-
-                        const risk = SoulData[unit.soulType].tileProps[BM.map[y][x]].risk;
-                        if (pathFindingConfig == 1) { // Astar
-                            validTiles.get(y).set(x, { y: y, x: x, f: 0, g: 0, h: 0, pY: null, pX: null, r: risk});
-                        } else if (pathFindingConfig == 2) { // Flow Field
-                            validTiles.get(y).set(x, {r: risk, d: getDistance(y, targetUnit.yPos, x, targetUnit.xPos)});
-                        } else { // Wander
-                            validTiles.get(y).set(x, {r: risk});
-                        }
-                    }
-                }
-            }
-        }
-        return [validTiles, allyUnits];
-    }
-    static aStar(unit, targetUnit, validTiles) { // Helper
-        const startNode = validTiles.get(unit.yPos).get(unit.xPos);
-        startNode.h = (Math.abs(targetUnit.xPos - unit.xPos) + Math.abs(targetUnit.yPos - unit.yPos));
-        startNode.f = startNode.h;
-        const path = [];
-        const openSet = [[unit.yPos, unit.xPos]];
-        const openSetAsMap = new Map();
-        openSetAsMap.set(unit.yPos, new Set());
-        openSetAsMap.get(unit.yPos).add(unit.xPos);
-        const closedMap = new Map();
-        while (openSet.length > 0) {
-            let lowestIndex = 0;
-            const openLength = openSet.length;
-            for (let i = 0; i < openLength; i++) {
-                if (openSet[i].f < openSet[lowestIndex].f) {
-                    lowestIndex = i;
-                }
-            }
-
-            let currentY = openSet[lowestIndex][0];
-            let currentX = openSet[lowestIndex][1];
-            if (currentY == targetUnit.yPos && currentX == targetUnit.xPos) {
-                let nextY = currentY;
-                let nextX = currentX;
-                path.push([nextY, nextX]);
-                while (nextY != null && nextX != null) {
-                    let nextData = validTiles.get(nextY).get(nextX);
-                    nextY = nextData.pY;
-                    nextX = nextData.pX;
-                    path.push([nextY, nextX]);
-                }
-                return (path.length >= 3 ? path[path.length - 3] : []);
-            }
-
-            openSetAsMap.get(openSet[lowestIndex][0]).delete(openSet[lowestIndex][1]);
-            openSet.splice(lowestIndex, 1);
-            if (!closedMap.has(currentY)) {
-                closedMap.set(currentY, new Set());
-            }
-            closedMap.get(currentY).add(currentX);
-
-            let neighboringTiles = shuffleArray([[0, 1], [1, 0], [0, -1], [-1, 0]]);
-            for (let d of neighboringTiles) {
-                let nY = currentY + d[0];
-                let nX = currentX + d[1];
-                if (validTiles.has(nY) && validTiles.get(nY).has(nX)) {
-                    if (SoulData[unit.soulType].tileProps[BM.map[nY][nX]].speed != 0) {
-                        if (!Creature.allUnitPositions.has(nY) || !Creature.allUnitPositions.get(nY).has(nX) || Creature.allUnitPositions.get(nY).get(nX).size <= Creature.tileCapacity) {
-                            if (!closedMap.has(nY) || !closedMap.get(nY).has(nX)) {
-                                const possibleG = validTiles.get(currentY).get(currentX).g + validTiles.get(nY).get(nX).r;
-                                const neighborData = validTiles.get(nY).get(nX);
-                                const missingYOnMap = !openSetAsMap.has(nY);
-                                if (missingYOnMap || !openSetAsMap.get(nY).has(nX)) {
-                                    if (missingYOnMap) {
-                                        openSetAsMap.set(nY, new Set());
-                                    }
-                                    openSetAsMap.get(nY).add(nX);
-                                    openSet.push([nY, nX]);
-                                } else if (possibleG >= neighborData.g) {
-                                    continue;
-                                }
-
-                                neighborData.g = possibleG;
-                                function getMinRisk(soulType) {
-                                    let min = Infinity;
-                                    for (const tile in SoulData[soulType].tileProps) {
-                                        const risk = SoulData[soulType].tileProps[tile].risk;
-                                        if (risk > 0 && risk < min) min = risk;
-                                    }
-                                    return min;
-                                }
-                                const MIN_RISK = getMinRisk(unit.soulType);
-                                const dx = Math.abs(targetUnit.xPos - neighborData.x);
-                                const dy = Math.abs(targetUnit.yPos - neighborData.y);
-                                neighborData.h = (dx + dy) * MIN_RISK;
-                                neighborData.f = neighborData.g + neighborData.h;
-                                neighborData.pY = currentY;
-                                neighborData.pX = currentX;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return ([]);
-    }
-    static flowField(unit, validTiles) { // Helper
-        // Get next tile
-        let bestY = unit.yPos;
-        let bestX = unit.xPos;
-        let bestRisk = Number.MAX_VALUE;
-        let bestDistance = Number.MAX_VALUE;
-        let directions = shuffleArray([[0, 1], [1, 0], [0, -1], [-1, 0]]);
-        for (let [yDir, xDir] of directions) {
-            let neighborY = unit.yPos + yDir;
-            let neighborX = unit.xPos + xDir;
-            if (validTiles.has(neighborY) && validTiles.get(neighborY).has(neighborX)) {
-                if (SoulData[unit.soulType].tileProps[BM.map[neighborY][neighborX]].speed != 0) {
-                    if (!Creature.allUnitPositions.has(neighborY) || !Creature.allUnitPositions.get(neighborY).has(neighborX) || Creature.allUnitPositions.get(neighborY).get(neighborX).size <= Creature.tileCapacity) {
-                        let neighborDistance = validTiles.get(neighborY).get(neighborX).d;
-                        let neighborRisk = validTiles.get(neighborY).get(neighborX).r;
-                        if (neighborDistance < bestDistance || (neighborDistance === bestDistance && neighborRisk < bestRisk)) {
-                            bestY = neighborY;
-                            bestX = neighborX;
-                            bestRisk = neighborRisk;
-                            bestDistance = neighborDistance;
-                        }
-                    }
-                }
-            }
-        }
-        return([bestY, bestX]);
-    }
-    static wander(unit, validTiles) { // Main
-        let touchingTiles = shuffleArray([[0, 1], [1, 0], [0, -1], [-1, 0]]);
-        let currentRisk = SoulData[unit.soulType].tileProps[BM.map[unit.yPos][unit.xPos]].risk;
-        let currentPosition = [unit.yPos, unit.xPos];
-        let wanderChange = SoulData[unit.soulType].wanderChance;
-        for (let d of touchingTiles) {
-            let nY = unit.yPos + d[0];
-            let nX = unit.xPos + d[1];
-            if (validTiles.has(nY) && validTiles.get(nY).has(nX) && BM.map[nY][nX] != "stone") {
-                let knownRisk = validTiles.get(nY).get(nX).r;
-                if (knownRisk <= currentRisk * 5 && Math.random() <= wanderChange) {
-                    if (!Creature.allUnitPositions.has(nY) || !Creature.allUnitPositions.get(nY).has(nX) || Creature.allUnitPositions.get(nY).get(nX).size <= Creature.tileCapacity) {
-                        currentRisk = knownRisk;
-                        currentPosition[0] = nY;
-                        currentPosition[1] = nX;
-                    }
-                }
-            }
-        }
-        return currentPosition;
-    }
-    static smartMove(unit, movementType) {
-        const detectVision = SoulData[unit.soulType].detectVision;
-        const alertVision = SoulData[unit.soulType].alertVision;
-        let targetUnit = (unit.targetChain.length > 0 ? unit.targetChain[unit.targetChain.length - 1] : null);
-
-        // Gets tiles to use in path finding
-        const data = Creature.getValidTiles(unit, targetUnit, detectVision, alertVision);
-        const validTiles = data[0];
-        const allyUnits = data[1];
-
-        // Adjusts Wander to AStar if nearby enemy found
-        // if (movementType == 2 && unit.targetChain[0]) {
-        //     targetUnit = unit.targetChain[unit.targetChain.length - 1];
-        //     movementType = 0;
-        // }
-        
-        // Gets best next move
-        let nextMove = null;
-        if (movementType == 0) {
-            nextMove = Creature.aStar(unit, targetUnit, validTiles);
-        } else if (movementType == 1) {
-            nextMove = Creature.flowField(unit, validTiles);
-        } else if (movementType == 2) {
-            nextMove = Creature.wander(unit, validTiles);
-        }
-        return ([nextMove, allyUnits]);
-    }
-
-    /* Updates Position */
-    static setNextPosition(nextPositions) { // Main
-       for (const [unit, desiredPosition] of nextPositions) {
-            if (unit.health <= 0) {
-                continue;
-            }
-            Creature.allUnitPositions.get(unit.yPos).get(unit.xPos).delete(unit);
-            unit.yPos = desiredPosition[0];
-            unit.xPos = desiredPosition[1];
-            Creature.updateAllUnitPositions(unit);
-            unit.moving = true;
-        }
-    }
-    static moveUnit(unit) { // Main
-        let dx = unit.xPos - unit.fluidXPos;
-        let dy = unit.yPos - unit.fluidYPos;
-        let dist = Math.hypot(dx, dy);
-
-        const useY = (dist <= 0.5 ? unit.yPos : unit.oldYPos);
-        const useX = (dist <= 0.5 ? unit.xPos : unit.oldXPos);
-        const speed = SoulData[unit.soulType].tileProps[BM.map[useY][useX]].speed * 0.05;
-
-        if (dist <= speed) {
-            unit.fluidXPos = unit.xPos;
-            unit.fluidYPos = unit.yPos;
-            unit.oldYPos = unit.yPos;;
-            unit.oldXPos = unit.xPos;
-            unit.moving = false;
-        } else {
-            unit.fluidXPos += (dx / dist) * speed;
-            unit.fluidYPos += (dy / dist) * speed;
-        }
-        return false;
-    }
-
     /* Weapons */
     static isClearPath(y1, x1, y2, x2) { // Helper
         // Math stuff
@@ -643,8 +409,8 @@ class Creature {
         const dy = y2 - y1;
         const stepX = Math.sign(dx);
         const stepY = Math.sign(dy);
-        const tDeltaX = dx !== 0 ? Math.abs(1/dx) : Infinity;
-        const tDeltaY = dy != 0 ? Math.abs(1/dy) : Infinity;
+        const tDeltaX = dx !== 0 ? Math.abs(1 / dx) : Infinity;
+        const tDeltaY = dy != 0 ? Math.abs(1 / dy) : Infinity;
         // More math stuff
         function getTMax(z, dz) {
             if (dz > 0) {
@@ -726,7 +492,7 @@ class Creature {
                 continue;
             }
             arrow.lifeTime += 1;
-            
+
             // Damage units
             function getHitUnits() {
                 // Hit stone
@@ -734,7 +500,7 @@ class Creature {
                 const closestX = Math.round(arrow.x);
                 if (BM.map[closestY] && BM.map[closestY][closestX] == "stone") {
                     return true;
-                } 
+                }
 
                 const touchingY = new Set();
                 touchingY.add(Math.floor(arrow.y));
@@ -762,15 +528,15 @@ class Creature {
                             for (const unit of Creature.allUnitPositions.get(ny).get(nx)) {
                                 const dx = unit.fluidXPos - arrow.x;
                                 const dy = unit.fluidYPos - arrow.y;
-                                if (unit.isGood != arrow.isGood && (dx * dx + dy * dy) <= arrowInfo.hitboxSize/2) {
+                                if (unit.isGood != arrow.isGood && (dx * dx + dy * dy) <= arrowInfo.hitboxSize / 2) {
                                     unit.health -= arrowInfo.damage;
                                     if (!arrowInfo.piercing) {
-                                        return(true);
+                                        return (true);
                                     } else if (!arrow.allPierced.has(unit)) {
                                         arrow.totalPierced += 1;
                                         arrow.allPierced.add(unit);
                                         if (arrow.allPierced.length >= arrowInfo.maxPierces) {
-                                            return(true);
+                                            return (true);
                                         }
                                     }
                                 }
@@ -778,20 +544,269 @@ class Creature {
                         }
                     }
                 }
-                return(false);
+                return (false);
             }
             const arrowDestroyed = getHitUnits();
             if (arrowDestroyed) {
                 deadArrows.add(arrow);
             } else {
                 // Move arrow in direction
-                arrow.x += Math.cos(arrow.direction + Math.PI) * arrowInfo.speed; 
+                arrow.x += Math.cos(arrow.direction + Math.PI) * arrowInfo.speed;
                 arrow.y += Math.sin(arrow.direction + Math.PI) * arrowInfo.speed;
             }
         }
         for (const arrow of deadArrows) {
             Creature.allArrows.delete(arrow);
         }
+    }
+
+    /* Smart Movement */
+    static getValidTiles(unit, targetUnit, detectVision, alertVision, pathFindingConfig) { // Helper
+        //console.log(pathFindingConfig)
+        const validTiles = new Map();
+        let allyUnits = new Set();
+        for (let i = 0; i < 2; i++) {
+            const useUnit = (i == 0 ? unit : targetUnit)
+            if (!useUnit) { break };
+            for (let y = useUnit.yPos + detectVision; y >= useUnit.yPos - detectVision; y--) {
+                let ySpread = Math.abs(useUnit.yPos - y);
+                let xSpread = detectVision - ySpread;
+                for (let x = useUnit.xPos + xSpread; x >= useUnit.xPos - xSpread; x--) {
+                    if (y >= 0 && x >= 0 && y < BM.maxRows && x < BM.maxColumns) {
+                        if (unit.targetChain.length < 3 && useUnit == unit) {
+                            // Adds targets
+                            const newAllies = Creature.makeUnitConnection(unit, y, x, alertVision);
+                            for (const ally of newAllies) {
+                                allyUnits.add(ally);
+                            }
+                        }
+                        if (!validTiles.has(y)) {
+                            validTiles.set(y, new Map());
+                        }
+
+                        const tileAtCapacity = (Creature.allUnitPositions.has(y) ? (Creature.allUnitPositions.get(y).has(x) ? Creature.allUnitPositions.get(y).get(x).size >= Creature.tileCapacity : false) : false);
+                        const risk = SoulData[unit.soulType].tileProps[BM.map[y][x]].risk;
+                        if (pathFindingConfig == 0) { // Astar
+                            validTiles.get(y).set(x, { y: y, x: x, f: 0, g: 0, h: 0, pY: null, pX: null, r: risk, c: tileAtCapacity });
+                        } else if (pathFindingConfig == 1) { // Flow Field
+                            validTiles.get(y).set(x, { r: risk, d: getDistance(y, targetUnit.yPos, x, targetUnit.xPos), c: tileAtCapacity });
+                        } else { // Wander
+                            validTiles.get(y).set(x, { r: risk, c: tileAtCapacity });
+                        }
+                    }
+                }
+            }
+        }
+        return [validTiles, allyUnits];
+    }
+    static aStar(unit, targetUnit, validTiles) { // Helper
+        const startNode = validTiles.get(unit.yPos).get(unit.xPos);
+        startNode.h = (Math.abs(targetUnit.xPos - unit.xPos) + Math.abs(targetUnit.yPos - unit.yPos));
+        startNode.f = startNode.h;
+        const path = [];
+        const openSet = [[unit.yPos, unit.xPos]];
+        const openSetAsMap = new Map();
+        openSetAsMap.set(unit.yPos, new Set());
+        openSetAsMap.get(unit.yPos).add(unit.xPos);
+        const closedMap = new Map();
+        while (openSet.length > 0) {
+            let lowestIndex = 0;
+            const openLength = openSet.length;
+            for (let i = 0; i < openLength; i++) {
+                if (openSet[i].f < openSet[lowestIndex].f) {
+                    lowestIndex = i;
+                }
+            }
+
+            let currentY = openSet[lowestIndex][0];
+            let currentX = openSet[lowestIndex][1];
+            if (currentY == targetUnit.yPos && currentX == targetUnit.xPos) {
+                let nextY = currentY;
+                let nextX = currentX;
+                path.push([nextY, nextX]);
+                while (nextY != null && nextX != null) {
+                    let nextData = validTiles.get(nextY).get(nextX);
+                    nextY = nextData.pY;
+                    nextX = nextData.pX;
+                    path.push([nextY, nextX]);
+                }
+                return (path.length >= 3 ? path[path.length - 3] : []);
+            }
+
+            openSetAsMap.get(openSet[lowestIndex][0]).delete(openSet[lowestIndex][1]);
+            openSet.splice(lowestIndex, 1);
+            if (!closedMap.has(currentY)) {
+                closedMap.set(currentY, new Set());
+            }
+            closedMap.get(currentY).add(currentX);
+
+            let neighboringTiles = shuffleArray([[0, 1], [1, 0], [0, -1], [-1, 0]]);
+            for (let d of neighboringTiles) {
+                let nY = currentY + d[0];
+                let nX = currentX + d[1];
+                if (validTiles.has(nY) && validTiles.get(nY).has(nX)) {
+                    if (SoulData[unit.soulType].tileProps[BM.map[nY][nX]].speed != 0) {
+                        if (!validTiles.get(nY).get(nX).c) {
+                            if (!closedMap.has(nY) || !closedMap.get(nY).has(nX)) {
+                                const possibleG = validTiles.get(currentY).get(currentX).g + validTiles.get(nY).get(nX).r;
+                                const neighborData = validTiles.get(nY).get(nX);
+                                const missingYOnMap = !openSetAsMap.has(nY);
+                                if (missingYOnMap || !openSetAsMap.get(nY).has(nX)) {
+                                    if (missingYOnMap) {
+                                        openSetAsMap.set(nY, new Set());
+                                    }
+                                    openSetAsMap.get(nY).add(nX);
+                                    openSet.push([nY, nX]);
+                                } else if (possibleG >= neighborData.g) {
+                                    continue;
+                                }
+
+                                neighborData.g = possibleG;
+                                function getMinRisk(soulType) {
+                                    let min = Infinity;
+                                    for (const tile in SoulData[soulType].tileProps) {
+                                        const risk = SoulData[soulType].tileProps[tile].risk;
+                                        if (risk > 0 && risk < min) min = risk;
+                                    }
+                                    return min;
+                                }
+                                const MIN_RISK = getMinRisk(unit.soulType);
+                                const dx = Math.abs(targetUnit.xPos - neighborData.x);
+                                const dy = Math.abs(targetUnit.yPos - neighborData.y);
+                                neighborData.h = (dx + dy) * MIN_RISK;
+                                neighborData.f = neighborData.g + neighborData.h;
+                                neighborData.pY = currentY;
+                                neighborData.pX = currentX;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return ([]);
+    }
+    static flowField(unit, validTiles) { // Helper
+        // Get next tile
+        let bestY = unit.yPos;
+        let bestX = unit.xPos;
+        let bestRisk = Number.MAX_VALUE;
+        let bestDistance = Number.MAX_VALUE;
+        let directions = shuffleArray([[0, 1], [1, 0], [0, -1], [-1, 0]]);
+        for (let [yDir, xDir] of directions) {
+            let nY = unit.yPos + yDir;
+            let nX = unit.xPos + xDir;
+            if (validTiles.has(nY) && validTiles.get(nY).has(nX)) {
+                if (SoulData[unit.soulType].tileProps[BM.map[nY][nX]].speed != 0) {
+                    if (!validTiles.get(nY).get(nX).c) {
+                        let nDistance = validTiles.get(nY).get(nX).d;
+                        let nRisk = validTiles.get(nY).get(nX).r;
+                        if (nDistance < bestDistance || (nDistance === bestDistance && nRisk < bestRisk)) {
+                            bestY = nY;
+                            bestX = nX;
+                            bestRisk = nRisk;
+                            bestDistance = nDistance;
+                        }
+                    }
+                }
+            }
+        }
+        return ([bestY, bestX]);
+    }
+    static wander(unit, validTiles) { // Helper
+        let touchingTiles = shuffleArray([[0, 1], [1, 0], [0, -1], [-1, 0]]);
+        let currentRisk = SoulData[unit.soulType].tileProps[BM.map[unit.yPos][unit.xPos]].risk;
+        let currentPosition = [unit.yPos, unit.xPos];
+        let wanderChange = SoulData[unit.soulType].wanderChance;
+        for (let d of touchingTiles) {
+            let nY = unit.yPos + d[0];
+            let nX = unit.xPos + d[1];
+            if (validTiles.has(nY) && validTiles.get(nY).has(nX) && BM.map[nY][nX] != "stone") {
+                let knownRisk = validTiles.get(nY).get(nX).r;
+                if (knownRisk <= currentRisk * 5 && Math.random() <= wanderChange) {
+                    if (!validTiles.get(nY).get(nX).c) {
+                        currentRisk = knownRisk;
+                        currentPosition[0] = nY;
+                        currentPosition[1] = nX;
+                    }
+                }
+            }
+        }
+        return currentPosition;
+    }
+    static smartMove(unit, movementType) {
+        const detectVision = SoulData[unit.soulType].detectVision;
+        const alertVision = SoulData[unit.soulType].alertVision;
+        let targetUnit = (unit.targetChain.length > 0 ? unit.targetChain[unit.targetChain.length - 1] : null);
+
+        // Gets tiles to use in path finding
+        const data = Creature.getValidTiles(unit, targetUnit, detectVision, alertVision, movementType);
+        const validTiles = data[0];
+        const allyUnits = data[1];
+
+        // Adjusts Wander to AStar if nearby enemy found
+        if (movementType == 2 && unit.targetChain[0]) {
+            targetUnit = unit.targetChain[unit.targetChain.length - 1];
+            movementType = 0;
+        }
+
+        // Attack
+        if (movementType != 2) {
+            const targetEnemy = unit.targetChain[0];
+            const distanceBetweenEnemy = getDistance(targetEnemy.yPos, unit.yPos, targetEnemy.xPos, unit.xPos);
+            const currentWeapon = WeaponData[unit.weaponType];
+            if (distanceBetweenEnemy <= currentWeapon.range && (currentWeapon.isMelee || Creature.isClearPath(unit.fluidYPos, unit.fluidXPos, targetEnemy.fluidYPos, targetEnemy.fluidXPos))) {
+                if (unit.attackTick == 0) {
+                    unit.attackTick = 1;
+                }
+                return ([false, allyUnits]);
+            }
+        }
+
+        // Gets best next move
+        let nextMove = null;
+        if (movementType == 0) {
+            nextMove = Creature.aStar(unit, targetUnit, validTiles);
+        } else if (movementType == 1) {
+            nextMove = Creature.flowField(unit, validTiles);
+        } else if (movementType == 2) {
+            nextMove = Creature.wander(unit, validTiles);
+        }
+        return ([nextMove, allyUnits]);
+    }
+
+    /* Updates Position */
+    static setNextPosition(nextPositions) { // Main
+        for (const [unit, desiredPosition] of nextPositions) {
+            if (unit.health <= 0) {
+                continue;
+            }
+            Creature.allUnitPositions.get(unit.yPos).get(unit.xPos).delete(unit);
+            unit.yPos = desiredPosition[0];
+            unit.xPos = desiredPosition[1];
+            Creature.updateAllUnitPositions(unit);
+            unit.moving = true;
+        }
+    }
+    static moveUnit(unit) { // Main
+        let dx = unit.xPos - unit.fluidXPos;
+        let dy = unit.yPos - unit.fluidYPos;
+        let dist = Math.hypot(dx, dy);
+
+        const useY = (dist <= 0.5 ? unit.yPos : unit.oldYPos);
+        const useX = (dist <= 0.5 ? unit.xPos : unit.oldXPos);
+        const speed = SoulData[unit.soulType].tileProps[BM.map[useY][useX]].speed * 0.05;
+
+        if (dist <= speed) {
+            unit.fluidXPos = unit.xPos;
+            unit.fluidYPos = unit.yPos;
+            unit.oldYPos = unit.yPos;;
+            unit.oldXPos = unit.xPos;
+            unit.moving = false;
+        } else {
+            unit.fluidXPos += (dx / dist) * speed;
+            unit.fluidYPos += (dy / dist) * speed;
+        }
+        return false;
     }
 
     static act() { // Main
@@ -834,33 +849,16 @@ class Creature {
             }
 
             if (!unit.moving) {
-                if (unit.allTargets.size == 0) { // Wander
-                    const moveData = Creature.smartMove(unit, 2 + (unit.justLostTarget ? 1 : 0));
-                    const nextMove = moveData[0];
-                    const allyUnits = moveData[1];
-                    visionData.set(unit, allyUnits);
-                    if (nextMove) {
-                        nextPositions.set(unit, nextMove);
-                    }
-                } else { // Pathfind towards target
-                    const targetEnemy = unit.targetChain[0];
-                    const distanceBetweenEnemy = getDistance(targetEnemy.yPos, unit.yPos, targetEnemy.xPos, unit.xPos);
-                    const currentWeapon = WeaponData[unit.weaponType];
-                    if (distanceBetweenEnemy <= currentWeapon.range && (currentWeapon.isMelee || Creature.isClearPath(unit.fluidYPos, unit.fluidXPos, targetEnemy.fluidYPos, targetEnemy.fluidXPos))) {
-                        if (unit.attackTick == 0) {
-                            unit.attackTick = 1;
-                        }
+                const moveData = Creature.smartMove(unit, (unit.allTargets.size == 0 ? 2 : 0));
+                const nextMove = moveData[0];
+                const allyUnits = moveData[1];
+                if (nextMove) {
+                    if (nextMove.length == 0) {
+                        lostTarget.add(unit);
+                        // No movement
                     } else {
-                        const moveData = Creature.smartMove(unit, 0);
-                        const nextMove = moveData[0];
-                        const allyUnits = moveData[1];
-                        if (nextMove.length == 0) {
-                            lostTarget.add(unit);
-                            // No movement
-                        } else {
-                            nextPositions.set(unit, nextMove);
-                            visionData.set(unit, allyUnits);
-                        }
+                        nextPositions.set(unit, nextMove);
+                        visionData.set(unit, allyUnits);
                     }
                 }
             } else { // Transition to spot
@@ -936,7 +934,7 @@ class Creature {
 
         const halfWidth = WP.windowWidth / 2;
         const halfHeight = WP.windowHeight / 2;
-        
+
         function getScreenPosition(z, mZ, halfZ) {
             return Math.floor((z - mZ + 0.5) * tileSize + halfZ);
         }
@@ -951,7 +949,7 @@ class Creature {
             const screenHeight = size * arrowSize;
             ctx.save();
             ctx.translate(screenX, screenY);
-            ctx.rotate(arrow.direction - Math.PI/2);
+            ctx.rotate(arrow.direction - Math.PI / 2);
             ctx.drawImage(
                 gameTextures[arrowInfo.texture],
                 -screenWidth / 2,
@@ -971,21 +969,15 @@ class Creature {
             const screenY = getScreenPosition(unit.fluidYPos, BM.mouseY, halfHeight);
             const screenWidth = size * width;
             const screenHeight = size * height;
-            const healthPercentage = unit.health/unit.maxHealth;
-            /*
-            They keep back tracking and bugging out because when their
-            target dies they default to wander for one tick then switch back
-            to astar.
-
-            */
+            const healthPercentage = unit.health / unit.maxHealth;
             ctx.drawImage(
-                gameTextures[unit.targetChain.length == 0 ? "missingTexture" : (healthPercentage <= 0.333 ? creatureData.healthLow : (healthPercentage <= 0.666 ? creatureData.healthMiddle : creatureData.healthHigh))],
+                gameTextures[unit.debugMode ? "missingTexture" : unit.debugEnemy ? "troll" : unit.debugAlly ? "elf" : (healthPercentage <= 0.333 ? creatureData.healthLow : (healthPercentage <= 0.666 ? creatureData.healthMiddle : creatureData.healthHigh))],
                 screenX - screenWidth / 2,
                 screenY - screenHeight / 2,
                 screenWidth,
                 screenHeight
             );
-            
+
             const currentWeapon = WeaponData[unit.weaponType];
             const weaponWidth = currentWeapon.width;
             const weaponHeight = currentWeapon.height;
@@ -994,25 +986,25 @@ class Creature {
             let rotation = 0;
             const targetEnemy = unit.targetChain[0];
             if (targetEnemy) {
-                rotation = Math.atan2(unit.fluidYPos - targetEnemy.fluidYPos, unit.fluidXPos - targetEnemy.fluidXPos) - Math.PI/2;
+                rotation = Math.atan2(unit.fluidYPos - targetEnemy.fluidYPos, unit.fluidXPos - targetEnemy.fluidXPos) - Math.PI / 2;
             } else {
                 if (unit.fluidYPos == unit.yPos && unit.fluidXPos == unit.xPos) {
                     rotation = unit.lastAttackAngle;
                 } else {
-                    rotation = Math.atan2(unit.fluidYPos - unit.yPos, unit.fluidXPos - unit.xPos) - Math.PI/2;
+                    rotation = Math.atan2(unit.fluidYPos - unit.yPos, unit.fluidXPos - unit.xPos) - Math.PI / 2;
                     unit.lastAttackAngle = rotation;
                 }
             }
             ctx.rotate(rotation);
             ctx.drawImage(
                 gameTextures[(!currentWeapon.isMelee && unit.attackTick < currentWeapon.attackRate ? currentWeapon.loadedTexture : currentWeapon.texture)],
-                -(size * weaponWidth + (targetEnemy ? 0 : (currentWeapon.isMelee ? size/2 : 0))) / 2,
+                -(size * weaponWidth + (targetEnemy ? 0 : (currentWeapon.isMelee ? size / 2 : 0))) / 2,
                 -(size * weaponHeight * (targetEnemy ? 2.5 : 2) + (targetEnemy ? (unit.attacking && currentWeapon.isMelee ? size : 0) : 0)) / 2,
                 size * weaponWidth,
                 size * weaponHeight
             );
             ctx.restore();
-            if (Creature.debugMode) {
+            if (unit.debugMode) {
                 const tileX = Math.floor((unit.xPos - BM.mouseX + 0.5) * tileSize + halfWidth);
                 const tileY = Math.floor((unit.yPos - BM.mouseY + 0.5) * tileSize + halfHeight);
                 ctx.drawImage(
@@ -1023,6 +1015,9 @@ class Creature {
                     size
                 );
             }
+            unit.debugMode = false;
+            unit.debugEnemy = false;
+            unit.debugAlly = false;
         }
     }
 }
@@ -1206,18 +1201,18 @@ function bootGame() {
             let r = Math.random();
             BM.map[y][x] =
                 (r < 1) ? "grass" :
-                (r < 1.1) ? "stone" : "lava"
-                // (r < 0.85) ? "shallowwater" :
-                // (r < 0.95) ? "deepwater" :
-                // (r < 1) ? "lava" : "lava";
+                    (r < 1.1) ? "stone" : "lava"
+            // (r < 0.85) ? "shallowwater" :
+            // (r < 0.95) ? "deepwater" :
+            // (r < 1) ? "lava" : "lava";
         }
     }
 
 
-    for (let i = 0; i < 25; i++) {
+    for (let i = 0; i < 30; i++) {
         for (let o = 0; o < 1; o++) {
-            new Creature(i + 25, o + 25, true, "warrior", "archer", "normal", (Math.random() < 0.5 ? "ironSword" : "bow"));
-            new Creature(i + 25, 5 - o + 40, false, "goblin", "archer", "normal", (Math.random() < 0.5 ? "ironSword" : "bow"));
+            new Creature(i + 10, o + 25, true, "warrior", "archer", "normal", (Math.random() < 0.5 ? "ironSword" : "bow"));
+            new Creature(i + 10, 5 - o + 40, false, "goblin", "archer", "normal", (Math.random() < 0.5 ? "ironSword" : "bow"));
         }
     }
 }
@@ -1236,7 +1231,7 @@ function getSelectedTile() {
 
     const selectedX = (tileX > (BM.maxColumns - 1) || tileX < 0) ? null : tileX;
     const selectedY = (tileY > (BM.maxRows - 1) || tileY < 0) ? null : tileY;
-    return [selectedX, selectedY];
+    return [selectedY, selectedX];
 }
 async function handleInputs() {
     // Gets interacted gui
@@ -1272,9 +1267,9 @@ async function handleInputs() {
                 MKI.downY = 0;
             }
             MKI.initialTarget = null;
-        }   
-    } 
-    if (!highestElement){
+        }
+    }
+    if (!highestElement) {
         MKI.hoveringOver = null
         if (MKI.currentMouse == 2) {
             if (MKI.wentDown) {
@@ -1332,7 +1327,7 @@ function handleUnitSelectionTab() {
     const height = 600;
     const x = WP.middle(0);
     const y = WP.center(120);
-    if (WP.resized) { GUI.instances["unitSelectBar"].update(x - width/2, y - height/2, width, height) };
+    if (WP.resized) { GUI.instances["unitSelectBar"].update(x - width / 2, y - height / 2, width, height) };
     if (GAMEselectedUnitType) {
         GUI.instances["unitSelectBar"].render();
     } else {
@@ -1342,17 +1337,19 @@ function handleUnitSelectionTab() {
 function handleControlTab() {
     const width = 50;
     const height = 50;
-    if (WP.resized) { GUI.instances["pausePlayButton"].update(
-        WP.right(width + 25),
-        height/2,
-        50,
-        50) }
+    if (WP.resized) {
+        GUI.instances["pausePlayButton"].update(
+            WP.right(width + 25),
+            height / 2,
+            50,
+            50)
+    }
     GUI.instances["pausePlayButton"].render()
 
-    if (WP.resized) { GUI.instances["speedButton"].update(WP.right(width*2 + 50), height/2, 50, 50) }
+    if (WP.resized) { GUI.instances["speedButton"].update(WP.right(width * 2 + 50), height / 2, 50, 50) }
     GUI.instances["speedButton"].render()
 
-    if (WP.resized) { GUI.instances["resetButton"].update(WP.right(width*3 + 75), height/2, 50, 50) }
+    if (WP.resized) { GUI.instances["resetButton"].update(WP.right(width * 3 + 75), height / 2, 50, 50) }
     GUI.instances["resetButton"].render()
 }
 function handleMapTab() {
@@ -1379,6 +1376,27 @@ async function handleRenders() {
     ctx.fillStyle = "black";
     ctx.fillRect(0, 0, WP.windowWidth, WP.windowHeight);
     BM.render();
+
+    /* Debug */
+    const data = getSelectedTile();
+    if (data) {
+        const y = data[0];
+        const x = data[1];
+        if (Creature.allUnitPositions.has(y) && Creature.allUnitPositions.get(y).has(x)) {
+            for (const unit of Creature.allUnitPositions.get(y).get(x)) {
+                console.log("New Creature")
+                unit.debugMode = true;
+                console.log(unit.targetChain)
+                for (let i = 0; i < unit.targetChain.length; i++) {
+                    if (i == 0) {
+                        unit.debugEnemy = true;
+                    } else {
+                        unit.debugAlly = true;
+                    }
+                }
+            }
+        }
+    }
 
     Creature.renderInstances();
 
