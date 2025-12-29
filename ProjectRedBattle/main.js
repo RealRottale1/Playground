@@ -743,8 +743,9 @@ class Creature {
         const validTiles = data[0];
         const allyUnits = data[1];
 
+        // Just lost target
         if (unit.justLostTarget) {
-            return ([[unit.yPos, unit.xPos], allyUnits]);
+            return ([false, allyUnits]);
         }
 
         // Adjusts Wander to AStar if nearby enemy found
@@ -867,6 +868,25 @@ class Creature {
                 }
             } else { // Transition to spot
                 Creature.moveUnit(unit);
+            }
+
+            // Remove useless chains
+            const detectVision = SoulData[unit.soulType].detectVision;
+            while (true) {
+                const chainLength = unit.targetChain.length;
+                if (chainLength >= 2) {
+                    const nearEndOfChain = (chainLength == 2);
+                    const secondTarget = unit.targetChain[chainLength - (nearEndOfChain ? 1 : 2)];
+                    const distanceFromSecond = getDistance(secondTarget.yPos, unit.yPos, secondTarget.xPos, unit.xPos);
+                    if (distanceFromSecond <= detectVision) {
+                        unit.allTargets.delete(secondTarget);
+                        unit.targetChain.pop();
+                    } else {
+                        break;
+                    }
+                } else {
+                    break;
+                }
             }
             unit.justLostTarget = false;
         }
@@ -1382,26 +1402,26 @@ async function handleRenders() {
     BM.render();
 
     /* Debug */
-    const data = getSelectedTile();
-    if (data) {
-        const y = data[0];
-        const x = data[1];
-        if (Creature.allUnitPositions.has(y) && Creature.allUnitPositions.get(y).has(x)) {
-            for (const unit of Creature.allUnitPositions.get(y).get(x)) {
-                console.log("New Creature")
-                unit.debugMode = true;
-                console.log(unit.targetChain)
-                for (let i = 0; i < unit.targetChain.length; i++) {
-                    const target = unit.targetChain[i];
-                    if (i == 0) {
-                        target.debugEnemy = true;
-                    } else {
-                        target.debugAlly = true;
-                    }
-                }
-            }
-        }
-    }
+    // const data = getSelectedTile();
+    // if (data) {
+    //     const y = data[0];
+    //     const x = data[1];
+    //     if (Creature.allUnitPositions.has(y) && Creature.allUnitPositions.get(y).has(x)) {
+    //         for (const unit of Creature.allUnitPositions.get(y).get(x)) {
+    //             console.log("New Creature")
+    //             unit.debugMode = true;
+    //             console.log(unit.targetChain)
+    //             for (let i = 0; i < unit.targetChain.length; i++) {
+    //                 const target = unit.targetChain[i];
+    //                 if (i == 0) {
+    //                     target.debugEnemy = true;
+    //                 } else {
+    //                     target.debugAlly = true;
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
 
     Creature.renderInstances();
 
