@@ -350,6 +350,7 @@ class Creature {
     allTargets = new Set();
     targetChain = [];
     moving = false;
+    justLostTarget = false;
     // Attack
     attackTick = 0;
     attacking = false;
@@ -585,12 +586,12 @@ class Creature {
         // }
         
         // Gets best next move
-        let nextMove;
+        let nextMove = null;
         if (movementType == 0) {
             nextMove = Creature.aStar(unit, targetUnit, validTiles);
         } else if (movementType == 1) {
             nextMove = Creature.flowField(unit, validTiles);
-        } else {
+        } else if (movementType == 2) {
             nextMove = Creature.wander(unit, validTiles);
         }
         return ([nextMove, allyUnits]);
@@ -817,12 +818,14 @@ class Creature {
                 if (unit.allTargets.has(target)) {
                     unit.allTargets.clear();
                     unit.targetChain = [];
+                    unit.justLostTarget = true;
                 }
             }
             // Unit above broke chain
             if (unit.targetChain.length > 0 && unit.targetChain[unit.targetChain.length - 1].targetChain.length <= 0 && unit.targetChain[unit.targetChain.length - 1].isGood == unit.isGood) {
                 unit.allTargets.clear();
                 unit.targetChain = [];
+                unit.justLostTarget = true;
             }
 
             // Progress attack
@@ -832,11 +835,13 @@ class Creature {
 
             if (!unit.moving) {
                 if (unit.allTargets.size == 0) { // Wander
-                    const moveData = Creature.smartMove(unit, 2);
+                    const moveData = Creature.smartMove(unit, 2 + (unit.justLostTarget ? 1 : 0));
                     const nextMove = moveData[0];
                     const allyUnits = moveData[1];
                     visionData.set(unit, allyUnits);
-                    nextPositions.set(unit, nextMove);
+                    if (nextMove) {
+                        nextPositions.set(unit, nextMove);
+                    }
                 } else { // Pathfind towards target
                     const targetEnemy = unit.targetChain[0];
                     const distanceBetweenEnemy = getDistance(targetEnemy.yPos, unit.yPos, targetEnemy.xPos, unit.xPos);
@@ -861,6 +866,7 @@ class Creature {
             } else { // Transition to spot
                 Creature.moveUnit(unit);
             }
+            unit.justLostTarget = false;
         }
 
         // Handles all arrows
@@ -1210,7 +1216,7 @@ function bootGame() {
 
     for (let i = 0; i < 25; i++) {
         for (let o = 0; o < 1; o++) {
-            new Creature(i + 25, o + 25, true, "warrior", "archer", "normal", (Math.random() < 0.5 ? "ironSword" : "ironSword"));
+            new Creature(i + 25, o + 25, true, "warrior", "archer", "normal", (Math.random() < 0.5 ? "ironSword" : "bow"));
             new Creature(i + 25, 5 - o + 40, false, "goblin", "archer", "normal", (Math.random() < 0.5 ? "ironSword" : "bow"));
         }
     }
