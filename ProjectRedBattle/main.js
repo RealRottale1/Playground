@@ -15,6 +15,7 @@ let GAMEPaused = true;
 let GAMESpeed = 1;
 let GAMEtickRate = 2;
 let GAMEselectedUnitType;
+let GAMEfillBucketSelected = false;
 
 /* TEXTURES */
 const gameTextures = {
@@ -42,13 +43,23 @@ const gameTextures = {
     goblinArcher1: makeImage("creatures/goblins/archer/archer1"),
     goblinArcher2: makeImage("creatures/goblins/archer/archer2"),
 
+    fishlingFootSoldier0: makeImage("creatures/fishlings/footSoldier/footSoldier0"),
+    fishlingFootSoldier1: makeImage("creatures/fishlings/footSoldier/footSoldier1"),
+    fishlingFootSoldier2: makeImage("creatures/fishlings/footSoldier/footSoldier2"),
+    fishlingArcher0: makeImage("creatures/fishlings/archer/archer0"),
+    fishlingArcher1: makeImage("creatures/fishlings/archer/archer1"),
+    fishlingArcher2: makeImage("creatures/fishlings/archer/archer2"),   
 
     ironSword: makeImage("weapons/ironSword"),
+    trident: makeImage("weapons/trident"),
 
     bow: makeImage("weapons/bow"),
     loadedBow: makeImage("weapons/loadedBow"),
+    fishlingBow: makeImage("weapons/fishlingBow"),
+    loadedFishlingBow: makeImage("weapons/loadedFishlingBow"),
 
     arrow: makeImage("arrows/arrow"),
+    fishlingArrow: makeImage("arrows/fishlingArrow"),
 
     unitBar: makeImage("tabUnitBar"),
     unitSelectBar: makeImage("tabUnitSelect"),
@@ -69,6 +80,7 @@ const gameTextures = {
     normalSpeedButton: makeImage("hud/normalSpeed"),
     doubleSpeedButton: makeImage("hud/doubleSpeed"),
     resetButton: makeImage("hud/resetButton"),
+    fillBucketButton: makeImage("hud/fillBucketButton"),
 }
 
 /* CANVAS VARIABLES */
@@ -254,19 +266,40 @@ const ArrowData = {
         hitboxSize: 0.125,
         piercing: false,
         maxPierces: 0,
+    },
+    "fishling": {
+        texture: "fishlingArrow",
+        damage: 15,
+        speed: 0.125,
+        lifeTime: 100,
+        size: 2,
+        hitboxSize: 0.125,
+        piercing: false,
+        maxPierces: 0,
     }
 }
 const WeaponData = {
     "ironSword": {
         range: 2,
         damage: 33,
-        attackRate: 20, // 1 = 0.1 * tickRate
+        attackRate: 20,
         attackDuration: 12,
         coolDownTime: 8,
         isMelee: true,
         texture: "ironSword",
         width: 1,
         height: 1,
+    },
+    "trident": {
+        range: 3,
+        damage: 33,
+        attackRate: 20,
+        attackDuration: 20,
+        coolDownTime: 16,
+        isMelee: true,
+        texture: "trident",
+        width: 1,
+        height: 1.25,
     },
     "bow": {
         range: 10,
@@ -277,6 +310,18 @@ const WeaponData = {
         texture: "bow",
         loadedTexture: "loadedBow",
         arrowType: "normal",
+        width: 1,
+        height: 1,
+    },
+    "fishlingBow": {
+        range: 10,
+        attackRate: 50,
+        attackDuration: 10,
+        coolDownTime: 20,
+        isMelee: false,
+        texture: "fishlingBow",
+        loadedTexture: "loadedFishlingBow",
+        arrowType: "fishling",
         width: 1,
         height: 1,
     }
@@ -331,6 +376,24 @@ const CreatureTypes = {
             healthMiddle: "goblinArcher1",
             healthLow: "goblinArcher2",
         },
+    },
+    "fishling": {
+        "footSoldier": {
+            width: 0.5,
+            height: 0.5,
+            health: 100,
+            healthHigh: "fishlingFootSoldier0",
+            healthMiddle: "fishlingFootSoldier1",
+            healthLow: "fishlingFootSoldier2",
+        },
+        "archer": {
+            width: 0.5,
+            height: 0.5,
+            health: 100,
+            healthHigh: "fishlingArcher0",
+            healthMiddle: "fishlingArcher1",
+            healthLow: "fishlingArcher2",
+        },
     }
 }
 class Creature {
@@ -338,7 +401,7 @@ class Creature {
     static allUnits = new Set();
     static allUnitPositions = new Map(); // int<int<Set(Creature)>>
     static allArrows = new Set(); // {x, y, type, lifeTime, direction, isGood, allPierced}
-    static tileCapacity = 12;
+    static tileCapacity = 4;
     // Core
     xPos; fluidXPos; oldXPos;
     yPos; fluidYPos; oldYPos;
@@ -1164,7 +1227,7 @@ function bootGame() {
         }
     }
 
-    /* Save And Upload Buttons */
+    /* Map Buttons */
     function loadUploadButton() {
         const uploadIcon = new GUI("uploadTab", "uploadIcon", 0, 0, 0, 0, 0);
         uploadIcon.click = () => {
@@ -1208,6 +1271,15 @@ function bootGame() {
             }
         };
     }
+    function loadFillButton() {
+        const saveIcon = new GUI("fillButton", "fillBucketButton", 0, 0, 0, 0, 0);
+        saveIcon.click = () => {
+            GAMEfillBucketSelected = !GAMEfillBucketSelected;
+            GUI.instances["fillButton"].darkness = (GAMEfillBucketSelected ? 0.65 : 0);
+            if (!BM.canEdit) { return };
+            console.log("YES")
+        }
+    }
 
     loadUnitTab();
     loadPlayButton();
@@ -1216,6 +1288,7 @@ function bootGame() {
     loadTileButtons();
     loadUploadButton();
     loadSaveButton();
+    loadFillButton();
 
     /* Default World Tiles */
     BM.map = [];
@@ -1232,10 +1305,18 @@ function bootGame() {
         }
     }
 
+    /* Units
+    "warrior", "footSoldier", "normal", "ironSword"
+    "warrior", "archer", "normal", "bow"
+    "fishling", "footSoldier", "swimmer", "trident"
+    "fishling", "archer", "swimmer", "fishlingBow"
+    "goblin", "footSoldier", "normal", "ironSword"
+    "goblin", "footSoldier", "normal", "bow"
+    */
 
     for (let i = 0; i < 30; i++) {
         for (let o = 0; o < 1; o++) {
-            new Creature(i + 10, o + 25, true, "warrior", "archer", "normal", (Math.random() < 0.5 ? "ironSword" : "bow"));
+            new Creature(i + 10, o + 25, true, "fishling", "archer", "swimmer", "fishlingBow");
             new Creature(i + 10, 5 - o + 40, false, "goblin", "archer", "normal", (Math.random() < 0.5 ? "ironSword" : "bow"));
         }
     }
@@ -1323,10 +1404,45 @@ async function handleInputs() {
             MKI.changeY = 0;
         }
 
-        const [x, y] = getSelectedTile();
+        const [y, x] = getSelectedTile();
         if (GAMEPaused && x != null && y != null) {
             if (MKI.currentMouse == 0 && BM.currentTile != null) {
+                const currentTileType = BM.map[y][x];
                 BM.map[y][x] = BM.currentTile;
+                if (GAMEfillBucketSelected) {
+                    function fill(sY, sX) {
+                        const closedTiles = new Map();
+                        closedTiles.set(y, new Set(x));
+                        const openTiles = [[sY, sX]];
+                        let index = 0
+                        while (index < openTiles.length) {
+                            const currentTile = openTiles[index];
+                            const y = currentTile[0];
+                            const x = currentTile[1];
+
+                            if (!closedTiles.has(y)) {
+                                closedTiles.set(y, new Set());
+                            }
+                            closedTiles.get(y).add(x);
+                            BM.map[y][x] = BM.currentTile;
+
+                            for (let [yDir, xDir] of [[0, 1], [1, 0], [0, -1], [-1, 0]]) {
+                                const nY = y + yDir;
+                                const nX = x + xDir;
+                                if (nY >= 0 && nX >= 0 && nY < BM.maxRows && nX < BM.maxColumns) {
+                                    if (!closedTiles.has(nY) || !closedTiles.get(nY).has(nX)) {
+                                        if (BM.map[nY][nX] == currentTileType) {
+                                            console.log("PUSHED")
+                                            openTiles.push([nY, nX]);
+                                        }
+                                    }
+                                }
+                            }
+                            index += 1;
+                        }
+                    }
+                    fill(y, x);
+                }
             }
         }
     };
@@ -1387,11 +1503,14 @@ function handleMapTab() {
         if (WP.resized) { GUI.instances[tiles[i]].update(x + 25, y + 75 * i + 75, 50, 50) }
         GUI.instances[tiles[i]].render();
     }
-    if (WP.resized) { GUI.instances["uploadTab"].update(x + 25, y + 600, 50, 50) }
+    if (WP.resized) { GUI.instances["uploadTab"].update(WP.right(75), WP.bottom(75), 50, 50) }
     GUI.instances["uploadTab"].render();
 
-    if (WP.resized) { GUI.instances["saveTab"].update(x + 100, y + 600, 50, 50) }
+    if (WP.resized) { GUI.instances["saveTab"].update(WP.right(175), WP.bottom(75), 50, 50) }
     GUI.instances["saveTab"].render();
+
+    if (WP.resized) { GUI.instances["fillButton"].update(x + 25, y + 600, 50, 50) }
+    GUI.instances["fillButton"].render();
 }
 async function handleRenders() {
     // Background
@@ -1454,7 +1573,3 @@ async function startGame() {
 }
 
 startGame();
-
-/*
-Issue: TileCapacity makes pathfinding ignore spots causing back track.
-*/
