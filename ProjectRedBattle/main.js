@@ -407,6 +407,7 @@ class Creature {
     yPos; fluidYPos; oldYPos;
     health; maxHealth;
     isGood; subClass; classType; soulType; weaponType;
+    standingTile;
     // Debug
     debugMode; debugEnemy;  debugAlly;
     // Movement
@@ -855,15 +856,11 @@ class Creature {
             unit.moving = true;
         }
     }
-    static moveUnit(unit) { // Main
-        let dx = unit.xPos - unit.fluidXPos;
-        let dy = unit.yPos - unit.fluidYPos;
-        let dist = Math.hypot(dx, dy);
-
-        const useY = (dist <= 0.5 ? unit.yPos : unit.oldYPos);
-        const useX = (dist <= 0.5 ? unit.xPos : unit.oldXPos);
-        const speed = SoulData[unit.soulType].tileProps[BM.map[useY][useX]].speed * 0.05;
-
+    static moveUnit(unit, speedData) { // Main
+        const dx = speedData[0];
+        const dy = speedData[1];
+        const dist = speedData[2];
+        const speed = speedData[3];
         if (dist <= speed) {
             unit.fluidXPos = unit.xPos;
             unit.fluidYPos = unit.yPos;
@@ -911,6 +908,21 @@ class Creature {
                 unit.justLostTarget = true;
             }
 
+            // Get standing tile
+            function getSpeed() {
+                const dx = unit.xPos - unit.fluidXPos;
+                const dy = unit.yPos - unit.fluidYPos;
+                const dist = Math.hypot(dx, dy);
+
+                const useY = (dist <= 0.5 ? unit.yPos : unit.oldYPos);
+                const useX = (dist <= 0.5 ? unit.xPos : unit.oldXPos);
+                const speed = SoulData[unit.soulType].tileProps[BM.map[useY][useX]].speed * 0.05;
+
+                return [[dx, dy, dist, speed], BM.map[useY][useX]];
+            }
+            const [speedData, standingTile] = getSpeed();
+            unit.standingTile = standingTile;
+
             // Progress attack
             if (unit.attackTick != 0) {
                 Creature.attack(unit, unit.targetChain[0]);
@@ -930,7 +942,7 @@ class Creature {
                     }
                 }
             } else { // Transition to spot
-                Creature.moveUnit(unit);
+                Creature.moveUnit(unit, speedData);
             }
 
             // Remove useless chains
@@ -1057,6 +1069,20 @@ class Creature {
             const screenWidth = size * width;
             const screenHeight = size * height;
             const healthPercentage = unit.health / unit.maxHealth;
+
+            const waterDepth = unit.standingTile == "shallowwater" ? 1.25 : unit.standingTile == "deepwater" ? 2 : 0;
+            if (waterDepth != 0) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.rect(
+                    screenX - screenWidth / 2,
+                    screenY - screenHeight / 2,
+                    screenWidth,
+                    screenHeight / waterDepth
+                );
+                ctx.clip();
+            }
+
             ctx.drawImage(
                 gameTextures[unit.debugMode ? "missingTexture" : unit.debugEnemy ? "troll" : unit.debugAlly ? "elf" : (healthPercentage <= 0.333 ? creatureData.healthLow : (healthPercentage <= 0.666 ? creatureData.healthMiddle : creatureData.healthHigh))],
                 screenX - screenWidth / 2,
@@ -1064,6 +1090,10 @@ class Creature {
                 screenWidth,
                 screenHeight
             );
+
+            if (waterDepth != 0) {
+                ctx.restore();
+            }
 
             const currentWeapon = WeaponData[unit.weaponType];
             const weaponWidth = currentWeapon.width;
@@ -1410,38 +1440,37 @@ async function handleInputs() {
                 const currentTileType = BM.map[y][x];
                 BM.map[y][x] = BM.currentTile;
                 if (GAMEfillBucketSelected) {
-                    function fill(sY, sX) {
+                    function fill(sY, sX, currentTileType) {
                         const closedTiles = new Map();
-                        closedTiles.set(y, new Set(x));
+                        closedTiles.set(sY, new Set());
+                        closedTiles.get(sY).add(sX);
                         const openTiles = [[sY, sX]];
-                        let index = 0
+                        let index = 0;
                         while (index < openTiles.length) {
                             const currentTile = openTiles[index];
                             const y = currentTile[0];
                             const x = currentTile[1];
-
-                            if (!closedTiles.has(y)) {
-                                closedTiles.set(y, new Set());
-                            }
-                            closedTiles.get(y).add(x);
                             BM.map[y][x] = BM.currentTile;
-
                             for (let [yDir, xDir] of [[0, 1], [1, 0], [0, -1], [-1, 0]]) {
                                 const nY = y + yDir;
                                 const nX = x + xDir;
                                 if (nY >= 0 && nX >= 0 && nY < BM.maxRows && nX < BM.maxColumns) {
                                     if (!closedTiles.has(nY) || !closedTiles.get(nY).has(nX)) {
                                         if (BM.map[nY][nX] == currentTileType) {
-                                            console.log("PUSHED")
                                             openTiles.push([nY, nX]);
                                         }
+                                        if (!closedTiles.has(nY)) {
+                                            closedTiles.set(nY, new Set());
+                                        }
+                                        closedTiles.get(nY).add(nX);
                                     }
                                 }
                             }
                             index += 1;
                         }
+
                     }
-                    fill(y, x);
+                    fill(y, x, currentTileType);
                 }
             }
         }
