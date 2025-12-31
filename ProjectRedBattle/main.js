@@ -81,6 +81,8 @@ const gameTextures = {
     doubleSpeedButton: makeImage("hud/doubleSpeed"),
     resetButton: makeImage("hud/resetButton"),
     fillBucketButton: makeImage("hud/fillBucketButton"),
+    trashCanButton: makeImage("hud/trashCanButton"),
+    removeButton: makeImage("hud/removeUnitButton"),
 }
 
 /* CANVAS VARIABLES */
@@ -213,7 +215,7 @@ class BM {
 
 /* GUI */
 class GUI {
-    static instances = {};
+    static instances = new Map();
     enabled = false;
     content = null;
     x = 0;
@@ -230,7 +232,7 @@ class GUI {
         this.width = width;
         this.height = height;
         this.zindex = zindex
-        GUI.instances[name] = this;
+        GUI.instances.set(name, this);
     }
     update(x, y, width, height, zindex) {
         this.x = x;
@@ -1169,16 +1171,18 @@ function bootGame() {
             }
             element.click = () => {
                 if (GAMEselectedUnitType) {
-                    GUI.instances[GAMEselectedUnitType].darkness = 0;
+                    GUI.instances.get(GAMEselectedUnitType).darkness = 0;
                 }
                 const deselected = GAMEselectedUnitType == guiName;
                 GAMEselectedUnitType = (deselected ? null : guiName);
                 if (!deselected) {
-                    GUI.instances[GAMEselectedUnitType].darkness = 0.65;
+                    GUI.instances.get(GAMEselectedUnitType).darkness = 0.65;
                 }
             }
         }
         const unitSelectBar = new GUI("unitSelectBar", "unitSelectBar", 0, 0, 0, 0, 1);
+        const trashCanButton = new GUI("trashCanButton", "trashCanButton", 0 ,0 ,0, 0 ,0);
+        const removeButton = new GUI("removeButton", "removeButton", 0, 0, 0, 0, 0);
     }
 
     /* Handles Control Buttons */
@@ -1244,7 +1248,7 @@ function bootGame() {
                 const alreadyUsing = BM.currentTile == tileName;
                 if (!alreadyUsing) {
                     for (const otherTile of BM.tiles) {
-                        const otherElement = GUI.instances[otherTile.toLowerCase().replaceAll(" ", "") + "Tab"];
+                        const otherElement = GUI.instances.get(otherTile.toLowerCase().replaceAll(" ", "") + "Tab");
                         if (otherElement.darkness != 0) {
                             otherElement.darkness = 0;
                             break;
@@ -1305,9 +1309,8 @@ function bootGame() {
         const saveIcon = new GUI("fillButton", "fillBucketButton", 0, 0, 0, 0, 0);
         saveIcon.click = () => {
             GAMEfillBucketSelected = !GAMEfillBucketSelected;
-            GUI.instances["fillButton"].darkness = (GAMEfillBucketSelected ? 0.65 : 0);
+            GUI.instances.get("fillButton").darkness = (GAMEfillBucketSelected ? 0.65 : 0);
             if (!BM.canEdit) { return };
-            console.log("YES")
         }
     }
 
@@ -1373,7 +1376,7 @@ async function handleInputs() {
     let highestZindex = -1;
     let highestElement = null;
     let highestKey = null;
-    for (const [key, element] of Object.entries(GUI.instances)) {
+    for (const [key, element] of GUI.instances) {
         if (element.enabled) {
             if (MKI.x >= element.x && MKI.x <= element.x + element.width && MKI.y >= element.y && MKI.y <= element.y + element.height) {
                 if (element.zindex > highestZindex) {
@@ -1480,46 +1483,51 @@ async function handleInputs() {
 /* RENDERING */
 function handleUnitTab() {
     const tabs = ["warriorTab", "fishlingTab", "elfTab", "trollTab", "fledglingTab", "goblinTab"];
-    if (WP.windowHeight < 500) { for (let i = 0; i < 6; i++) { GUI.instances[tabs[i]].enabled = false }; return };
+    if (WP.windowHeight < 500) { for (let i = 0; i < 6; i++) { GUI.instances.get(tabs[i]).enabled = false }; return };
     const x = WP.middle(600);
     const y = WP.bottom(100);
     const width = 600;
     const height = 100;
     ctx.drawImage(gameTextures.unitBar, x, y, width, height);
     for (let i = 0; i < 6; i++) {
-        if (WP.resized) { GUI.instances[tabs[i]].update(x + 100 * i + 25, y + 25, 50, 50) };
-        GUI.instances[tabs[i]].render();
+        if (WP.resized) { GUI.instances.get(tabs[i]).update(x + 100 * i + 25, y + 25, 50, 50) };
+        GUI.instances.get(tabs[i]).render();
     }
+    if (WP.resized) { GUI.instances.get("trashCanButton").update(x + 625, y + 25, 50, 50) };
+    GUI.instances.get("trashCanButton").render();
+    if (WP.resized) { GUI.instances.get("removeButton").update(x - 75, y + 25, 50, 50) };
+    GUI.instances.get("removeButton").render();
 }
 function handleUnitSelectionTab() {
     const width = 600;
     const height = 600;
     const x = WP.middle(0);
     const y = WP.center(120);
-    if (WP.resized) { GUI.instances["unitSelectBar"].update(x - width / 2, y - height / 2, width, height) };
+    const guiObject = GUI.instances.get("unitSelectBar");
+    if (WP.resized) { guiObject.update(x - width / 2, y - height / 2, width, height) };
     if (GAMEselectedUnitType) {
-        GUI.instances["unitSelectBar"].render();
+        guiObject.render();
     } else {
-        GUI.instances["unitSelectBar"].enabled = false;
+        guiObject.enabled = false;
     }
 }
 function handleControlTab() {
     const width = 50;
     const height = 50;
     if (WP.resized) {
-        GUI.instances["pausePlayButton"].update(
+        GUI.instances.get("pausePlayButton").update(
             WP.right(width + 25),
             height / 2,
             50,
             50)
     }
-    GUI.instances["pausePlayButton"].render()
+    GUI.instances.get("pausePlayButton").render()
 
-    if (WP.resized) { GUI.instances["speedButton"].update(WP.right(width * 2 + 50), height / 2, 50, 50) }
-    GUI.instances["speedButton"].render()
+    if (WP.resized) { GUI.instances.get("speedButton").update(WP.right(width * 2 + 50), height / 2, 50, 50) }
+    GUI.instances.get("speedButton").render()
 
-    if (WP.resized) { GUI.instances["resetButton"].update(WP.right(width * 3 + 75), height / 2, 50, 50) }
-    GUI.instances["resetButton"].render()
+    if (WP.resized) { GUI.instances.get("resetButton").update(WP.right(width * 3 + 75), height / 2, 50, 50) }
+    GUI.instances.get("resetButton").render()
 }
 function handleMapTab() {
     const x = 0;
@@ -1529,17 +1537,17 @@ function handleMapTab() {
     ctx.drawImage(gameTextures.mapBar, x, y, width, height);
     const tiles = ["grassTab", "stoneTab", "shallowwaterTab", "deepwaterTab", "sandTab", "lavaTab"];
     for (let i = 0; i < tiles.length; i++) {
-        if (WP.resized) { GUI.instances[tiles[i]].update(x + 25, y + 75 * i + 75, 50, 50) }
-        GUI.instances[tiles[i]].render();
+        if (WP.resized) { GUI.instances.get(tiles[i]).update(x + 25, y + 75 * i + 75, 50, 50) }
+        GUI.instances.get(tiles[i]).render();
     }
-    if (WP.resized) { GUI.instances["uploadTab"].update(WP.right(75), WP.bottom(75), 50, 50) }
-    GUI.instances["uploadTab"].render();
+    if (WP.resized) { GUI.instances.get("uploadTab").update(WP.right(75), WP.bottom(75), 50, 50) }
+    GUI.instances.get("uploadTab").render();
 
-    if (WP.resized) { GUI.instances["saveTab"].update(WP.right(175), WP.bottom(75), 50, 50) }
-    GUI.instances["saveTab"].render();
+    if (WP.resized) { GUI.instances.get("saveTab").update(WP.right(175), WP.bottom(75), 50, 50) }
+    GUI.instances.get("saveTab").render();
 
-    if (WP.resized) { GUI.instances["fillButton"].update(x + 25, y + 600, 50, 50) }
-    GUI.instances["fillButton"].render();
+    if (WP.resized) { GUI.instances.get("fillButton").update(x + 25, y + 600, 50, 50) }
+    GUI.instances.get("fillButton").render();
 }
 async function handleRenders() {
     // Background
