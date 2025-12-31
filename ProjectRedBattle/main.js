@@ -35,6 +35,15 @@ const gameTextures = {
     warriorArcher0: makeImage("creatures/warriors/archer/archer0"),
     warriorArcher1: makeImage("creatures/warriors/archer/archer1"),
     warriorArcher2: makeImage("creatures/warriors/archer/archer2"),
+    warriorKnight0: makeImage("creatures/warriors/knight/knight0"),
+    warriorKnight1: makeImage("creatures/warriors/knight/knight1"),
+    warriorKnight2: makeImage("creatures/warriors/knight/knight2"),
+    warriorUndead0: makeImage("creatures/warriors/undead/undead0"),
+    warriorUndead1: makeImage("creatures/warriors/undead/undead1"),
+    warriorUndead2: makeImage("creatures/warriors/undead/undead2"),
+    warriorRusher0: makeImage("creatures/warriors/rusher/rusher0"),
+    warriorRusher1: makeImage("creatures/warriors/rusher/rusher1"),
+    warriorRusher2: makeImage("creatures/warriors/rusher/rusher2"),
 
     goblinFootSoldier0: makeImage("creatures/goblins/footSoldier/footSoldier0"),
     goblinFootSoldier1: makeImage("creatures/goblins/footSoldier/footSoldier1"),
@@ -52,6 +61,9 @@ const gameTextures = {
 
     ironSword: makeImage("weapons/ironSword"),
     trident: makeImage("weapons/trident"),
+    knightSword: makeImage("weapons/knightSword"),
+    undeadSword: makeImage("weapons/undeadSword"),
+    dagger: makeImage("weapons/dagger"),
 
     bow: makeImage("weapons/bow"),
     loadedBow: makeImage("weapons/loadedBow"),
@@ -303,6 +315,39 @@ const WeaponData = {
         width: 1,
         height: 1.25,
     },
+    "knightSword": {
+        range: 3,
+        damage: 45,
+        attackRate: 30,
+        attackDuration: 30,
+        coolDownTime: 24,
+        isMelee: true,
+        texture: "knightSword",
+        width: 1,
+        height: 1.25,
+    },
+    "undeadSword": {
+        range: 2,
+        damage: 22,
+        attackRate: 20,
+        attackDuration: 12,
+        coolDownTime: 8,
+        isMelee: true,
+        texture: "undeadSword",
+        width: 1,
+        height: 1,
+    },
+    "dagger": {
+        range: 1,
+        damage: 8,
+        attackRate: 10,
+        attackDuration: 6,
+        coolDownTime: 4,
+        isMelee: true,
+        texture: "dagger",
+        width: 0.5,
+        height: 0.5,
+    },
     "bow": {
         range: 10,
         attackRate: 50,
@@ -335,6 +380,24 @@ const SoulData = {
         alertVision: 7,
         wanderChance: 1,
     },
+    "warriorUndead": {
+        tileProps: { "grass": { risk: 1, speed: 1.25 }, "stone": { risk: Number.MAX_VALUE, speed: 0 }, "shallowwater": { risk: 5, speed: 0.5 }, "deepwater": { risk: 25, speed: 0.375 }, "sand": { risk: 2, speed: 1.15 }, "lava": { risk: 25, speed: 0.375 } },
+        detectVision: 10,
+        alertVision: 2,
+        wanderChance: 1,
+    },
+    "warriorRusher": {
+        tileProps: { "grass": { risk: 1, speed: 1.25 }, "stone": { risk: Number.MAX_VALUE, speed: 0 }, "shallowwater": { risk: 5, speed: 0.5 }, "deepwater": { risk: 25, speed: 0.375 }, "sand": { risk: 2, speed: 1.15 }, "lava": { risk: Number.MAX_VALUE, speed: 0 } },
+        detectVision: 12,
+        alertVision: 4,
+        wanderChance: 1,
+    },
+    "warriorKnight": {
+        tileProps: { "grass": { risk: 1, speed: 0.875}, "stone": { risk: Number.MAX_VALUE, speed: 0 }, "shallowwater": { risk: 5, speed: 0.125 }, "deepwater": { risk: Number.MAX_VALUE, speed: 0 }, "sand": { risk: 2, speed: 0.775 }, "lava": { risk: Number.MAX_VALUE, speed: 0 } },
+        detectVision: 20,
+        alertVision: 12,
+        wanderChance: 1,
+    },
     "swimmer": {
         tileProps: { "grass": { risk: 8, speed: 0.5 }, "stone": { risk: Number.MAX_VALUE, speed: 0 }, "shallowwater": { risk: 1, speed: 1 }, "deepwater": { risk: 2, speed: 0.8 }, "sand": { risk: 4, speed: 0.75 }, "lava": { risk: Number.MAX_VALUE, speed: 0 } },
         detectVision: 15,
@@ -345,6 +408,7 @@ const SoulData = {
 const CreatureTypes = {
     "warrior": {
         "footSoldier": {
+            hitboxSize: 0.5,
             width: 0.5,
             height: 0.5,
             health: 100,
@@ -353,6 +417,7 @@ const CreatureTypes = {
             healthLow: "warriorFootSoldier2",
         },
         "archer": {
+            hitboxSize: 0.5,
             width: 0.5,
             height: 0.5,
             health: 100,
@@ -360,9 +425,37 @@ const CreatureTypes = {
             healthMiddle: "warriorArcher1",
             healthLow: "warriorArcher2",
         },
+        "knight": {
+            hitboxSize: 0.5,
+            width: 0.5,
+            height: 0.5,
+            health: 200,
+            healthHigh: "warriorKnight0",
+            healthMiddle: "warriorKnight1",
+            healthLow: "warriorKnight2",
+        },
+        "undead": {
+            hitboxSize: 0.5,
+            width: 0.5,
+            height: 0.5,
+            health: 75,
+            healthHigh: "warriorUndead0",
+            healthMiddle: "warriorUndead1",
+            healthLow: "warriorUndead2",
+        },
+        "rusher": {
+            hitboxSize: 0.5,
+            width: 0.625,
+            height: 0.625,
+            health: 100,
+            healthHigh: "warriorRusher0",
+            healthMiddle: "warriorRusher1",
+            healthLow: "warriorRusher2",
+        }
     },
     "goblin": {
         "footSoldier": {
+            hitboxSize: 0.5,
             width: 0.5,
             height: 0.5,
             health: 100,
@@ -371,6 +464,7 @@ const CreatureTypes = {
             healthLow: "goblinFootSoldier2",
         },
         "archer": {
+            hitboxSize: 0.5,
             width: 0.5,
             height: 0.5,
             health: 100,
@@ -381,6 +475,7 @@ const CreatureTypes = {
     },
     "fishling": {
         "footSoldier": {
+            hitboxSize: 0.5,
             width: 0.5,
             height: 0.5,
             health: 100,
@@ -389,6 +484,7 @@ const CreatureTypes = {
             healthLow: "fishlingFootSoldier2",
         },
         "archer": {
+            hitboxSize: 0.5,
             width: 0.5,
             height: 0.5,
             health: 100,
@@ -1118,7 +1214,7 @@ class Creature {
             ctx.drawImage(
                 gameTextures[(!currentWeapon.isMelee && unit.attackTick < currentWeapon.attackRate ? currentWeapon.loadedTexture : currentWeapon.texture)],
                 -(size * weaponWidth + (targetEnemy ? 0 : (currentWeapon.isMelee ? size / 2 : 0))) / 2,
-                -(size * weaponHeight * (targetEnemy ? 2.5 : 2) + (targetEnemy ? (unit.attacking && currentWeapon.isMelee ? size : 0) : 0)) / 2,
+                -(size * weaponHeight * (targetEnemy ? 3 : 2) + (targetEnemy ? (unit.attacking && currentWeapon.isMelee ? size : 0) : 0)) / 2,
                 size * weaponWidth,
                 size * weaponHeight
             );
@@ -1341,6 +1437,10 @@ function bootGame() {
     /* Units
     "warrior", "footSoldier", "normal", "ironSword"
     "warrior", "archer", "normal", "bow"
+    "warrior", "knight", "warriorKnight", "knightSword"
+    "warrior", "undead", "warriorUndead", "undeadSword"
+    "warrior", "rusher", "warriorRusher", "dagger"
+
     "fishling", "footSoldier", "swimmer", "trident"
     "fishling", "archer", "swimmer", "fishlingBow"
     "goblin", "footSoldier", "normal", "ironSword"
@@ -1349,7 +1449,7 @@ function bootGame() {
 
     for (let i = 0; i < 30; i++) {
         for (let o = 0; o < 1; o++) {
-            new Creature(i + 10, o + 25, true, "fishling", "archer", "swimmer", "fishlingBow");
+            new Creature(i + 10, o + 25, true,     "warrior", "rusher", "warriorRusher", "dagger");
             new Creature(i + 10, 5 - o + 40, false, "goblin", "archer", "normal", (Math.random() < 0.5 ? "ironSword" : "bow"));
         }
     }
