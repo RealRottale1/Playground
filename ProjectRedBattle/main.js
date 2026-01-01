@@ -57,7 +57,13 @@ const gameTextures = {
     goblinArcher0: makeImage("creatures/goblins/archer/archer0"),
     goblinArcher1: makeImage("creatures/goblins/archer/archer1"),
     goblinArcher2: makeImage("creatures/goblins/archer/archer2"),
-
+    goblinLarge0: makeImage("creatures/goblins/large/large0"),
+    goblinLarge1: makeImage("creatures/goblins/large/large1"),
+    goblinLarge2: makeImage("creatures/goblins/large/large2"),
+    goblinBerserker0: makeImage("creatures/goblins/Berserker/Berserker0"),
+    goblinBerserker1: makeImage("creatures/goblins/Berserker/Berserker1"),
+    goblinBerserker2: makeImage("creatures/goblins/Berserker/Berserker2"),
+    
     fishlingFootSoldier0: makeImage("creatures/fishlings/footSoldier/footSoldier0"),
     fishlingFootSoldier1: makeImage("creatures/fishlings/footSoldier/footSoldier1"),
     fishlingFootSoldier2: makeImage("creatures/fishlings/footSoldier/footSoldier2"),
@@ -67,6 +73,9 @@ const gameTextures = {
     fishlingRusher0: makeImage("creatures/fishlings/rusher/rusher0"), 
     fishlingRusher1: makeImage("creatures/fishlings/rusher/rusher1"), 
     fishlingRusher2: makeImage("creatures/fishlings/rusher/rusher2"), 
+    fishlingDiver0: makeImage("creatures/fishlings/diver/diver0"), 
+    fishlingDiver1: makeImage("creatures/fishlings/diver/diver1"),
+    fishlingDiver2: makeImage("creatures/fishlings/diver/diver2"),
 
     ironSword: makeImage("weapons/ironSword"),
     trident: makeImage("weapons/trident"),
@@ -74,6 +83,7 @@ const gameTextures = {
     undeadSword: makeImage("weapons/undeadSword"),
     dagger: makeImage("weapons/dagger"),
     fishlingDagger: makeImage("weapons/fishlingDagger"),
+    largeSword: makeImage("weapons/largeSword"),
 
     bow: makeImage("weapons/bow"),
     loadedBow: makeImage("weapons/loadedBow"),
@@ -319,6 +329,17 @@ const WeaponData = {
         width: 1,
         height: 1,
     },
+    "strongIronSword": {
+        range: 2,
+        damage: 33,
+        attackRate: 15,
+        attackDuration: 6,
+        coolDownTime: 4,
+        isMelee: true,
+        texture: "ironSword",
+        width: 1,
+        height: 1,
+    },
     "trident": {
         range: 3,
         damage: 33,
@@ -332,10 +353,10 @@ const WeaponData = {
     },
     "knightSword": {
         range: 3,
-        damage: 45,
-        attackRate: 30,
-        attackDuration: 30,
-        coolDownTime: 24,
+        damage: 50,
+        attackRate: 20,
+        attackDuration: 20,
+        coolDownTime: 16,
         isMelee: true,
         texture: "knightSword",
         width: 1,
@@ -373,6 +394,17 @@ const WeaponData = {
         texture: "fishlingDagger",
         width: 0.5,
         height: 0.5,
+    },
+    "largeSword": {
+        range: 4,
+        damage: 50,
+        attackRate: 30,
+        attackDuration: 20,
+        coolDownTime: 16,
+        isMelee: true,
+        texture: "largeSword",
+        width: 1,
+        height: 1.5,
     },
     "bow": {
         range: 10,
@@ -435,7 +467,19 @@ const SoulData = {
         detectVision: 12,
         alertVision: 4,
         wanderChance: 1,
-    }
+    },
+    "fishlingDiver": {
+        tileProps: { "grass": { risk: 8, speed: 0.5 }, "stone": { risk: Number.MAX_VALUE, speed: 0 }, "shallowwater": { risk: 1, speed: 1 }, "deepwater": { risk: 2, speed: 0.8 }, "sand": { risk: 4, speed: 0.75 }, "lava": { risk: Number.MAX_VALUE, speed: 0 } },
+        detectVision: 15,
+        alertVision: 7,
+        wanderChance: 1,
+    },
+    "large": {
+        tileProps: { "grass": { risk: 1, speed: 0.5 }, "stone": { risk: Number.MAX_VALUE, speed: 0 }, "shallowwater": { risk: 5, speed: 0.125 }, "deepwater": { risk: Number.MAX_VALUE, speed: 0 }, "sand": { risk: 2, speed: 0.45 }, "lava": { risk: Number.MAX_VALUE, speed: 0 } },
+        detectVision: 20,
+        alertVision: 12,
+        wanderChance: 1,
+    },
 }
 const CreatureTypes = {
     "warrior": {
@@ -461,7 +505,7 @@ const CreatureTypes = {
             hitboxSize: 0.5,
             width: 0.5,
             height: 0.5,
-            health: 200,
+            health: 300,
             healthHigh: "warriorKnight0",
             healthMiddle: "warriorKnight1",
             healthLow: "warriorKnight2",
@@ -504,6 +548,24 @@ const CreatureTypes = {
             healthMiddle: "goblinArcher1",
             healthLow: "goblinArcher2",
         },
+        "large": {
+            hitboxSize: 0.75,
+            width: 0.75,
+            height: 0.75,
+            health: 250,
+            healthHigh: "goblinLarge0",
+            healthMiddle: "goblinLarge1",
+            healthLow: "goblinLarge2",
+        },
+        "berserker": {
+            hitboxSize: 0.5,
+            width: 0.75,
+            height: 0.75,
+            health: 75,
+            healthHigh: "goblinBerserker0",
+            healthMiddle: "goblinBerserker1",
+            healthLow: "goblinBerserker2",
+        },
     },
     "fishling": {
         "footSoldier": {
@@ -532,6 +594,15 @@ const CreatureTypes = {
             healthHigh: "fishlingRusher0",
             healthMiddle: "fishlingRusher1",
             healthLow: "fishlingRusher2",
+        },
+        "diver": {
+            hitboxSize: 0.5,
+            width: 0.5,
+            height: 0.5,
+            health: 100,
+            healthHigh: "fishlingDiver0",
+            healthMiddle: "fishlingDiver1",
+            healthLow: "fishlingDiver2",
         }
     }
 }
@@ -971,7 +1042,6 @@ class Creature {
             }
         }
 
-        console.log(creatureOverload)
         // Gets best next move
         let nextMove = null;
         if (movementType == 0) {
@@ -1282,20 +1352,6 @@ class Creature {
         }
     }
 }
-    /* Units
-    "warrior", "footSoldier", "normal", "ironSword"
-    "warrior", "archer", "normal", "bow"
-    "warrior", "knight", "warriorKnight", "knightSword"
-    "warrior", "undead", "warriorUndead", "undeadSword"
-    "warrior", "rusher", "warriorRusher", "dagger"
-
-    "fishling", "footSoldier", "swimmer", "trident"
-    "fishling", "archer", "swimmer", "fishlingBow"
-    "fishling", "rusher", "rushingSwimmer", "fishlingDagger"
-
-    "goblin", "footSoldier", "normal", "ironSword"
-    "goblin", "footSoldier", "normal", "bow"
-    */
 const CreatureSelection = {
     "warriorTab": {
         "Foot Soldier": [true, "warrior", "footSoldier", "normal", "ironSword"],
@@ -1303,6 +1359,18 @@ const CreatureSelection = {
         "Knight": [true, "warrior", "knight", "warriorKnight", "knightSword"],
         "Undead": [true, "warrior", "undead", "warriorUndead", "undeadSword"],
         "Rusher": [true, "warrior", "rusher", "warriorRusher", "dagger"],
+    },
+    "fishlingTab": {
+        "Foot Soldier": [true, "fishling", "footSoldier", "swimmer", "trident"],
+        "Archer": [true, "fishling", "archer", "swimmer", "fishlingBow"],
+        "Rusher": [true, "fishling", "rusher", "rushingSwimmer", "fishlingDagger"],
+        "Diver": [true, "fishling", "diver", "fishlingDiver", "trident"],
+    },
+    "goblinTab": {
+        "Foot Soldier": [false, "goblin", "footSoldier", "normal", "ironSword"],
+        "Archer": [false, "goblin", "archer", "normal", "bow"],
+        "Large": [false, "goblin", "large", "large", "largeSword"],
+        "Berserker": [false, "goblin", "berserker", "warriorRusher", "strongIronSword"],
     }
 }
 
@@ -1608,16 +1676,16 @@ async function handleInputs() {
         const [y, x] = getSelectedTile();
         if (GAMEPaused && x != null && y != null) {
             if (MKI.currentMouse == 0) {
-                if (GAMEselectedUnit) {
-                    if (!Creature.allUnitPositions.has(y) || (Creature.allUnitPositions.has(y) && !Creature.allUnitPositions.get(y).has(x))) {
-                        new Creature(x, y, GAMEselectedUnit[0], GAMEselectedUnit[1], GAMEselectedUnit[2], GAMEselectedUnit[3], GAMEselectedUnit[4]);
-                    }
-                } else if (GAMETrashcanSelected) {
+                if (GAMETrashcanSelected) {
                     if (Creature.allUnitPositions.has(y) && Creature.allUnitPositions.get(y).has(x)) {
                         for (const unit of Creature.allUnitPositions.get(y).get(x)) {
                             Creature.allUnits.delete(unit);
                         }
-                        Creature.allUnitPositions.get(y).get(x).clear();
+                        Creature.allUnitPositions.get(y).delete(x);
+                    }
+                } else if (GAMEselectedUnit) {
+                    if (!Creature.allUnitPositions.has(y) || (Creature.allUnitPositions.has(y) && (!Creature.allUnitPositions.get(y).has(x) || (Creature.allUnitPositions.get(y).has(x) && Creature.allUnitPositions.get(y).get(x).size == 0)))) {
+                        new Creature(x, y, GAMEselectedUnit[0], GAMEselectedUnit[1], GAMEselectedUnit[2], GAMEselectedUnit[3], GAMEselectedUnit[4]);
                     }
                 } else if (BM.currentTile != null)  {
                     const currentTileType = BM.map[y][x];
