@@ -14,7 +14,13 @@ let GAMEStarted = false;
 let GAMEPaused = true;
 let GAMESpeed = 1;
 let GAMEtickRate = 2;
+
 let GAMEselectedUnitType;
+let GAMEloadedSelectedUnitType = false;
+let GAMEselectedUnit = null;
+let GAMEGUIUnits = [];
+
+let GAMETrashcanSelected = false;
 let GAMEfillBucketSelected = false;
 
 /* TEXTURES */
@@ -58,12 +64,16 @@ const gameTextures = {
     fishlingArcher0: makeImage("creatures/fishlings/archer/archer0"),
     fishlingArcher1: makeImage("creatures/fishlings/archer/archer1"),
     fishlingArcher2: makeImage("creatures/fishlings/archer/archer2"),   
+    fishlingRusher0: makeImage("creatures/fishlings/rusher/rusher0"), 
+    fishlingRusher1: makeImage("creatures/fishlings/rusher/rusher1"), 
+    fishlingRusher2: makeImage("creatures/fishlings/rusher/rusher2"), 
 
     ironSword: makeImage("weapons/ironSword"),
     trident: makeImage("weapons/trident"),
     knightSword: makeImage("weapons/knightSword"),
     undeadSword: makeImage("weapons/undeadSword"),
     dagger: makeImage("weapons/dagger"),
+    fishlingDagger: makeImage("weapons/fishlingDagger"),
 
     bow: makeImage("weapons/bow"),
     loadedBow: makeImage("weapons/loadedBow"),
@@ -255,17 +265,22 @@ class GUI {
     }
     render() {
         this.enabled = true;
-        const baseTileSize = WP.windowWidth / BM.maxColumns;
-        const tileSize = baseTileSize * BM.zoom;
-        const size = Math.ceil(tileSize);
-
-        const halfWidth = WP.windowWidth / 2;
-        const halfHeight = WP.windowHeight / 2;
         ctx.drawImage(gameTextures[this.content], this.x, this.y, this.width, this.height);
         if (this.darkness != 0) {
             ctx.fillStyle = `rgba(0, 0, 0, ${this.darkness})`;
             ctx.fillRect(this.x, this.y, this.width, this.height);
         }
+    }
+    renderText() {
+        this.enabled = true;
+        
+        ctx.fillStyle = `rgba(255, 0, 0)`;
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+        ctx.fillStyle = "rgba(255, 255, 255, 1)";
+        ctx.font = "35px serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(this.content, this.x+this.width/2, this.y+this.height/2);
     }
 }
 
@@ -348,6 +363,17 @@ const WeaponData = {
         width: 0.5,
         height: 0.5,
     },
+    "fishlingDagger": {
+        range: 1,
+        damage: 8,
+        attackRate: 10,
+        attackDuration: 6,
+        coolDownTime: 4,
+        isMelee: true,
+        texture: "fishlingDagger",
+        width: 0.5,
+        height: 0.5,
+    },
     "bow": {
         range: 10,
         attackRate: 50,
@@ -402,6 +428,12 @@ const SoulData = {
         tileProps: { "grass": { risk: 8, speed: 0.5 }, "stone": { risk: Number.MAX_VALUE, speed: 0 }, "shallowwater": { risk: 1, speed: 1 }, "deepwater": { risk: 2, speed: 0.8 }, "sand": { risk: 4, speed: 0.75 }, "lava": { risk: Number.MAX_VALUE, speed: 0 } },
         detectVision: 15,
         alertVision: 7,
+        wanderChance: 1,
+    },
+    "rushingSwimmer": {
+        tileProps: { "grass": { risk: 8, speed: 0.75 }, "stone": { risk: Number.MAX_VALUE, speed: 0 }, "shallowwater": { risk: 1, speed: 1.25 }, "deepwater": { risk: 2, speed: 1.05 }, "sand": { risk: 4, speed: 1 }, "lava": { risk: Number.MAX_VALUE, speed: 0 } },
+        detectVision: 12,
+        alertVision: 4,
         wanderChance: 1,
     }
 }
@@ -492,6 +524,15 @@ const CreatureTypes = {
             healthMiddle: "fishlingArcher1",
             healthLow: "fishlingArcher2",
         },
+        "rusher": {
+            hitboxSize: 0.5,
+            width: 0.625,
+            height: 0.625,
+            health: 100,
+            healthHigh: "fishlingRusher0",
+            healthMiddle: "fishlingRusher1",
+            healthLow: "fishlingRusher2",
+        }
     }
 }
 class Creature {
@@ -899,9 +940,10 @@ class Creature {
         const detectVision = SoulData[unit.soulType].detectVision;
         const alertVision = SoulData[unit.soulType].alertVision;
         let targetUnit = (unit.targetChain.length > 0 ? unit.targetChain[unit.targetChain.length - 1] : null);
+        const creatureOverload = (Creature.allUnits.size > 250); // Reduces lag on huge loads
 
         // Gets tiles to use in path finding
-        const data = Creature.getValidTiles(unit, targetUnit, detectVision, alertVision, movementType);
+        const data = Creature.getValidTiles(unit, targetUnit, detectVision, alertVision, (movementType == 0 && creatureOverload ? 1 : 0));
         const validTiles = data[0];
         const allyUnits = data[1];
 
@@ -913,7 +955,7 @@ class Creature {
         // Adjusts Wander to AStar if nearby enemy found
         if (movementType == 2 && unit.targetChain[0]) {
             targetUnit = unit.targetChain[unit.targetChain.length - 1];
-            movementType = 0;
+            movementType = (creatureOverload ? 1 : 0);
         }
 
         // Attack
@@ -929,6 +971,7 @@ class Creature {
             }
         }
 
+        console.log(creatureOverload)
         // Gets best next move
         let nextMove = null;
         if (movementType == 0) {
@@ -1020,6 +1063,9 @@ class Creature {
             }
             const [speedData, standingTile] = getSpeed();
             unit.standingTile = standingTile;
+            if (unit.standingTile == "stone") {
+                unit.health -= unit.maxHealth/10;
+            }
 
             // Progress attack
             if (unit.attackTick != 0) {
@@ -1236,6 +1282,29 @@ class Creature {
         }
     }
 }
+    /* Units
+    "warrior", "footSoldier", "normal", "ironSword"
+    "warrior", "archer", "normal", "bow"
+    "warrior", "knight", "warriorKnight", "knightSword"
+    "warrior", "undead", "warriorUndead", "undeadSword"
+    "warrior", "rusher", "warriorRusher", "dagger"
+
+    "fishling", "footSoldier", "swimmer", "trident"
+    "fishling", "archer", "swimmer", "fishlingBow"
+    "fishling", "rusher", "rushingSwimmer", "fishlingDagger"
+
+    "goblin", "footSoldier", "normal", "ironSword"
+    "goblin", "footSoldier", "normal", "bow"
+    */
+const CreatureSelection = {
+    "warriorTab": {
+        "Foot Soldier": [true, "warrior", "footSoldier", "normal", "ironSword"],
+        "Archer": [true, "warrior", "archer", "normal", "bow"],
+        "Knight": [true, "warrior", "knight", "warriorKnight", "knightSword"],
+        "Undead": [true, "warrior", "undead", "warriorUndead", "undeadSword"],
+        "Rusher": [true, "warrior", "rusher", "warriorRusher", "dagger"],
+    }
+}
 
 /* BOOT */
 function bootGame() {
@@ -1262,15 +1331,20 @@ function bootGame() {
                 ctx.fillStyle = "rgba(255, 255, 255, 1)";
                 ctx.font = "35px serif";
                 ctx.textAlign = "center";
-                ctx.textBaseLine = "middle";
-                ctx.fillText(tab, x, y);
+                ctx.textBaseline = "middle";
+                ctx.fillText(tab, x, y-(35/4));
             }
             element.click = () => {
                 if (GAMEselectedUnitType) {
                     GUI.instances.get(GAMEselectedUnitType).darkness = 0;
                 }
+                for (const guiName of GAMEGUIUnits) {
+                    GUI.instances.delete(guiName);
+                }
+                GAMEGUIUnits = [];
                 const deselected = GAMEselectedUnitType == guiName;
                 GAMEselectedUnitType = (deselected ? null : guiName);
+                GAMEloadedSelectedUnitType = false;
                 if (!deselected) {
                     GUI.instances.get(GAMEselectedUnitType).darkness = 0.65;
                 }
@@ -1278,7 +1352,20 @@ function bootGame() {
         }
         const unitSelectBar = new GUI("unitSelectBar", "unitSelectBar", 0, 0, 0, 0, 1);
         const trashCanButton = new GUI("trashCanButton", "trashCanButton", 0 ,0 ,0, 0 ,0);
+        trashCanButton.click = () => {
+            GAMETrashcanSelected = !GAMETrashcanSelected;
+            if (GAMETrashcanSelected) {
+                GUI.instances.get("trashCanButton").darkness = 0.65;
+            } else {
+                GUI.instances.get("trashCanButton").darkness = 0;
+            }
+        }
         const removeButton = new GUI("removeButton", "removeButton", 0, 0, 0, 0, 0);
+        removeButton.click = () => {
+            if (GAMEselectedUnit) {
+                GAMEselectedUnit = null;
+            }
+        }
     }
 
     /* Handles Control Buttons */
@@ -1337,8 +1424,8 @@ function bootGame() {
                 ctx.fillStyle = "rgba(255, 255, 255, 1)";
                 ctx.font = "35px serif";
                 ctx.textAlign = "center";
-                ctx.textBaseLine = "middle";
-                ctx.fillText(tile, x - length / 2, y);
+                ctx.textBaseline = "middle";
+                ctx.fillText(tile, x - length / 2, y-(35/4));
             }
             element.click = () => {
                 const alreadyUsing = BM.currentTile == tileName;
@@ -1424,35 +1511,16 @@ function bootGame() {
     for (let y = 0; y < BM.maxRows; y++) {
         BM.map[y] = [];
         for (let x = 0; x < BM.maxColumns; x++) {
-            let r = Math.random();
-            BM.map[y][x] =
-                (r < 1) ? "grass" :
-                    (r < 1.1) ? "stone" : "lava"
-            // (r < 0.85) ? "shallowwater" :
-            // (r < 0.95) ? "deepwater" :
-            // (r < 1) ? "lava" : "lava";
+            BM.map[y][x] = "grass";
         }
     }
 
-    /* Units
-    "warrior", "footSoldier", "normal", "ironSword"
-    "warrior", "archer", "normal", "bow"
-    "warrior", "knight", "warriorKnight", "knightSword"
-    "warrior", "undead", "warriorUndead", "undeadSword"
-    "warrior", "rusher", "warriorRusher", "dagger"
-
-    "fishling", "footSoldier", "swimmer", "trident"
-    "fishling", "archer", "swimmer", "fishlingBow"
-    "goblin", "footSoldier", "normal", "ironSword"
-    "goblin", "footSoldier", "normal", "bow"
-    */
-
-    for (let i = 0; i < 30; i++) {
-        for (let o = 0; o < 1; o++) {
-            new Creature(i + 10, o + 25, true,     "warrior", "rusher", "warriorRusher", "dagger");
-            new Creature(i + 10, 5 - o + 40, false, "goblin", "archer", "normal", (Math.random() < 0.5 ? "ironSword" : "bow"));
-        }
-    }
+    // for (let i = 0; i < 30; i++) {
+    //     for (let o = 0; o < 1; o++) {
+    //         new Creature(i + 10, o + 25, true,     "fishling", "rusher", "rushingSwimmer", "fishlingDagger");
+    //         new Creature(i + 10, 5 - o + 40, false, "goblin", "archer", "normal", (Math.random() < 0.5 ? "ironSword" : "bow"));
+    //     }
+    // }
 }
 bootGame();
 
@@ -1539,45 +1607,58 @@ async function handleInputs() {
 
         const [y, x] = getSelectedTile();
         if (GAMEPaused && x != null && y != null) {
-            if (MKI.currentMouse == 0 && BM.currentTile != null) {
-                const currentTileType = BM.map[y][x];
-                BM.map[y][x] = BM.currentTile;
-                if (GAMEfillBucketSelected) {
-                    function fill(sY, sX, currentTileType) {
-                        const closedTiles = new Map();
-                        closedTiles.set(sY, new Set());
-                        closedTiles.get(sY).add(sX);
-                        const openTiles = [[sY, sX]];
-                        let index = 0;
-                        while (index < openTiles.length) {
-                            const currentTile = openTiles[index];
-                            const y = currentTile[0];
-                            const x = currentTile[1];
-                            BM.map[y][x] = BM.currentTile;
-                            for (let [yDir, xDir] of [[0, 1], [1, 0], [0, -1], [-1, 0]]) {
-                                const nY = y + yDir;
-                                const nX = x + xDir;
-                                if (nY >= 0 && nX >= 0 && nY < BM.maxRows && nX < BM.maxColumns) {
-                                    if (!closedTiles.has(nY) || !closedTiles.get(nY).has(nX)) {
-                                        if (BM.map[nY][nX] == currentTileType) {
-                                            openTiles.push([nY, nX]);
+            if (MKI.currentMouse == 0) {
+                if (GAMEselectedUnit) {
+                    if (!Creature.allUnitPositions.has(y) || (Creature.allUnitPositions.has(y) && !Creature.allUnitPositions.get(y).has(x))) {
+                        new Creature(x, y, GAMEselectedUnit[0], GAMEselectedUnit[1], GAMEselectedUnit[2], GAMEselectedUnit[3], GAMEselectedUnit[4]);
+                    }
+                } else if (GAMETrashcanSelected) {
+                    if (Creature.allUnitPositions.has(y) && Creature.allUnitPositions.get(y).has(x)) {
+                        for (const unit of Creature.allUnitPositions.get(y).get(x)) {
+                            Creature.allUnits.delete(unit);
+                        }
+                        Creature.allUnitPositions.get(y).get(x).clear();
+                    }
+                } else if (BM.currentTile != null)  {
+                    const currentTileType = BM.map[y][x];
+                    BM.map[y][x] = BM.currentTile;
+                    if (GAMEfillBucketSelected) {
+                        function fill(sY, sX, currentTileType) {
+                            const closedTiles = new Map();
+                            closedTiles.set(sY, new Set());
+                            closedTiles.get(sY).add(sX);
+                            const openTiles = [[sY, sX]];
+                            let index = 0;
+                            while (index < openTiles.length) {
+                                const currentTile = openTiles[index];
+                                const y = currentTile[0];
+                                const x = currentTile[1];
+                                BM.map[y][x] = BM.currentTile;
+                                for (let [yDir, xDir] of [[0, 1], [1, 0], [0, -1], [-1, 0]]) {
+                                    const nY = y + yDir;
+                                    const nX = x + xDir;
+                                    if (nY >= 0 && nX >= 0 && nY < BM.maxRows && nX < BM.maxColumns) {
+                                        if (!closedTiles.has(nY) || !closedTiles.get(nY).has(nX)) {
+                                            if (BM.map[nY][nX] == currentTileType) {
+                                                openTiles.push([nY, nX]);
+                                            }
+                                            if (!closedTiles.has(nY)) {
+                                                closedTiles.set(nY, new Set());
+                                            }
+                                            closedTiles.get(nY).add(nX);
                                         }
-                                        if (!closedTiles.has(nY)) {
-                                            closedTiles.set(nY, new Set());
-                                        }
-                                        closedTiles.get(nY).add(nX);
                                     }
                                 }
+                                index += 1;
                             }
-                            index += 1;
-                        }
 
+                        }
+                        fill(y, x, currentTileType);
                     }
-                    fill(y, x, currentTileType);
                 }
             }
         }
-    };
+    }
 }
 
 /* RENDERING */
@@ -1596,7 +1677,9 @@ function handleUnitTab() {
     if (WP.resized) { GUI.instances.get("trashCanButton").update(x + 625, y + 25, 50, 50) };
     GUI.instances.get("trashCanButton").render();
     if (WP.resized) { GUI.instances.get("removeButton").update(x - 75, y + 25, 50, 50) };
-    GUI.instances.get("removeButton").render();
+    if (GAMEselectedUnit) {
+        GUI.instances.get("removeButton").render();
+    }
 }
 function handleUnitSelectionTab() {
     const width = 600;
@@ -1607,6 +1690,27 @@ function handleUnitSelectionTab() {
     if (WP.resized) { guiObject.update(x - width / 2, y - height / 2, width, height) };
     if (GAMEselectedUnitType) {
         guiObject.render();
+        if (!GAMEloadedSelectedUnitType) {
+            let index = 0;
+            for (const [displayName, unitData] of Object.entries(CreatureSelection[GAMEselectedUnitType])) {
+                GAMEGUIUnits.push(displayName);
+                const xOffset = (index % 2 == 0) ? (x-100) - 150: (x-100) + 150;
+                const button = new GUI(displayName, displayName, xOffset, y-250 + 100*Math.floor(index/2), 200, 50, 2);
+                button.click = () => {
+                    GAMETrashcanSelected = false;
+                    GUI.instances.get("trashCanButton").darkness = 0;
+                    GAMEselectedUnit = unitData;
+                }
+                index += 1;
+            }
+            GAMEloadedSelectedUnitType = true;
+        }
+        for (const guiName of GAMEGUIUnits) {
+            const guiButton = GUI.instances.get(guiName);
+            //guiButton.update(350, 350, 250, 250)
+            guiButton.renderText();
+            //console.log(guiButton)
+        } 
     } else {
         guiObject.enabled = false;
     }
