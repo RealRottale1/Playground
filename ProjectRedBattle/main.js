@@ -1024,10 +1024,11 @@ class Creature {
         }
 
         // Adjusts Wander to AStar if nearby enemy found
-        if (movementType == 2 && unit.targetChain[0]) {
-            targetUnit = unit.targetChain[unit.targetChain.length - 1];
-            movementType = (creatureOverload ? 1 : 0);
-        }
+        // if (movementType == 2 && unit.targetChain[0]) {
+        //     console.log("FOUND ENEMY")
+        //     targetUnit = unit.targetChain[unit.targetChain.length - 1];
+        //     movementType = (creatureOverload ? 1 : 0);
+        // }
 
         // Attack
         if (movementType != 2) {
@@ -1506,6 +1507,7 @@ function bootGame() {
                         }
                     }
                 }
+                GAMEselectedUnit = null;
                 element.darkness = (alreadyUsing ? 0 : 0.65);
                 BM.currentTile = (alreadyUsing ? null : tileName);
             }
@@ -1765,6 +1767,14 @@ function handleUnitSelectionTab() {
                 const xOffset = (index % 2 == 0) ? (x-100) - 150: (x-100) + 150;
                 const button = new GUI(displayName, displayName, xOffset, y-250 + 100*Math.floor(index/2), 200, 50, 2);
                 button.click = () => {
+                    BM.currentTile = null;
+                    for (const tile of BM.tiles) {
+                        const element = GUI.instances.get(tile.toLowerCase().replaceAll(" ", "") + "Tab");
+                        if (element.darkness != 0) {
+                            element.darkness = 0;
+                            break;
+                        }
+                    }
                     GAMETrashcanSelected = false;
                     GUI.instances.get("trashCanButton").darkness = 0;
                     GAMEselectedUnit = unitData;
@@ -1773,11 +1783,13 @@ function handleUnitSelectionTab() {
             }
             GAMEloadedSelectedUnitType = true;
         }
-        for (const guiName of GAMEGUIUnits) {
-            const guiButton = GUI.instances.get(guiName);
-            //guiButton.update(350, 350, 250, 250)
+        for (let i = 0; i < GAMEGUIUnits.length; i++) {
+            const guiButton = GUI.instances.get(GAMEGUIUnits[i]);
+            if (WP.resized) { 
+                const xOffset = (i % 2 == 0) ? (x-100) - 150: (x-100) + 150;
+                guiButton.update(xOffset, y-250 + 100*Math.floor(i/2), 200, 50)
+            }
             guiButton.renderText();
-            //console.log(guiButton)
         } 
     } else {
         guiObject.enabled = false;
