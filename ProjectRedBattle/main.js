@@ -674,7 +674,7 @@ class Creature {
     static allUnits = new Set();
     static allUnitPositions = new Map(); // int<int<Set(Creature)>>
     static allArrows = new Set(); // {x, y, type, lifeTime, direction, isGood, allPierced}
-    static allExplosions = []; // [y, x, radius, lifeTime]
+    static allExplosions = []; // [y, x, radius, lifeTime, growth]
     static tileCapacity = 4;
 
     // Core
@@ -696,7 +696,7 @@ class Creature {
     attacking = false;
     lastAttackAngle = 0;
     biters = new Set(); bit = null;
-    exploded = false;
+    exploded = false;   blowingUp = false;
 
     static updateAllUnitPositions(unit) { // Helper
         // Position
@@ -797,6 +797,7 @@ class Creature {
             self.xPos,
             radius,
             100,
+            6,
         ]);
         self.exploded = true;
         self.health = 0;
@@ -825,6 +826,16 @@ class Creature {
                 }
             }
         }
+        const explodedArrows = new Set();
+        for (const arrow of Creature.allArrows) {
+            if ((arrow.y >= eY - i + 0.5 && arrow.y <= eY + i - 0.5)
+            &&  (arrow.x >= eX - i + 0.5  && arrow.x <= eX + i - 0.5)) {
+                explodedArrows.add(arrow);
+            }
+        }
+        for (const arrow of explodedArrows) {
+            Creature.allArrows.delete(arrow);
+        }
     }
     static attack(unit, targetUnit) { // Main
         const currentWeapon = WeaponData[unit.weaponType];
@@ -838,7 +849,7 @@ class Creature {
                 targetUnit.biters.add(unit);
                 targetUnit.health -= currentWeapon.damage;
             } else if (unit.classType == "bomber" && !unit.exploded) {
-                Creature.explode(unit);
+                unit.blowingUp = true;
             }
         } else {
             unit.attackTick += 1;
@@ -1224,6 +1235,7 @@ class Creature {
         for (const explosion of Creature.allExplosions) {
             explosion[3] -= 1;
             if (explosion[3] > 0) {
+                explosion[4] += (explosion[4] > 1 ? -1 : 0);
                 survivingExplosions.push(explosion);
             }
         }
@@ -1321,6 +1333,13 @@ class Creature {
                 }
             }
             unit.justLostTarget = false;
+        }
+
+        // Handle Explosions
+        for (const unit of Creature.allUnits) {
+            if (unit.blowingUp && !unit.exploded) {
+                Creature.explode(unit);
+            }
         }
 
         // Handles all arrows
@@ -1505,7 +1524,8 @@ class Creature {
             const radius = explosion[2];
             const screenX = getScreenPosition(explosion[1], BM.mouseX, halfWidth);
             const screenY = getScreenPosition(explosion[0], BM.mouseY, halfHeight);
-            const screenRadius = size * radius;
+            const screenRadius = size * (radius/explosion[4]);
+            ctx.globalAlpha = (explosion[3] < 50 ? explosion[3]/50 : 1);
             ctx.drawImage(
                 gameTextures["explosion"],
                 screenX - screenRadius / 2,
@@ -1513,6 +1533,7 @@ class Creature {
                 screenRadius,
                 screenRadius
             );
+            ctx.globalAlpha = 1;
         }
     }
 }
