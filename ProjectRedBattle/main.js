@@ -70,6 +70,12 @@ const gameTextures = {
     goblinBomber1: makeImage("creatures/goblins/bomber/bomber1"),
     goblinBomber2: makeImage("creatures/goblins/bomber/bomber2"),
     explosion: makeImage("creatures/explosion"),
+    goblinMirror0: makeImage("creatures/goblins/mirror/mirror0"),
+    goblinMirror1: makeImage("creatures/goblins/mirror/mirror1"),
+    goblinMirror2: makeImage("creatures/goblins/mirror/mirror2"),
+    goblinUndead0: makeImage("creatures/goblins/undead/undead0"),
+    goblinUndead1: makeImage("creatures/goblins/undead/undead1"),
+    goblinUndead2: makeImage("creatures/goblins/undead/undead2"),
 
     fishlingFootSoldier0: makeImage("creatures/fishlings/footSoldier/footSoldier0"),
     fishlingFootSoldier1: makeImage("creatures/fishlings/footSoldier/footSoldier1"),
@@ -628,6 +634,24 @@ const CreatureTypes = {
             healthMiddle: "goblinBomber1",
             healthLow: "goblinBomber2",
         },
+        "mirror": {
+            hitboxSize: 0.5,
+            width: 0.5,
+            height: 0.5,
+            health: 75,
+            healthHigh: "goblinMirror0",
+            healthMiddle: "goblinMirror1",
+            healthLow: "goblinMirror2",
+        },
+        "undead": {
+            hitboxSize: 0.5,
+            width: 0.5,
+            height: 0.5,
+            health: 75,
+            healthHigh: "goblinUndead0",
+            healthMiddle: "goblinUndead1",
+            healthLow: "goblinUndead2",
+        },
     },
     "fishling": {
         "footSoldier": {
@@ -932,10 +956,17 @@ class Creature {
                                 const dx = unit.fluidXPos - arrow.x;
                                 const dy = unit.fluidYPos - arrow.y;
                                 if (unit.isGood != arrow.isGood && !unit.underWater && (dx * dx + dy * dy) <= arrowInfo.hitboxSize / 2) {
-                                    unit.health -= arrowInfo.damage;
                                     if (!arrowInfo.piercing) {
-                                        return (true);
+                                        if (unit.classType != "mirror") {
+                                            unit.health -= arrowInfo.damage;
+                                            return (true);
+                                        } else {
+                                            arrow.direction += Math.PI;
+                                            arrow.isGood = !arrow.isGood;
+                                            return (false);
+                                        }
                                     } else if (!arrow.allPierced.has(unit)) {
+                                        unit.health -= arrowInfo.damage;
                                         arrow.totalPierced += 1;
                                         arrow.allPierced.add(unit);
                                         if (arrow.allPierced.length >= arrowInfo.maxPierces) {
@@ -1558,6 +1589,8 @@ const CreatureSelection = {
         "Berserker": [false, "goblin", "berserker", "warriorRusher", "strongIronSword"],
         "Biter": [false, "goblin", "biter", "biter", "bite"],
         "Bomber": [false, "goblin", "bomber", "bomber", "explode"],
+        "Mirror": [false, "goblin", "mirror", "normal", "ironSword"],
+        "Undead": [false, "goblin", "undead", "warriorUndead", "undeadSword"],
     }
 }
 
