@@ -63,6 +63,9 @@ const gameTextures = {
     goblinBerserker0: makeImage("creatures/goblins/Berserker/Berserker0"),
     goblinBerserker1: makeImage("creatures/goblins/Berserker/Berserker1"),
     goblinBerserker2: makeImage("creatures/goblins/Berserker/Berserker2"),
+    goblinBiter0: makeImage("creatures/goblins/biter/biter0"),
+    goblinBiter1: makeImage("creatures/goblins/biter/biter1"),
+    goblinBiter2: makeImage("creatures/goblins/biter/biter2"),
     
     fishlingFootSoldier0: makeImage("creatures/fishlings/footSoldier/footSoldier0"),
     fishlingFootSoldier1: makeImage("creatures/fishlings/footSoldier/footSoldier1"),
@@ -76,6 +79,7 @@ const gameTextures = {
     fishlingDiver0: makeImage("creatures/fishlings/diver/diver0"), 
     fishlingDiver1: makeImage("creatures/fishlings/diver/diver1"),
     fishlingDiver2: makeImage("creatures/fishlings/diver/diver2"),
+    waterBubble: makeImage("creatures/waterBubble"),
 
     ironSword: makeImage("weapons/ironSword"),
     trident: makeImage("weapons/trident"),
@@ -429,7 +433,19 @@ const WeaponData = {
         arrowType: "fishling",
         width: 1,
         height: 1,
-    }
+    },
+    "bite": {
+        range: 1,
+        damage: 5,
+        attackRate: 0,
+        attackDuration: 0,
+        coolDownTime: 0,
+        isEvent: true,
+        isMelee: true,
+        texture: null,
+        width: 1,
+        height: 1,
+    },
 }
 const SoulData = {
     "normal": {
@@ -478,6 +494,12 @@ const SoulData = {
         tileProps: { "grass": { risk: 1, speed: 0.5 }, "stone": { risk: Number.MAX_VALUE, speed: 0 }, "shallowwater": { risk: 5, speed: 0.125 }, "deepwater": { risk: Number.MAX_VALUE, speed: 0 }, "sand": { risk: 2, speed: 0.45 }, "lava": { risk: Number.MAX_VALUE, speed: 0 } },
         detectVision: 20,
         alertVision: 12,
+        wanderChance: 1,
+    },
+    "biter": {
+        tileProps: { "grass": { risk: 1, speed: 1.5 }, "stone": { risk: Number.MAX_VALUE, speed: 0 }, "shallowwater": { risk: 5, speed: 0.5 }, "deepwater": { risk: 25, speed: 0.25 }, "sand": { risk: 2, speed: 1.3 }, "lava": { risk: Number.MAX_VALUE, speed: 0 } },
+        detectVision: 15,
+        alertVision: 0,
         wanderChance: 1,
     },
 }
@@ -566,6 +588,15 @@ const CreatureTypes = {
             healthMiddle: "goblinBerserker1",
             healthLow: "goblinBerserker2",
         },
+        "biter": {
+            hitboxSize: 0.25,
+            width: 0.25,
+            height: 0.25,
+            health: 25,
+            healthHigh: "goblinBiter0",
+            healthMiddle: "goblinBiter1",
+            healthLow: "goblinBiter2",
+        },
     },
     "fishling": {
         "footSoldier": {
@@ -613,6 +644,7 @@ class Creature {
     static allUnitPositions = new Map(); // int<int<Set(Creature)>>
     static allArrows = new Set(); // {x, y, type, lifeTime, direction, isGood, allPierced}
     static tileCapacity = 4;
+
     // Core
     xPos; fluidXPos; oldXPos;
     yPos; fluidYPos; oldYPos;
@@ -631,6 +663,7 @@ class Creature {
     attackTick = 0;
     attacking = false;
     lastAttackAngle = 0;
+    biters = new Set(); bit = null;
 
     static updateAllUnitPositions(unit) { // Helper
         // Position
@@ -730,34 +763,42 @@ class Creature {
         const attackDuration = currentWeapon.attackDuration;
         const coolDownTime = currentWeapon.coolDownTime;
 
-        unit.attackTick += 1;
-        if (unit.attackTick == attackRate) {
-            // Lost target
-            if (!targetUnit) {
-                unit.attackTick = 0;
-                return;
-            }
-            unit.attacking = true;
-            if (currentWeapon.isMelee) { // Melee attack
+        if (currentWeapon.isEvent) {
+            if (unit.classType == "biter" && !unit.bit && targetUnit) {
+                unit.bit = targetUnit;
+                targetUnit.biters.add(unit);
                 targetUnit.health -= currentWeapon.damage;
-            } else { // Ranged attack
-                const arrow = {
-                    x: unit.fluidXPos,
-                    y: unit.fluidYPos,
-                    type: currentWeapon.arrowType,
-                    lifeTime: 0,
-                    direction: Math.atan2(unit.fluidYPos - targetUnit.fluidYPos, unit.fluidXPos - targetUnit.fluidXPos),
-                    isGood: unit.isGood,
-                    allPierced: new Set(),
-                };
-                Creature.allArrows.add(arrow);
             }
         } else {
-            if (unit.attackTick == attackRate + attackDuration) {
-                unit.attacking = false;
-            } else {
-                if (unit.attackTick >= attackRate + attackDuration + coolDownTime) {
+            unit.attackTick += 1;
+            if (unit.attackTick == attackRate) {
+                // Lost target
+                if (!targetUnit) {
                     unit.attackTick = 0;
+                    return;
+                }
+                unit.attacking = true;
+                if (currentWeapon.isMelee) { // Melee attack
+                    targetUnit.health -= currentWeapon.damage;
+                } else { // Ranged attack
+                    const arrow = {
+                        x: unit.fluidXPos,
+                        y: unit.fluidYPos,
+                        type: currentWeapon.arrowType,
+                        lifeTime: 0,
+                        direction: Math.atan2(unit.fluidYPos - targetUnit.fluidYPos, unit.fluidXPos - targetUnit.fluidXPos),
+                        isGood: unit.isGood,
+                        allPierced: new Set(),
+                    };
+                    Creature.allArrows.add(arrow);
+                }
+            } else {
+                if (unit.attackTick == attackRate + attackDuration) {
+                    unit.attacking = false;
+                } else {
+                    if (unit.attackTick >= attackRate + attackDuration + coolDownTime) {
+                        unit.attackTick = 0;
+                    }
                 }
             }
         }
@@ -1118,6 +1159,12 @@ class Creature {
                     unit.targetChain = [];
                     unit.justLostTarget = true;
                 }
+                if (unit.bit === target) {
+                    unit.bit = null;
+                }
+                if (unit.biters.has(target)) {
+                    unit.biters.delete(target);
+                }
             }
             // Unit above broke chain
             if (unit.targetChain.length > 0 
@@ -1143,7 +1190,7 @@ class Creature {
             }
             const [speedData, standingTile] = getSpeed();
             unit.standingTile = standingTile;
-            if (unit.standingTile == "stone") {
+            if (speedData[3] == 0) {
                 unit.health -= unit.maxHealth/10;
             }
             if (unit.isDiver) {
@@ -1155,7 +1202,7 @@ class Creature {
                 Creature.attack(unit, unit.targetChain[0]);
             }
 
-            if (!unit.moving) {
+            if (!unit.moving || (unit.biters.size > 0 && !unit.bit)) {
                 const moveData = Creature.smartMove(unit, (unit.allTargets.size == 0 ? 2 : 0));
                 const nextMove = moveData[0];
                 const allyUnits = moveData[1];
@@ -1169,7 +1216,9 @@ class Creature {
                     }
                 }
             } else { // Transition to spot
-                Creature.moveUnit(unit, speedData);
+                if (unit.biters.size <= 0 && !unit.bit) {
+                    Creature.moveUnit(unit, speedData);
+                }
             }
 
             // Remove useless chains
@@ -1313,7 +1362,7 @@ class Creature {
             }
 
             ctx.drawImage(
-                gameTextures[unit.debugMode ? "missingTexture" : unit.debugEnemy ? "troll" : unit.debugAlly ? "elf" : unit.underWater ? "missingTexture" : (healthPercentage <= 0.333 ? creatureData.healthLow : (healthPercentage <= 0.666 ? creatureData.healthMiddle : creatureData.healthHigh))],
+                gameTextures[unit.debugMode ? "missingTexture" : unit.debugEnemy ? "troll" : unit.debugAlly ? "elf" : unit.underWater ? "waterBubble" : (healthPercentage <= 0.333 ? creatureData.healthLow : (healthPercentage <= 0.666 ? creatureData.healthMiddle : creatureData.healthHigh))],
                 screenX - screenWidth / 2,
                 screenY - screenHeight / 2,
                 screenWidth,
@@ -1342,14 +1391,16 @@ class Creature {
                         unit.lastAttackAngle = rotation;
                     }
                 }
-                ctx.rotate(rotation);
-                ctx.drawImage(
+                if (currentWeapon.texture) {
+                    ctx.rotate(rotation);
+                    ctx.drawImage(
                     gameTextures[(!currentWeapon.isMelee && unit.attackTick < currentWeapon.attackRate ? currentWeapon.loadedTexture : currentWeapon.texture)],
                     -(size * weaponWidth + (targetEnemy ? 0 : (currentWeapon.isMelee ? size / 2 : 0))) / 2,
                     -(size * weaponHeight * (targetEnemy ? 3 : 2) + (targetEnemy ? (unit.attacking && currentWeapon.isMelee ? size : 0) : 0)) / 2,
                     size * weaponWidth,
                     size * weaponHeight
-                );
+                    );
+                }
                 ctx.restore();
             }
             if (unit.debugMode || unit.debugEnemy || unit.debugAlly) {
@@ -1388,6 +1439,7 @@ const CreatureSelection = {
         "Archer": [false, "goblin", "archer", "normal", "bow"],
         "Large": [false, "goblin", "large", "large", "largeSword"],
         "Berserker": [false, "goblin", "berserker", "warriorRusher", "strongIronSword"],
+        "Biter": [false, "goblin", "biter", "biter", "bite"],
     }
 }
 
@@ -1858,26 +1910,26 @@ async function handleRenders() {
     BM.render();
 
     /* Debug */
-    const data = getSelectedTile();
-    if (data) {
-        const y = data[0];
-        const x = data[1];
-        if (Creature.allUnitPositions.has(y) && Creature.allUnitPositions.get(y).has(x)) {
-            for (const unit of Creature.allUnitPositions.get(y).get(x)) {
-                console.log("New Creature")
-                unit.debugMode = true;
-                console.log(unit.targetChain)
-                for (let i = 0; i < unit.targetChain.length; i++) {
-                    const target = unit.targetChain[i];
-                    if (i == 0) {
-                        target.debugEnemy = true;
-                    } else {
-                        target.debugAlly = true;
-                    }
-                }
-            }
-        }
-    }
+    // const data = getSelectedTile();
+    // if (data) {
+    //     const y = data[0];
+    //     const x = data[1];
+    //     if (Creature.allUnitPositions.has(y) && Creature.allUnitPositions.get(y).has(x)) {
+    //         for (const unit of Creature.allUnitPositions.get(y).get(x)) {
+    //             console.log("New Creature")
+    //             unit.debugMode = true;
+    //             console.log(unit.targetChain)
+    //             for (let i = 0; i < unit.targetChain.length; i++) {
+    //                 const target = unit.targetChain[i];
+    //                 if (i == 0) {
+    //                     target.debugEnemy = true;
+    //                 } else {
+    //                     target.debugAlly = true;
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
 
     Creature.renderInstances();
 
