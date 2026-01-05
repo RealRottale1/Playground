@@ -66,7 +66,11 @@ const gameTextures = {
     goblinBiter0: makeImage("creatures/goblins/biter/biter0"),
     goblinBiter1: makeImage("creatures/goblins/biter/biter1"),
     goblinBiter2: makeImage("creatures/goblins/biter/biter2"),
-    
+    goblinBomber0: makeImage("creatures/goblins/bomber/bomber0"),
+    goblinBomber1: makeImage("creatures/goblins/bomber/bomber1"),
+    goblinBomber2: makeImage("creatures/goblins/bomber/bomber2"),
+    explosion: makeImage("creatures/explosion"),
+
     fishlingFootSoldier0: makeImage("creatures/fishlings/footSoldier/footSoldier0"),
     fishlingFootSoldier1: makeImage("creatures/fishlings/footSoldier/footSoldier1"),
     fishlingFootSoldier2: makeImage("creatures/fishlings/footSoldier/footSoldier2"),
@@ -446,6 +450,18 @@ const WeaponData = {
         width: 1,
         height: 1,
     },
+    "explode": {
+        range: 1,
+        damage: 0,
+        attackRate: 0,
+        attackDuration: 0,
+        coolDownTime: 0,
+        isEvent: true,
+        isMelee: true,
+        texture: null,
+        width: 1,
+        height: 1,
+    },
 }
 const SoulData = {
     "normal": {
@@ -498,6 +514,12 @@ const SoulData = {
     },
     "biter": {
         tileProps: { "grass": { risk: 1, speed: 1.5 }, "stone": { risk: Number.MAX_VALUE, speed: 0 }, "shallowwater": { risk: 5, speed: 0.5 }, "deepwater": { risk: 25, speed: 0.25 }, "sand": { risk: 2, speed: 1.3 }, "lava": { risk: Number.MAX_VALUE, speed: 0 } },
+        detectVision: 15,
+        alertVision: 0,
+        wanderChance: 1,
+    },
+    "bomber": {
+        tileProps: { "grass": { risk: 1, speed: 0.5 }, "stone": { risk: Number.MAX_VALUE, speed: 0 }, "shallowwater": { risk: 5, speed: 0.125 }, "deepwater": { risk: 25, speed: 0.0625 }, "sand": { risk: 2, speed: 0.45 }, "lava": { risk: Number.MAX_VALUE, speed: 0 } },
         detectVision: 15,
         alertVision: 0,
         wanderChance: 1,
@@ -597,6 +619,15 @@ const CreatureTypes = {
             healthMiddle: "goblinBiter1",
             healthLow: "goblinBiter2",
         },
+        "bomber": {
+            hitboxSize: 0.5,
+            width: 0.625,
+            height: 0.625,
+            health: 125,
+            healthHigh: "goblinBomber0",
+            healthMiddle: "goblinBomber1",
+            healthLow: "goblinBomber2",
+        },
     },
     "fishling": {
         "footSoldier": {
@@ -643,6 +674,7 @@ class Creature {
     static allUnits = new Set();
     static allUnitPositions = new Map(); // int<int<Set(Creature)>>
     static allArrows = new Set(); // {x, y, type, lifeTime, direction, isGood, allPierced}
+    static allExplosions = []; // [y, x, radius, lifeTime]
     static tileCapacity = 4;
 
     // Core
@@ -664,6 +696,7 @@ class Creature {
     attacking = false;
     lastAttackAngle = 0;
     biters = new Set(); bit = null;
+    exploded = false;
 
     static updateAllUnitPositions(unit) { // Helper
         // Position
@@ -757,6 +790,42 @@ class Creature {
             }
         }
     }
+    static explode(self) { // Helper
+        const radius = 3
+        Creature.allExplosions.push([
+            self.yPos,
+            self.xPos,
+            radius,
+            100,
+        ]);
+        self.exploded = true;
+        self.health = 0;
+        const eY = self.yPos;
+        const eX = self.xPos;
+        const i = Math.floor(radius/2) + 1;
+        for (let y = -i; y <= i; y++) {
+            for (let x = -i; x <= i; x++) {
+                const nY = eY + y;
+                const nX = eX + x;
+                if (Creature.allUnitPositions.has(nY) && Creature.allUnitPositions.get(nY).has(nX)) {
+                    for (const unit of Creature.allUnitPositions.get(nY).get(nX)) {
+                        const isBomber = (unit.weaponType == "explode");
+                        if (unit.isGood != self.isGood || isBomber) {
+                            const uY = unit.fluidYPos;
+                            const uX = unit.fluidXPos;
+                            if ((uY >= eY - i + 0.5 && uY <= eY + i - 0.5)
+                            &&  (uX >= eX - i + 0.5  && uX <= eX + i - 0.5)) {
+                                unit.health = 0;
+                                if (isBomber && !unit.exploded) {
+                                    Creature.explode(unit);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
     static attack(unit, targetUnit) { // Main
         const currentWeapon = WeaponData[unit.weaponType];
         const attackRate = currentWeapon.attackRate;
@@ -768,6 +837,8 @@ class Creature {
                 unit.bit = targetUnit;
                 targetUnit.biters.add(unit);
                 targetUnit.health -= currentWeapon.damage;
+            } else if (unit.classType == "bomber" && !unit.exploded) {
+                Creature.explode(unit);
             }
         } else {
             unit.attackTick += 1;
@@ -1148,6 +1219,16 @@ class Creature {
             Creature.allUnitPositions.get(deadY).get(deadX).delete(unit);
         }
 
+        // All explosion
+        const survivingExplosions = [];
+        for (const explosion of Creature.allExplosions) {
+            explosion[3] -= 1;
+            if (explosion[3] > 0) {
+                survivingExplosions.push(explosion);
+            }
+        }
+        Creature.allExplosions = survivingExplosions;
+
         // Act for all units
         const visionData = new Map();
         const nextPositions = new Map();
@@ -1418,6 +1499,21 @@ class Creature {
             unit.debugEnemy = false;
             unit.debugAlly = false;
         }
+
+        // Render explosions
+        for (const explosion of Creature.allExplosions) {
+            const radius = explosion[2];
+            const screenX = getScreenPosition(explosion[1], BM.mouseX, halfWidth);
+            const screenY = getScreenPosition(explosion[0], BM.mouseY, halfHeight);
+            const screenRadius = size * radius;
+            ctx.drawImage(
+                gameTextures["explosion"],
+                screenX - screenRadius / 2,
+                screenY - screenRadius / 2,
+                screenRadius,
+                screenRadius
+            );
+        }
     }
 }
 const CreatureSelection = {
@@ -1440,6 +1536,7 @@ const CreatureSelection = {
         "Large": [false, "goblin", "large", "large", "largeSword"],
         "Berserker": [false, "goblin", "berserker", "warriorRusher", "strongIronSword"],
         "Biter": [false, "goblin", "biter", "biter", "bite"],
+        "Bomber": [false, "goblin", "bomber", "bomber", "explode"],
     }
 }
 
@@ -1541,6 +1638,7 @@ function bootGame() {
                 Creature.allUnits.clear();
                 Creature.allUnitPositions.clear();
                 Creature.allArrows.clear();
+                Creature.allExplosions = [];
                 for (const unitData of GAMEsavedUnits) {
                     new Creature(unitData[0], unitData[1], unitData[2], unitData[3], unitData[4], unitData[5], unitData[6]);
                 }
