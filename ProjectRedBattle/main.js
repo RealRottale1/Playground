@@ -603,6 +603,7 @@ const CreatureTypes = {
             healthHigh: "fishlingDiver0",
             healthMiddle: "fishlingDiver1",
             healthLow: "fishlingDiver2",
+            diver: true,
         }
     }
 }
@@ -625,6 +626,7 @@ class Creature {
     targetChain = [];
     moving = false;
     justLostTarget = false;
+    isDiver = false;    underWater = false;
     // Attack
     attackTick = 0;
     attacking = false;
@@ -651,15 +653,19 @@ class Creature {
                     continue;
                 }
                 if (unit.isGood != target.isGood) {
-                    if (unit.targetChain.length > 0) {
-                        if (unit.targetChain[0] == target || getDistance(target.yPos, unit.yPos, target.xPos, unit.xPos) < getDistance(unit.targetChain[0].yPos, unit.yPos, unit.targetChain[0].xPos, unit.xPos)) {
+                    if (!unit.isMelee && target.underWater) {
+                        continue;
+                    } else {
+                        if (unit.targetChain.length > 0) {
+                            if (unit.targetChain[0] == target || getDistance(target.yPos, unit.yPos, target.xPos, unit.xPos) < getDistance(unit.targetChain[0].yPos, unit.yPos, unit.targetChain[0].xPos, unit.xPos)) {
+                                unit.targetChain = [target];
+                                unit.allTargets.clear();
+                                unit.allTargets.add(target);
+                            }
+                        } else {
                             unit.targetChain = [target];
-                            unit.allTargets.clear();
                             unit.allTargets.add(target);
                         }
-                    } else {
-                        unit.targetChain = [target];
-                        unit.allTargets.add(target);
                     }
                 } else {
                     const distanceFromAlly = getDistance(unit.yPos, y, unit.xPos, x);
@@ -802,7 +808,7 @@ class Creature {
                             for (const unit of Creature.allUnitPositions.get(ny).get(nx)) {
                                 const dx = unit.fluidXPos - arrow.x;
                                 const dy = unit.fluidYPos - arrow.y;
-                                if (unit.isGood != arrow.isGood && (dx * dx + dy * dy) <= arrowInfo.hitboxSize / 2) {
+                                if (unit.isGood != arrow.isGood && !unit.underWater && (dx * dx + dy * dy) <= arrowInfo.hitboxSize / 2) {
                                     unit.health -= arrowInfo.damage;
                                     if (!arrowInfo.piercing) {
                                         return (true);
@@ -1114,7 +1120,10 @@ class Creature {
                 }
             }
             // Unit above broke chain
-            if (unit.targetChain.length > 0 && unit.targetChain[unit.targetChain.length - 1].targetChain.length <= 0 && unit.targetChain[unit.targetChain.length - 1].isGood == unit.isGood) {
+            if (unit.targetChain.length > 0 
+                && ((unit.targetChain[unit.targetChain.length - 1].targetChain.length <= 0 && unit.targetChain[unit.targetChain.length - 1].isGood == unit.isGood)
+                || !unit.isMelee && unit.targetChain[0].underWater)
+            ) {
                 unit.allTargets.clear();
                 unit.targetChain = [];
                 unit.justLostTarget = true;
@@ -1136,6 +1145,9 @@ class Creature {
             unit.standingTile = standingTile;
             if (unit.standingTile == "stone") {
                 unit.health -= unit.maxHealth/10;
+            }
+            if (unit.isDiver) {
+                unit.underWater = (unit.standingTile == "deepwater");
             }
 
             // Progress attack
@@ -1236,7 +1248,7 @@ class Creature {
         this.weaponType = weaponType;
         this.health = CreatureTypes[subClass][classType].health;
         this.maxHealth = this.health;
-
+        this.isDiver = CreatureTypes[subClass][classType].diver;
         Creature.allUnits.add(this);
         Creature.updateAllUnitPositions(this);
     }
@@ -1286,20 +1298,22 @@ class Creature {
             const healthPercentage = unit.health / unit.maxHealth;
 
             const waterDepth = unit.standingTile == "shallowwater" ? 1.25 : unit.standingTile == "deepwater" ? 2 : 0;
-            if (waterDepth != 0) {
-                ctx.save();
-                ctx.beginPath();
-                ctx.rect(
-                    screenX - screenWidth / 2,
-                    screenY - screenHeight / 2,
-                    screenWidth,
-                    screenHeight / waterDepth
-                );
-                ctx.clip();
+            if (!unit.underWater) {
+                if (waterDepth != 0) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.rect(
+                        screenX - screenWidth / 2,
+                        screenY - screenHeight / 2,
+                        screenWidth,
+                        screenHeight / waterDepth
+                    );
+                    ctx.clip();
+                }
             }
 
             ctx.drawImage(
-                gameTextures[unit.debugMode ? "missingTexture" : unit.debugEnemy ? "troll" : unit.debugAlly ? "elf" : (healthPercentage <= 0.333 ? creatureData.healthLow : (healthPercentage <= 0.666 ? creatureData.healthMiddle : creatureData.healthHigh))],
+                gameTextures[unit.debugMode ? "missingTexture" : unit.debugEnemy ? "troll" : unit.debugAlly ? "elf" : unit.underWater ? "missingTexture" : (healthPercentage <= 0.333 ? creatureData.healthLow : (healthPercentage <= 0.666 ? creatureData.healthMiddle : creatureData.healthHigh))],
                 screenX - screenWidth / 2,
                 screenY - screenHeight / 2,
                 screenWidth,
@@ -1310,32 +1324,34 @@ class Creature {
                 ctx.restore();
             }
 
-            const currentWeapon = WeaponData[unit.weaponType];
-            const weaponWidth = currentWeapon.width;
-            const weaponHeight = currentWeapon.height;
-            ctx.save();
-            ctx.translate(screenX, screenY);
-            let rotation = 0;
-            const targetEnemy = unit.targetChain[0];
-            if (targetEnemy) {
-                rotation = Math.atan2(unit.fluidYPos - targetEnemy.fluidYPos, unit.fluidXPos - targetEnemy.fluidXPos) - Math.PI / 2;
-            } else {
-                if (unit.fluidYPos == unit.yPos && unit.fluidXPos == unit.xPos) {
-                    rotation = unit.lastAttackAngle;
+            if (!unit.underWater) {
+                const currentWeapon = WeaponData[unit.weaponType];
+                const weaponWidth = currentWeapon.width;
+                const weaponHeight = currentWeapon.height;
+                ctx.save();
+                ctx.translate(screenX, screenY);
+                let rotation = 0;
+                const targetEnemy = unit.targetChain[0];
+                if (targetEnemy) {
+                    rotation = Math.atan2(unit.fluidYPos - targetEnemy.fluidYPos, unit.fluidXPos - targetEnemy.fluidXPos) - Math.PI / 2;
                 } else {
-                    rotation = Math.atan2(unit.fluidYPos - unit.yPos, unit.fluidXPos - unit.xPos) - Math.PI / 2;
-                    unit.lastAttackAngle = rotation;
+                    if (unit.fluidYPos == unit.yPos && unit.fluidXPos == unit.xPos) {
+                        rotation = unit.lastAttackAngle;
+                    } else {
+                        rotation = Math.atan2(unit.fluidYPos - unit.yPos, unit.fluidXPos - unit.xPos) - Math.PI / 2;
+                        unit.lastAttackAngle = rotation;
+                    }
                 }
+                ctx.rotate(rotation);
+                ctx.drawImage(
+                    gameTextures[(!currentWeapon.isMelee && unit.attackTick < currentWeapon.attackRate ? currentWeapon.loadedTexture : currentWeapon.texture)],
+                    -(size * weaponWidth + (targetEnemy ? 0 : (currentWeapon.isMelee ? size / 2 : 0))) / 2,
+                    -(size * weaponHeight * (targetEnemy ? 3 : 2) + (targetEnemy ? (unit.attacking && currentWeapon.isMelee ? size : 0) : 0)) / 2,
+                    size * weaponWidth,
+                    size * weaponHeight
+                );
+                ctx.restore();
             }
-            ctx.rotate(rotation);
-            ctx.drawImage(
-                gameTextures[(!currentWeapon.isMelee && unit.attackTick < currentWeapon.attackRate ? currentWeapon.loadedTexture : currentWeapon.texture)],
-                -(size * weaponWidth + (targetEnemy ? 0 : (currentWeapon.isMelee ? size / 2 : 0))) / 2,
-                -(size * weaponHeight * (targetEnemy ? 3 : 2) + (targetEnemy ? (unit.attacking && currentWeapon.isMelee ? size : 0) : 0)) / 2,
-                size * weaponWidth,
-                size * weaponHeight
-            );
-            ctx.restore();
             if (unit.debugMode || unit.debugEnemy || unit.debugAlly) {
                 const tileX = Math.floor((unit.xPos - BM.mouseX + 0.5) * tileSize + halfWidth);
                 const tileY = Math.floor((unit.yPos - BM.mouseY + 0.5) * tileSize + halfHeight);
@@ -1842,26 +1858,26 @@ async function handleRenders() {
     BM.render();
 
     /* Debug */
-    // const data = getSelectedTile();
-    // if (data) {
-    //     const y = data[0];
-    //     const x = data[1];
-    //     if (Creature.allUnitPositions.has(y) && Creature.allUnitPositions.get(y).has(x)) {
-    //         for (const unit of Creature.allUnitPositions.get(y).get(x)) {
-    //             console.log("New Creature")
-    //             unit.debugMode = true;
-    //             console.log(unit.targetChain)
-    //             for (let i = 0; i < unit.targetChain.length; i++) {
-    //                 const target = unit.targetChain[i];
-    //                 if (i == 0) {
-    //                     target.debugEnemy = true;
-    //                 } else {
-    //                     target.debugAlly = true;
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
+    const data = getSelectedTile();
+    if (data) {
+        const y = data[0];
+        const x = data[1];
+        if (Creature.allUnitPositions.has(y) && Creature.allUnitPositions.get(y).has(x)) {
+            for (const unit of Creature.allUnitPositions.get(y).get(x)) {
+                console.log("New Creature")
+                unit.debugMode = true;
+                console.log(unit.targetChain)
+                for (let i = 0; i < unit.targetChain.length; i++) {
+                    const target = unit.targetChain[i];
+                    if (i == 0) {
+                        target.debugEnemy = true;
+                    } else {
+                        target.debugAlly = true;
+                    }
+                }
+            }
+        }
+    }
 
     Creature.renderInstances();
 
