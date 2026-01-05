@@ -76,6 +76,12 @@ const gameTextures = {
     goblinUndead0: makeImage("creatures/goblins/undead/undead0"),
     goblinUndead1: makeImage("creatures/goblins/undead/undead1"),
     goblinUndead2: makeImage("creatures/goblins/undead/undead2"),
+    goblinKnight0: makeImage("creatures/goblins/Knight/Knight0"),
+    goblinKnight1: makeImage("creatures/goblins/Knight/Knight1"),
+    goblinKnight2: makeImage("creatures/goblins/Knight/Knight2"),
+    goblinKron0: makeImage("creatures/goblins/Kron/Kron0"),
+    goblinKron1: makeImage("creatures/goblins/Kron/Kron1"),
+    goblinKron2: makeImage("creatures/goblins/Kron/Kron2"),
 
     fishlingFootSoldier0: makeImage("creatures/fishlings/footSoldier/footSoldier0"),
     fishlingFootSoldier1: makeImage("creatures/fishlings/footSoldier/footSoldier1"),
@@ -98,6 +104,7 @@ const gameTextures = {
     dagger: makeImage("weapons/dagger"),
     fishlingDagger: makeImage("weapons/fishlingDagger"),
     largeSword: makeImage("weapons/largeSword"),
+    kronSword: makeImage("weapons/kronSword"),
 
     bow: makeImage("weapons/bow"),
     loadedBow: makeImage("weapons/loadedBow"),
@@ -468,6 +475,17 @@ const WeaponData = {
         width: 1,
         height: 1,
     },
+    "kronSword": {
+        range: 7,
+        damage: 100,
+        attackRate: 20,
+        attackDuration: 20,
+        coolDownTime: 16,
+        isMelee: true,
+        texture: "kronSword",
+        width: 1,
+        height: 2,
+    },
 }
 const SoulData = {
     "normal": {
@@ -528,6 +546,12 @@ const SoulData = {
         tileProps: { "grass": { risk: 1, speed: 0.5 }, "stone": { risk: Number.MAX_VALUE, speed: 0 }, "shallowwater": { risk: 5, speed: 0.125 }, "deepwater": { risk: 25, speed: 0.0625 }, "sand": { risk: 2, speed: 0.45 }, "lava": { risk: Number.MAX_VALUE, speed: 0 } },
         detectVision: 15,
         alertVision: 0,
+        wanderChance: 1,
+    },
+    "kron": {
+        tileProps: { "grass": { risk: 1, speed: 0.5 }, "stone": { risk: Number.MAX_VALUE, speed: 0 }, "shallowwater": { risk: 5, speed: 0.125 }, "deepwater": { risk: 25, speed: 0.0625 }, "sand": { risk: 2, speed: 0.45 }, "lava": { risk: 125, speed: 0.0625 } },
+        detectVision: 20,
+        alertVision: 12,
         wanderChance: 1,
     },
 }
@@ -651,6 +675,24 @@ const CreatureTypes = {
             healthHigh: "goblinUndead0",
             healthMiddle: "goblinUndead1",
             healthLow: "goblinUndead2",
+        },
+        "knight": {
+            hitboxSize: 0.5,
+            width: 0.75,
+            height: 0.75,
+            health: 300,
+            healthHigh: "goblinKnight0",
+            healthMiddle: "goblinKnight1",
+            healthLow: "goblinKnight2",
+        },
+        "kron": {
+            hitboxSize: 1.5,
+            width: 2,
+            height: 2,
+            health: 3000,
+            healthHigh: "goblinKron0",
+            healthMiddle: "goblinKron1",
+            healthLow: "goblinKron2",
         },
     },
     "fishling": {
@@ -840,7 +882,7 @@ class Creature {
                             const uX = unit.fluidXPos;
                             if ((uY >= eY - i + 0.5 && uY <= eY + i - 0.5)
                             &&  (uX >= eX - i + 0.5  && uX <= eX + i - 0.5)) {
-                                unit.health = 0;
+                                unit.health -= 100;
                                 if (isBomber && !unit.exploded) {
                                     Creature.explode(unit);
                                 }
@@ -1522,11 +1564,13 @@ class Creature {
                         unit.lastAttackAngle = rotation;
                     }
                 }
+                
                 if (currentWeapon.texture) {
                     ctx.rotate(rotation);
+                    const yOffset = (targetEnemy ? 1 : (1+creatureData.hitboxSize))
                     ctx.drawImage(
                     gameTextures[(!currentWeapon.isMelee && unit.attackTick < currentWeapon.attackRate ? currentWeapon.loadedTexture : currentWeapon.texture)],
-                    -(size * weaponWidth + (targetEnemy ? 0 : (currentWeapon.isMelee ? size / 2 : 0))) / 2,
+                    -yOffset*(size * weaponWidth + (targetEnemy ? 0 : (currentWeapon.isMelee ? size / 2 : 0))) / 2,
                     -(size * weaponHeight * (targetEnemy ? 3 : 2) + (targetEnemy ? (unit.attacking && currentWeapon.isMelee ? size : 0) : 0)) / 2,
                     size * weaponWidth,
                     size * weaponHeight
@@ -1591,6 +1635,8 @@ const CreatureSelection = {
         "Bomber": [false, "goblin", "bomber", "bomber", "explode"],
         "Mirror": [false, "goblin", "mirror", "normal", "ironSword"],
         "Undead": [false, "goblin", "undead", "warriorUndead", "undeadSword"],
+        "Knight": [false, "goblin", "knight", "warriorKnight", "knightSword"],
+        "Kron": [false, "goblin", "kron", "kron", "kronSword"],
     }
 }
 
