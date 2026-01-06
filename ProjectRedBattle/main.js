@@ -53,6 +53,9 @@ const gameTextures = {
     warriorBomber0: makeImage("creatures/warriors/Bomber/Bomber0"),
     warriorBomber1: makeImage("creatures/warriors/Bomber/Bomber1"),
     warriorBomber2: makeImage("creatures/warriors/Bomber/Bomber2"),
+    warriorKing0: makeImage("creatures/warriors/King/King0"),
+    warriorKing1: makeImage("creatures/warriors/King/King1"),
+    warriorKing2: makeImage("creatures/warriors/King/King2"),
 
     goblinFootSoldier0: makeImage("creatures/goblins/footSoldier/footSoldier0"),
     goblinFootSoldier1: makeImage("creatures/goblins/footSoldier/footSoldier1"),
@@ -92,6 +95,9 @@ const gameTextures = {
     goblinPosion1: makeImage("creatures/goblins/Posion/Posion1"),
     goblinPosion2: makeImage("creatures/goblins/Posion/Posion2"),
     posion: makeImage("creatures/posionTile"),
+    goblinKing0: makeImage("creatures/goblins/King/King0"),
+    goblinKing1: makeImage("creatures/goblins/King/King1"),
+    goblinKing2: makeImage("creatures/goblins/King/King2"),
 
     fishlingFootSoldier0: makeImage("creatures/fishlings/footSoldier/footSoldier0"),
     fishlingFootSoldier1: makeImage("creatures/fishlings/footSoldier/footSoldier1"),
@@ -115,6 +121,8 @@ const gameTextures = {
     fishlingDagger: makeImage("weapons/fishlingDagger"),
     largeSword: makeImage("weapons/largeSword"),
     kronSword: makeImage("weapons/kronSword"),
+    warriorKingSword: makeImage("weapons/warriorKingSword"),
+    goblinKingSword: makeImage("weapons/goblinKingSword"),
 
     bow: makeImage("weapons/bow"),
     loadedBow: makeImage("weapons/loadedBow"),
@@ -509,6 +517,28 @@ const WeaponData = {
         width: 1,
         height: 2,
     },
+    "warriorKingSword": {
+        range: 5,
+        damage: 100,
+        attackRate: 25,
+        attackDuration: 20,
+        coolDownTime: 16,
+        isMelee: true,
+        texture: "warriorKingSword",
+        width: 1,
+        height: 2,
+    },
+    "warriorKingSword": {
+        range: 5,
+        damage: 100,
+        attackRate: 25,
+        attackDuration: 20,
+        coolDownTime: 16,
+        isMelee: true,
+        texture: "goblinKingSword",
+        width: 1,
+        height: 2,
+    },
     "posion": {
         range: 1,
         damage: 0,
@@ -609,6 +639,12 @@ const SoulData = {
         isGhost: true,
         floats: true,
     },
+    "warriorKing": {
+        tileProps: { "grass": { risk: 1, speed: 0.75 }, "stone": { risk: Number.MAX_VALUE, speed: 0 }, "shallowwater": { risk: 5, speed: 0.25 }, "deepwater": { risk: 25, speed: 0.125 }, "sand": { risk: 2, speed: 0.9 }, "lava": { risk: Number.MAX_VALUE, speed: 0 } },
+        detectVision: 20,
+        alertVision: 12,
+        wanderChance: 1,
+    },
 }
 const CreatureTypes = {
     "warrior": {
@@ -665,6 +701,15 @@ const CreatureTypes = {
             healthHigh: "warriorBomber0",
             healthMiddle: "warriorBomber1",
             healthLow: "warriorBomber2",
+        },
+        "king": {
+            hitboxSize: 1.25,
+            width: 1.5,
+            height: 1.5,
+            health: 2000,
+            healthHigh: "warriorKing0",
+            healthMiddle: "warriorKing1",
+            healthLow: "warriorKing2",
         },
     },
     "goblin": {
@@ -775,6 +820,15 @@ const CreatureTypes = {
             healthHigh: "goblinPosion0",
             healthMiddle: "goblinPosion1",
             healthLow: "goblinPosion2",
+        },
+        "king": {
+            hitboxSize: 1.25,
+            width: 1.5,
+            height: 1.5,
+            health: 2000,
+            healthHigh: "goblinKing0",
+            healthMiddle: "goblinKing1",
+            healthLow: "goblinKing2",
         },
     },
     "fishling": {
@@ -1765,6 +1819,7 @@ const CreatureSelection = {
         "Undead": [true, "warrior", "undead", "warriorUndead", "undeadSword"],
         "Rusher": [true, "warrior", "rusher", "warriorRusher", "dagger"],
         "Bomber": [true, "warrior", "bomber", "bomber", "explode"],
+        "King": [true, "warrior", "king", "warriorKing", "warriorKingSword"],
     },
     "fishlingTab": {
         "Foot Soldier": [true, "fishling", "footSoldier", "swimmer", "trident"],
@@ -1785,6 +1840,7 @@ const CreatureSelection = {
         "Kron": [false, "goblin", "kron", "kron", "kronSword"],
         "Ghost": [false, "goblin", "ghost", "ghost", "undeadSword"],
         "Posion": [false, "goblin", "posion", "normal", "posion"],
+        "King": [false, "goblin", "king", "warriorKing", "warriorKingSword"],
     }
 }
 
