@@ -56,6 +56,12 @@ const gameTextures = {
     warriorKing0: makeImage("creatures/warriors/King/King0"),
     warriorKing1: makeImage("creatures/warriors/King/King1"),
     warriorKing2: makeImage("creatures/warriors/King/King2"),
+    warriorEldrin0: makeImage("creatures/warriors/Eldrin/Eldrin0"),
+    warriorEldrin1: makeImage("creatures/warriors/Eldrin/Eldrin1"),
+    warriorEldrin2: makeImage("creatures/warriors/Eldrin/Eldrin2"),
+    warriorForestGuardian0: makeImage("creatures/warriors/ForestGuardian/ForestGuardian0"),
+    warriorForestGuardian1: makeImage("creatures/warriors/ForestGuardian/ForestGuardian1"),
+    warriorForestGuardian2: makeImage("creatures/warriors/ForestGuardian/ForestGuardian2"),
 
     goblinFootSoldier0: makeImage("creatures/goblins/footSoldier/footSoldier0"),
     goblinFootSoldier1: makeImage("creatures/goblins/footSoldier/footSoldier1"),
@@ -98,6 +104,9 @@ const gameTextures = {
     goblinKing0: makeImage("creatures/goblins/King/King0"),
     goblinKing1: makeImage("creatures/goblins/King/King1"),
     goblinKing2: makeImage("creatures/goblins/King/King2"),
+    goblinAldrin0: makeImage("creatures/goblins/Aldrin/Aldrin0"),
+    goblinAldrin1: makeImage("creatures/goblins/Aldrin/Aldrin1"),
+    goblinAldrin2: makeImage("creatures/goblins/Aldrin/Aldrin2"),
 
     fishlingFootSoldier0: makeImage("creatures/fishlings/footSoldier/footSoldier0"),
     fishlingFootSoldier1: makeImage("creatures/fishlings/footSoldier/footSoldier1"),
@@ -130,10 +139,15 @@ const gameTextures = {
     loadedFishlingBow: makeImage("weapons/loadedFishlingBow"),
     heavyBow: makeImage("weapons/heavyBow"),
     loadedHeavyBow: makeImage("weapons/loadedHeavyBow"),
+    aldrinStaff: makeImage("weapons/aldrinStaff"),
+    eldrinStaff: makeImage("weapons/eldrinStaff"),
 
     arrow: makeImage("arrows/arrow"),
     fishlingArrow: makeImage("arrows/fishlingArrow"),
     heavyArrow: makeImage("arrows/heavyArrow"),
+    darkMagic: makeImage("arrows/darkMagic"),
+    lightMagic: makeImage("arrows/lightMagic"),
+    seed: makeImage("arrows/seed"),
 
     unitBar: makeImage("tabUnitBar"),
     unitSelectBar: makeImage("tabUnitSelect"),
@@ -361,12 +375,42 @@ const ArrowData = {
     "heavy": {
         texture: "heavyArrow",
         damage: 25,
-        speed: 0.125,
+        speed: 0.15,
         lifeTime: 120,
         size: 2,
         hitboxSize: 0.125,
         piercing: true,
         maxPierces: 3,
+    },
+    "darkMagic": {
+        texture: "darkMagic",
+        damage: 100,
+        speed: 0.15,
+        lifeTime: 180,
+        size: 0.5,
+        hitboxSize: 0.125,
+        piercing: true,
+        maxPierces: 5,
+    },
+    "lightMagic": {
+        texture: "lightMagic",
+        damage: 100,
+        speed: 0.15,
+        lifeTime: 180,
+        size: 0.5,
+        hitboxSize: 0.125,
+        piercing: true,
+        maxPierces: 5,
+    },
+    "seed": {
+        texture: "seed",
+        damage: 15,
+        speed: 0.15,
+        lifeTime: 100,
+        size: 0.5,
+        hitboxSize: 0.125,
+        piercing: false,
+        maxPierces: 0,
     },
 }
 const WeaponData = {
@@ -563,6 +607,42 @@ const WeaponData = {
         width: 1,
         height: 1,
     },
+    "aldrinStaff": {
+        range: 20,
+        attackRate: 20,
+        attackDuration: 5,
+        coolDownTime: 10,
+        isMelee: false,
+        texture: "aldrinStaff",
+        loadedTexture: "aldrinStaff",
+        arrowType: "darkMagic",
+        width: 1.75,
+        height: 1.125,
+    },
+    "eldrinStaff": {
+        range: 20,
+        attackRate: 20,
+        attackDuration: 5,
+        coolDownTime: 10,
+        isMelee: false,
+        texture: "eldrinStaff",
+        loadedTexture: "eldrinStaff",
+        arrowType: "lightMagic",
+        width: 1.75,
+        height: 1.125,
+    },
+    "forestSeed": {
+        range: 15,
+        attackRate: 5,
+        attackDuration: 5,
+        coolDownTime: 10,
+        isMelee: false,
+        texture: null,
+        loadedTexture: null,
+        arrowType: "seed",
+        width: 1,
+        height: 1,
+    },
 }
 const SoulData = {
     "normal": {
@@ -645,6 +725,12 @@ const SoulData = {
         alertVision: 12,
         wanderChance: 1,
     },
+    "forestGuardian": {
+        tileProps: { "grass": { risk: 1, speed: 1 }, "stone": { risk: Number.MAX_VALUE, speed: 0 }, "shallowwater": { risk: 5, speed: 0.5 }, "deepwater": { risk: 10, speed: 0.25 }, "sand": { risk: 2, speed: 0.45 }, "lava": { risk: Number.MAX_VALUE, speed: 0 } },
+        detectVision: 20,
+        alertVision: 12,
+        wanderChance: 1,
+    },
 }
 const CreatureTypes = {
     "warrior": {
@@ -710,6 +796,24 @@ const CreatureTypes = {
             healthHigh: "warriorKing0",
             healthMiddle: "warriorKing1",
             healthLow: "warriorKing2",
+        },
+        "eldrin": {
+            hitboxSize: 1.5,
+            width: 2,
+            height: 2,
+            health: 5000,
+            healthHigh: "warriorEldrin0",
+            healthMiddle: "warriorEldrin1",
+            healthLow: "warriorEldrin2",
+        },
+        "forestGuardian": {
+            hitboxSize: 1,
+            width: 1.25,
+            height: 1.25,
+            health: 2500,
+            healthHigh: "warriorForestGuardian0",
+            healthMiddle: "warriorForestGuardian1",
+            healthLow: "warriorForestGuardian2",
         },
     },
     "goblin": {
@@ -829,6 +933,15 @@ const CreatureTypes = {
             healthHigh: "goblinKing0",
             healthMiddle: "goblinKing1",
             healthLow: "goblinKing2",
+        },
+        "aldrin": {
+            hitboxSize: 1.5,
+            width: 2,
+            height: 2,
+            health: 5000,
+            healthHigh: "goblinAldrin0",
+            healthMiddle: "goblinAldrin1",
+            healthLow: "goblinAldrin2",
         },
     },
     "fishling": {
@@ -1820,6 +1933,8 @@ const CreatureSelection = {
         "Rusher": [true, "warrior", "rusher", "warriorRusher", "dagger"],
         "Bomber": [true, "warrior", "bomber", "bomber", "explode"],
         "King": [true, "warrior", "king", "warriorKing", "warriorKingSword"],
+        "Eldrin": [true, "warrior", "eldrin", "large", "eldrinStaff"],
+        "Forest Guardian": [true, "warrior", "forestGuardian", "forestGuardian", "forestSeed"],
     },
     "fishlingTab": {
         "Foot Soldier": [true, "fishling", "footSoldier", "swimmer", "trident"],
@@ -1841,6 +1956,7 @@ const CreatureSelection = {
         "Ghost": [false, "goblin", "ghost", "ghost", "undeadSword"],
         "Posion": [false, "goblin", "posion", "normal", "posion"],
         "King": [false, "goblin", "king", "warriorKing", "warriorKingSword"],
+        "Aldrin": [false, "goblin", "aldrin", "large", "aldrinStaff"],
     }
 }
 
