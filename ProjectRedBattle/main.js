@@ -50,6 +50,9 @@ const gameTextures = {
     warriorRusher0: makeImage("creatures/warriors/rusher/rusher0"),
     warriorRusher1: makeImage("creatures/warriors/rusher/rusher1"),
     warriorRusher2: makeImage("creatures/warriors/rusher/rusher2"),
+    warriorBomber0: makeImage("creatures/warriors/Bomber/Bomber0"),
+    warriorBomber1: makeImage("creatures/warriors/Bomber/Bomber1"),
+    warriorBomber2: makeImage("creatures/warriors/Bomber/Bomber2"),
 
     goblinFootSoldier0: makeImage("creatures/goblins/footSoldier/footSoldier0"),
     goblinFootSoldier1: makeImage("creatures/goblins/footSoldier/footSoldier1"),
@@ -82,6 +85,13 @@ const gameTextures = {
     goblinKron0: makeImage("creatures/goblins/Kron/Kron0"),
     goblinKron1: makeImage("creatures/goblins/Kron/Kron1"),
     goblinKron2: makeImage("creatures/goblins/Kron/Kron2"),
+    goblinGhost0: makeImage("creatures/goblins/Ghost/Ghost0"),
+    goblinGhost1: makeImage("creatures/goblins/Ghost/Ghost1"),
+    goblinGhost2: makeImage("creatures/goblins/Ghost/Ghost2"),
+    goblinPosion0: makeImage("creatures/goblins/Posion/Posion0"),
+    goblinPosion1: makeImage("creatures/goblins/Posion/Posion1"),
+    goblinPosion2: makeImage("creatures/goblins/Posion/Posion2"),
+    posion: makeImage("creatures/posionTile"),
 
     fishlingFootSoldier0: makeImage("creatures/fishlings/footSoldier/footSoldier0"),
     fishlingFootSoldier1: makeImage("creatures/fishlings/footSoldier/footSoldier1"),
@@ -110,9 +120,12 @@ const gameTextures = {
     loadedBow: makeImage("weapons/loadedBow"),
     fishlingBow: makeImage("weapons/fishlingBow"),
     loadedFishlingBow: makeImage("weapons/loadedFishlingBow"),
+    heavyBow: makeImage("weapons/heavyBow"),
+    loadedHeavyBow: makeImage("weapons/loadedHeavyBow"),
 
     arrow: makeImage("arrows/arrow"),
     fishlingArrow: makeImage("arrows/fishlingArrow"),
+    heavyArrow: makeImage("arrows/heavyArrow"),
 
     unitBar: makeImage("tabUnitBar"),
     unitSelectBar: makeImage("tabUnitSelect"),
@@ -336,7 +349,17 @@ const ArrowData = {
         hitboxSize: 0.125,
         piercing: false,
         maxPierces: 0,
-    }
+    },
+    "heavy": {
+        texture: "heavyArrow",
+        damage: 25,
+        speed: 0.125,
+        lifeTime: 120,
+        size: 2,
+        hitboxSize: 0.125,
+        piercing: true,
+        maxPierces: 3,
+    },
 }
 const WeaponData = {
     "ironSword": {
@@ -476,7 +499,7 @@ const WeaponData = {
         height: 1,
     },
     "kronSword": {
-        range: 7,
+        range: 5,
         damage: 100,
         attackRate: 20,
         attackDuration: 20,
@@ -485,6 +508,30 @@ const WeaponData = {
         texture: "kronSword",
         width: 1,
         height: 2,
+    },
+    "posion": {
+        range: 1,
+        damage: 0,
+        attackRate: 0,
+        attackDuration: 0,
+        coolDownTime: 0,
+        isEvent: true,
+        isMelee: true,
+        texture: null,
+        width: 1,
+        height: 1,
+    },
+    "heavyBow": {
+        range: 12,
+        attackRate: 100,
+        attackDuration: 10,
+        coolDownTime: 20,
+        isMelee: false,
+        texture: "heavyBow",
+        loadedTexture: "loadedHeavyBow",
+        arrowType: "heavy",
+        width: 1,
+        height: 1,
     },
 }
 const SoulData = {
@@ -554,6 +601,14 @@ const SoulData = {
         alertVision: 12,
         wanderChance: 1,
     },
+    "ghost": {
+        tileProps: { "grass": { risk: 1, speed: 1 }, "stone": { risk: 1, speed: 1 }, "shallowwater": { risk: 1, speed: 1 }, "deepwater": { risk: 1, speed: 1 }, "sand": { risk: 1, speed: 1 }, "lava": { risk: 1, speed: 1 } },
+        detectVision: 15,
+        alertVision: 7,
+        wanderChance: 1,
+        isGhost: true,
+        floats: true,
+    },
 }
 const CreatureTypes = {
     "warrior": {
@@ -601,7 +656,16 @@ const CreatureTypes = {
             healthHigh: "warriorRusher0",
             healthMiddle: "warriorRusher1",
             healthLow: "warriorRusher2",
-        }
+        },
+        "bomber": {
+            hitboxSize: 0.5,
+            width: 0.625,
+            height: 0.625,
+            health: 125,
+            healthHigh: "warriorBomber0",
+            healthMiddle: "warriorBomber1",
+            healthLow: "warriorBomber2",
+        },
     },
     "goblin": {
         "footSoldier": {
@@ -694,6 +758,24 @@ const CreatureTypes = {
             healthMiddle: "goblinKron1",
             healthLow: "goblinKron2",
         },
+        "ghost": {
+            hitboxSize: 0.5,
+            width: 0.5,
+            height: 0.5,
+            health: 100,
+            healthHigh: "goblinGhost0",
+            healthMiddle: "goblinGhost1",
+            healthLow: "goblinGhost2",
+        },
+        "posion": {
+            hitboxSize: 0.5,
+            width: 0.5,
+            height: 0.5,
+            health: 100,
+            healthHigh: "goblinPosion0",
+            healthMiddle: "goblinPosion1",
+            healthLow: "goblinPosion2",
+        },
     },
     "fishling": {
         "footSoldier": {
@@ -741,6 +823,7 @@ class Creature {
     static allUnitPositions = new Map(); // int<int<Set(Creature)>>
     static allArrows = new Set(); // {x, y, type, lifeTime, direction, isGood, allPierced}
     static allExplosions = []; // [y, x, radius, lifeTime, growth]
+    static allPosion = []; // [y, x, radius, lifeTime, growth, isGood]
     static tileCapacity = 4;
 
     // Core
@@ -903,6 +986,43 @@ class Creature {
             Creature.allArrows.delete(arrow);
         }
     }
+    static posionBurst(unit) { // Helper
+        unit.health = 0;
+        const radius = 3
+        Creature.allPosion.push([
+            unit.yPos,
+            unit.xPos,
+            radius,
+            200,
+            6,
+            unit.isGood,
+        ]);
+    } 
+    static posion() { // Helper
+        for (const p of Creature.allPosion) {
+            const eY = p[0];
+            const eX = p[1];
+            const i = p[2];
+            for (let y = -i; y <= i; y++) {
+                for (let x = -i; x <= i; x++) {
+                    const nY = eY + y;
+                    const nX = eX + x;
+                    if (Creature.allUnitPositions.has(nY) && Creature.allUnitPositions.get(nY).has(nX)) {
+                        for (const unit of Creature.allUnitPositions.get(nY).get(nX)) {
+                            if (unit.isGood != p[5]) {
+                                const uY = unit.fluidYPos;
+                                const uX = unit.fluidXPos;
+                                if ((uY >= eY - i + 0.5 && uY <= eY + i - 0.5)
+                                &&  (uX >= eX - i + 0.5  && uX <= eX + i - 0.5)) {
+                                    unit.health -= 0.1;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
     static attack(unit, targetUnit) { // Main
         const currentWeapon = WeaponData[unit.weaponType];
         const attackRate = currentWeapon.attackRate;
@@ -916,6 +1036,8 @@ class Creature {
                 targetUnit.health -= currentWeapon.damage;
             } else if (unit.classType == "bomber" && !unit.exploded) {
                 unit.blowingUp = true;
+            } else if (unit.classType == "posion") {
+                Creature.posionBurst(unit);
             }
         } else {
             unit.attackTick += 1;
@@ -1196,7 +1318,7 @@ class Creature {
         for (let d of touchingTiles) {
             let nY = unit.yPos + d[0];
             let nX = unit.xPos + d[1];
-            if (validTiles.has(nY) && validTiles.get(nY).has(nX) && BM.map[nY][nX] != "stone") {
+            if (validTiles.has(nY) && validTiles.get(nY).has(nX) && (BM.map[nY][nX] != "stone" || SoulData[unit.soulType].isGhost)) {
                 let knownRisk = validTiles.get(nY).get(nX).r;
                 if (knownRisk <= currentRisk * 5 && Math.random() <= wanderChange) {
                     if (!validTiles.get(nY).get(nX).c) {
@@ -1289,6 +1411,22 @@ class Creature {
     }
 
     static act() { // Main
+        // All tile objects
+        function getSurvivingTileObjects(source) {
+            const surviving = [];
+            for (const v of source) {
+                v[3] -= 1;
+                if (v[3] > 0) {
+                    v[4] += (v[4] > 1 ? -1 : 0);
+                    surviving.push(v);
+                }
+            }
+            return surviving;
+        }
+        Creature.allExplosions = getSurvivingTileObjects(Creature.allExplosions);
+        Creature.allPosion = getSurvivingTileObjects(Creature.allPosion);
+        Creature.posion();
+
         // Prune dead units
         const deadUnits = new Set();
         for (const unit of Creature.allUnits) {
@@ -1302,17 +1440,6 @@ class Creature {
             Creature.allUnits.delete(unit);
             Creature.allUnitPositions.get(deadY).get(deadX).delete(unit);
         }
-
-        // All explosion
-        const survivingExplosions = [];
-        for (const explosion of Creature.allExplosions) {
-            explosion[3] -= 1;
-            if (explosion[3] > 0) {
-                explosion[4] += (explosion[4] > 1 ? -1 : 0);
-                survivingExplosions.push(explosion);
-            }
-        }
-        Creature.allExplosions = survivingExplosions;
 
         // Act for all units
         const visionData = new Map();
@@ -1487,6 +1614,23 @@ class Creature {
             return Math.floor((z - mZ + 0.5) * tileSize + halfZ);
         }
 
+        // Render posion
+        for (const posion of Creature.allPosion) {
+            const radius = posion[2];
+            const screenX = getScreenPosition(posion[1], BM.mouseX, halfWidth);
+            const screenY = getScreenPosition(posion[0], BM.mouseY, halfHeight);
+            const screenRadius = size * (radius/posion[4]);
+            ctx.globalAlpha = (posion[3] < 50 ? posion[3]/50 : 1);
+            ctx.drawImage(
+                gameTextures["posion"],
+                screenX - screenRadius / 2,
+                screenY - screenRadius / 2,
+                screenRadius,
+                screenRadius
+            );
+            ctx.globalAlpha = 1;
+        }
+
         // Render arrows
         for (const arrow of Creature.allArrows) {
             const arrowInfo = ArrowData[arrow.type];
@@ -1520,7 +1664,7 @@ class Creature {
             const healthPercentage = unit.health / unit.maxHealth;
 
             const waterDepth = unit.standingTile == "shallowwater" ? 1.25 : unit.standingTile == "deepwater" ? 2 : 0;
-            if (!unit.underWater) {
+            if (!unit.underWater && !SoulData[unit.soulType].floats) {
                 if (waterDepth != 0) {
                     ctx.save();
                     ctx.beginPath();
@@ -1616,9 +1760,11 @@ const CreatureSelection = {
     "warriorTab": {
         "Foot Soldier": [true, "warrior", "footSoldier", "normal", "ironSword"],
         "Archer": [true, "warrior", "archer", "normal", "bow"],
+        "Heavy Archer": [true, "warrior", "archer", "normal", "heavyBow"],
         "Knight": [true, "warrior", "knight", "warriorKnight", "knightSword"],
         "Undead": [true, "warrior", "undead", "warriorUndead", "undeadSword"],
         "Rusher": [true, "warrior", "rusher", "warriorRusher", "dagger"],
+        "Bomber": [true, "warrior", "bomber", "bomber", "explode"],
     },
     "fishlingTab": {
         "Foot Soldier": [true, "fishling", "footSoldier", "swimmer", "trident"],
@@ -1637,6 +1783,8 @@ const CreatureSelection = {
         "Undead": [false, "goblin", "undead", "warriorUndead", "undeadSword"],
         "Knight": [false, "goblin", "knight", "warriorKnight", "knightSword"],
         "Kron": [false, "goblin", "kron", "kron", "kronSword"],
+        "Ghost": [false, "goblin", "ghost", "ghost", "undeadSword"],
+        "Posion": [false, "goblin", "posion", "normal", "posion"],
     }
 }
 
@@ -1739,6 +1887,7 @@ function bootGame() {
                 Creature.allUnitPositions.clear();
                 Creature.allArrows.clear();
                 Creature.allExplosions = [];
+                Creature.allPosion = [];
                 for (const unitData of GAMEsavedUnits) {
                     new Creature(unitData[0], unitData[1], unitData[2], unitData[3], unitData[4], unitData[5], unitData[6]);
                 }
