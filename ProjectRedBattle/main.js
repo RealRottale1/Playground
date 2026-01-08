@@ -62,6 +62,9 @@ const gameTextures = {
     warriorForestGuardian0: makeImage("creatures/warriors/ForestGuardian/ForestGuardian0"),
     warriorForestGuardian1: makeImage("creatures/warriors/ForestGuardian/ForestGuardian1"),
     warriorForestGuardian2: makeImage("creatures/warriors/ForestGuardian/ForestGuardian2"),
+    warriorCastleGuardian0: makeImage("creatures/warriors/CastleGuardian/CastleGuardian0"),
+    warriorCastleGuardian1: makeImage("creatures/warriors/CastleGuardian/CastleGuardian1"),
+    warriorCastleGuardian2: makeImage("creatures/warriors/CastleGuardian/CastleGuardian2"),
 
     goblinFootSoldier0: makeImage("creatures/goblins/footSoldier/footSoldier0"),
     goblinFootSoldier1: makeImage("creatures/goblins/footSoldier/footSoldier1"),
@@ -731,6 +734,12 @@ const SoulData = {
         alertVision: 12,
         wanderChance: 1,
     },
+    "castleGuardian": {
+        tileProps: { "grass": { risk: 1, speed: 1.2 }, "stone": { risk: Number.MAX_VALUE, speed: 0 }, "shallowwater": { risk: Number.MAX_VALUE, speed: 0 }, "deepwater": { risk: Number.MAX_VALUE, speed: 0 }, "sand": { risk: 2, speed: 1 }, "lava": { risk: Number.MAX_VALUE, speed: 0 } },
+        detectVision: 20,
+        alertVision: 12,
+        wanderChance: 1,
+    },
 }
 const CreatureTypes = {
     "warrior": {
@@ -814,6 +823,15 @@ const CreatureTypes = {
             healthHigh: "warriorForestGuardian0",
             healthMiddle: "warriorForestGuardian1",
             healthLow: "warriorForestGuardian2",
+        },
+        "castleGuardian": {
+            hitboxSize: 1,
+            width: 1.5,
+            height: 1.5,
+            health: 2500,
+            healthHigh: "warriorCastleGuardian0",
+            healthMiddle: "warriorCastleGuardian1",
+            healthLow: "warriorCastleGuardian2",
         },
     },
     "goblin": {
@@ -1935,6 +1953,7 @@ const CreatureSelection = {
         "King": [true, "warrior", "king", "warriorKing", "warriorKingSword"],
         "Eldrin": [true, "warrior", "eldrin", "large", "eldrinStaff"],
         "Forest Guardian": [true, "warrior", "forestGuardian", "forestGuardian", "forestSeed"],
+        "Castle Guardian": [true, "warrior", "castleGuardian", "castleGuardian", "forestSeed"],
     },
     "fishlingTab": {
         "Foot Soldier": [true, "fishling", "footSoldier", "swimmer", "trident"],
