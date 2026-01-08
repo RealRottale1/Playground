@@ -135,6 +135,7 @@ const gameTextures = {
     kronSword: makeImage("weapons/kronSword"),
     warriorKingSword: makeImage("weapons/warriorKingSword"),
     goblinKingSword: makeImage("weapons/goblinKingSword"),
+    castleGuardianSword: makeImage("weapons/castleGuardianSword"),
 
     bow: makeImage("weapons/bow"),
     loadedBow: makeImage("weapons/loadedBow"),
@@ -575,7 +576,7 @@ const WeaponData = {
         width: 1,
         height: 2,
     },
-    "warriorKingSword": {
+    "goblinKingSword": {
         range: 5,
         damage: 100,
         attackRate: 25,
@@ -645,6 +646,17 @@ const WeaponData = {
         arrowType: "seed",
         width: 1,
         height: 1,
+    },
+    "castleGuardianSword": {
+        range: 4,
+        damage: 75,
+        attackRate: 20,
+        attackDuration: 15,
+        coolDownTime: 16,
+        isMelee: true,
+        texture: "castleGuardianSword",
+        width: 1,
+        height: 1.75,
     },
 }
 const SoulData = {
@@ -1953,7 +1965,7 @@ const CreatureSelection = {
         "King": [true, "warrior", "king", "warriorKing", "warriorKingSword"],
         "Eldrin": [true, "warrior", "eldrin", "large", "eldrinStaff"],
         "Forest Guardian": [true, "warrior", "forestGuardian", "forestGuardian", "forestSeed"],
-        "Castle Guardian": [true, "warrior", "castleGuardian", "castleGuardian", "forestSeed"],
+        "Castle Guardian": [true, "warrior", "castleGuardian", "castleGuardian", "castleGuardianSword"],
     },
     "fishlingTab": {
         "Foot Soldier": [true, "fishling", "footSoldier", "swimmer", "trident"],
@@ -1974,7 +1986,7 @@ const CreatureSelection = {
         "Kron": [false, "goblin", "kron", "kron", "kronSword"],
         "Ghost": [false, "goblin", "ghost", "ghost", "undeadSword"],
         "Posion": [false, "goblin", "posion", "normal", "posion"],
-        "King": [false, "goblin", "king", "warriorKing", "warriorKingSword"],
+        "King": [false, "goblin", "king", "warriorKing", "goblinKingSword"],
         "Aldrin": [false, "goblin", "aldrin", "large", "aldrinStaff"],
     }
 }
