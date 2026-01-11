@@ -66,6 +66,16 @@ const gameTextures = {
     warriorCastleGuardian1: makeImage("creatures/warriors/CastleGuardian/CastleGuardian1"),
     warriorCastleGuardian2: makeImage("creatures/warriors/CastleGuardian/CastleGuardian2"),
 
+    elfFootSoldier0: makeImage("creatures/elfs/footSoldier/footSoldier0"),
+    elfFootSoldier1: makeImage("creatures/elfs/footSoldier/footSoldier1"),
+    elfFootSoldier2: makeImage("creatures/elfs/footSoldier/footSoldier2"),
+    elfHealer0: makeImage("creatures/elfs/Healer/Healer0"),
+    elfHealer1: makeImage("creatures/elfs/Healer/Healer1"),
+    elfHealer2: makeImage("creatures/elfs/Healer/Healer2"),
+    elfNecromancer0: makeImage("creatures/elfs/Necromancer/Necromancer0"),
+    elfNecromancer1: makeImage("creatures/elfs/Necromancer/Necromancer1"),
+    elfNecromancer2: makeImage("creatures/elfs/Necromancer/Necromancer2"),
+
     goblinFootSoldier0: makeImage("creatures/goblins/footSoldier/footSoldier0"),
     goblinFootSoldier1: makeImage("creatures/goblins/footSoldier/footSoldier1"),
     goblinFootSoldier2: makeImage("creatures/goblins/footSoldier/footSoldier2"),
@@ -136,6 +146,8 @@ const gameTextures = {
     warriorKingSword: makeImage("weapons/warriorKingSword"),
     goblinKingSword: makeImage("weapons/goblinKingSword"),
     castleGuardianSword: makeImage("weapons/castleGuardianSword"),
+    elfDagger: makeImage("weapons/elfDagger"),
+    staff: makeImage("weapons/staff"),
 
     bow: makeImage("weapons/bow"),
     loadedBow: makeImage("weapons/loadedBow"),
@@ -145,6 +157,7 @@ const gameTextures = {
     loadedHeavyBow: makeImage("weapons/loadedHeavyBow"),
     aldrinStaff: makeImage("weapons/aldrinStaff"),
     eldrinStaff: makeImage("weapons/eldrinStaff"),
+    blowDart: makeImage("weapons/blowDart"),
 
     arrow: makeImage("arrows/arrow"),
     fishlingArrow: makeImage("arrows/fishlingArrow"),
@@ -152,6 +165,7 @@ const gameTextures = {
     darkMagic: makeImage("arrows/darkMagic"),
     lightMagic: makeImage("arrows/lightMagic"),
     seed: makeImage("arrows/seed"),
+    dart: makeImage("arrows/dart"),
 
     unitBar: makeImage("tabUnitBar"),
     unitSelectBar: makeImage("tabUnitSelect"),
@@ -416,6 +430,17 @@ const ArrowData = {
         piercing: false,
         maxPierces: 0,
     },
+    "dart": {
+        texture: "dart",
+        damage: 1,
+        speed: 0.125,
+        lifeTime: 100,
+        size: 0.25,
+        hitboxSize: 0.125,
+        piercing: false,
+        maxPierces: 0,
+        posioned: true,
+    },
 }
 const WeaponData = {
     "ironSword": {
@@ -536,7 +561,7 @@ const WeaponData = {
         attackRate: 0,
         attackDuration: 0,
         coolDownTime: 0,
-        isEvent: true,
+        isEvent: 1,
         isMelee: true,
         texture: null,
         width: 1,
@@ -548,7 +573,7 @@ const WeaponData = {
         attackRate: 0,
         attackDuration: 0,
         coolDownTime: 0,
-        isEvent: true,
+        isEvent: 1,
         isMelee: true,
         texture: null,
         width: 1,
@@ -593,7 +618,7 @@ const WeaponData = {
         attackRate: 0,
         attackDuration: 0,
         coolDownTime: 0,
-        isEvent: true,
+        isEvent: 1,
         isMelee: true,
         texture: null,
         width: 1,
@@ -657,6 +682,53 @@ const WeaponData = {
         texture: "castleGuardianSword",
         width: 1,
         height: 1.75,
+    },
+    "elfDagger": {
+        range: 1,
+        damage: 8,
+        attackRate: 10,
+        attackDuration: 6,
+        coolDownTime: 4,
+        isMelee: true,
+        texture: "elfDagger",
+        width: 0.5,
+        height: 0.5,
+    },
+    "heal": {
+        range: 3,
+        damage: 0,
+        attackRate: 15,
+        attackDuration: 7,
+        coolDownTime: 5,
+        isEvent: 2,
+        isMelee: true,
+        texture: null,
+        width: 1,
+        height: 1,
+    },
+    "blowDart": {
+        range: 10,
+        attackRate: 50,
+        attackDuration: 10,
+        coolDownTime: 20,
+        isMelee: false,
+        texture: "blowDart",
+        loadedTexture: "blowDart",
+        arrowType: "dart",
+        width: 1,
+        height: .5,
+    },
+    "resurect": {
+        range: 16,
+        damage: 0,
+        attackRate: 35,
+        attackDuration: 200,
+        coolDownTime: 200,
+        isEvent: 2,
+        isMelee: true,
+        texture: "staff",
+        width: 0.75,
+        height: 0.75,
     },
 }
 const SoulData = {
@@ -752,6 +824,12 @@ const SoulData = {
         alertVision: 12,
         wanderChance: 1,
     },
+    "elf": {
+        tileProps: { "grass": { risk: 1, speed: 1.25 }, "stone": { risk: Number.MAX_VALUE, speed: 0 }, "shallowwater": { risk: 5, speed: 0.5 }, "deepwater": { risk: 25, speed: 0.150 }, "sand": { risk: 2, speed: 1.15 }, "lava": { risk: Number.MAX_VALUE, speed: 0 } },
+        detectVision: 15,
+        alertVision: 7,
+        wanderChance: 1,
+    },
 }
 const CreatureTypes = {
     "warrior": {
@@ -844,6 +922,36 @@ const CreatureTypes = {
             healthHigh: "warriorCastleGuardian0",
             healthMiddle: "warriorCastleGuardian1",
             healthLow: "warriorCastleGuardian2",
+        },
+    },
+    "elf": {
+        "footSoldier": {
+            hitboxSize: 0.4,
+            width: 0.4,
+            height: 0.4,
+            health: 75,
+            healthHigh: "elfFootSoldier0",
+            healthMiddle: "elfFootSoldier1",
+            healthLow: "elfFootSoldier2",
+        },
+        "healer": {
+            hitboxSize: 0.4,
+            width: 0.6,
+            height: 0.6,
+            health: 100,
+            healthHigh: "elfHealer0",
+            healthMiddle: "elfHealer1",
+            healthLow: "elfHealer2",
+        },
+        "necromancer": {
+            hitboxSize: 0.4,
+            width: 0.6,
+            height: 0.6,
+            health: 200,
+            healthHigh: "elfNecromancer0",
+            healthMiddle: "elfNecromancer1",
+            healthLow: "elfNecromancer2",
+            units: [["warriorTab", "Undead"]],
         },
     },
     "goblin": {
@@ -1043,6 +1151,7 @@ class Creature {
     lastAttackAngle = 0;
     biters = new Set(); bit = null;
     exploded = false;   blowingUp = false;
+    posioned = [];
 
     static updateAllUnitPositions(unit) { // Helper
         // Position
@@ -1220,13 +1329,52 @@ class Creature {
             }
         }
     }
+    static healUnits(useUnit) {// Helper
+        const range = 3;
+        for (let y = useUnit.yPos + range; y >= useUnit.yPos - range; y--) {
+            let ySpread = Math.abs(useUnit.yPos - y);
+            let xSpread = range - ySpread;
+            for (let x = useUnit.xPos + xSpread; x >= useUnit.xPos - xSpread; x--) {
+                if (y >= 0 && x >= 0 && y < BM.maxRows && x < BM.maxColumns) {
+                    if (Creature.allUnitPositions.has(y) && Creature.allUnitPositions.get(y).has(x)) {
+                        for (const unit of Creature.allUnitPositions.get(y).get(x)) {
+                            if (unit != useUnit && unit.isGood == useUnit.isGood) {
+                                unit.health += Math.min(unit.health + 2.5, unit.maxHealth);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    static resurectUnits(unit) { // Helper
+        const spawned = [];
+        const spawnableUnits = CreatureTypes[unit.subClass][unit.classType].units;
+        const totalSpawnableUnits = spawnableUnits.length;
+        let maxSpawn = Math.floor(Math.random() * 4);
+        let neighboringTiles = shuffleArray([[0, 1], [1, 0], [0, -1], [-1, 0]]);
+        for (let d of neighboringTiles) {
+            let nY = unit.yPos + d[0];
+            let nX = unit.xPos + d[1];
+            if (BM.map[nY] && BM.map[nY][nX]) {
+                maxSpawn -= 1;
+                const randomData = spawnableUnits[Math.floor(Math.random() * totalSpawnableUnits)];
+                spawned.push([nY, nX, randomData]);
+                if (maxSpawn == 0) {
+                    break;
+                }
+            }
+        }
+        console.log(spawned)
+        return spawned;
+    }
     static attack(unit, targetUnit) { // Main
         const currentWeapon = WeaponData[unit.weaponType];
         const attackRate = currentWeapon.attackRate;
         const attackDuration = currentWeapon.attackDuration;
         const coolDownTime = currentWeapon.coolDownTime;
 
-        if (currentWeapon.isEvent) {
+        if (currentWeapon.isEvent == 1) {
             if (unit.classType == "biter" && !unit.bit && targetUnit) {
                 unit.bit = targetUnit;
                 targetUnit.biters.add(unit);
@@ -1245,19 +1393,28 @@ class Creature {
                     return;
                 }
                 unit.attacking = true;
-                if (currentWeapon.isMelee) { // Melee attack
-                    targetUnit.health -= currentWeapon.damage;
-                } else { // Ranged attack
-                    const arrow = {
-                        x: unit.fluidXPos,
-                        y: unit.fluidYPos,
-                        type: currentWeapon.arrowType,
-                        lifeTime: 0,
-                        direction: Math.atan2(unit.fluidYPos - targetUnit.fluidYPos, unit.fluidXPos - targetUnit.fluidXPos),
-                        isGood: unit.isGood,
-                        allPierced: new Set(),
-                    };
-                    Creature.allArrows.add(arrow);
+                if (currentWeapon.isEvent == 2) {
+                    if (unit.classType == "healer") {
+                        Creature.healUnits(unit);
+                    } else if (unit.classType == "necromancer") {
+                        const newUnits = Creature.resurectUnits(unit);
+                        return newUnits;
+                    }
+                } else {
+                    if (currentWeapon.isMelee) { // Melee attack
+                        targetUnit.health -= currentWeapon.damage;
+                    } else { // Ranged attack
+                        const arrow = {
+                            x: unit.fluidXPos,
+                            y: unit.fluidYPos,
+                            type: currentWeapon.arrowType,
+                            lifeTime: 0,
+                            direction: Math.atan2(unit.fluidYPos - targetUnit.fluidYPos, unit.fluidXPos - targetUnit.fluidXPos),
+                            isGood: unit.isGood,
+                            allPierced: new Set(),
+                        };
+                        Creature.allArrows.add(arrow);
+                    }
                 }
             } else {
                 if (unit.attackTick == attackRate + attackDuration) {
@@ -1320,6 +1477,9 @@ class Creature {
                                     if (!arrowInfo.piercing) {
                                         if (unit.classType != "mirror") {
                                             unit.health -= arrowInfo.damage;
+                                            if (arrowInfo.posioned) {
+                                                unit.posioned.push(25);
+                                            }
                                             return (true);
                                         } else {
                                             arrow.direction += Math.PI;
@@ -1328,6 +1488,9 @@ class Creature {
                                         }
                                     } else if (!arrow.allPierced.has(unit)) {
                                         unit.health -= arrowInfo.damage;
+                                        if (arrowInfo.posioned) {
+                                            unit.posioned.push(25);
+                                        }
                                         arrow.totalPierced += 1;
                                         arrow.allPierced.add(unit);
                                         if (arrow.allPierced.length >= arrowInfo.maxPierces) {
@@ -1627,8 +1790,18 @@ class Creature {
         // Prune dead units
         const deadUnits = new Set();
         for (const unit of Creature.allUnits) {
+            let remainingTTL = [];
+            for (const ttl of unit.posioned) {
+                unit.health -= 0.25;
+                const newTTL = ttl - 1;
+                if (newTTL > 0) {
+                    remainingTTL.push(newTTL);
+                }
+            }
             if (unit.health <= 0) {
                 deadUnits.add(unit);
+            } else {
+                unit.posioned = remainingTTL;
             }
         }
         for (const unit of deadUnits) {
@@ -1642,6 +1815,7 @@ class Creature {
         const visionData = new Map();
         const nextPositions = new Map();
         const lostTarget = new Set();
+        const newUnits = [];
         for (const unit of Creature.allUnits) {
             for (const target of deadUnits) {
                 if (unit.allTargets.has(target)) {
@@ -1689,7 +1863,12 @@ class Creature {
 
             // Progress attack
             if (unit.attackTick != 0) {
-                Creature.attack(unit, unit.targetChain[0]);
+                const n = Creature.attack(unit, unit.targetChain[0]);
+                if (n) {
+                    for (const data of n) {
+                        newUnits.push(data);
+                    }
+                }
             }
 
             if (!unit.moving || (unit.biters.size > 0 && !unit.bit)) {
@@ -1780,6 +1959,14 @@ class Creature {
         for (let unit of lostTarget) {
             unit.allTargets.clear();
             unit.targetChain = [];
+        }
+
+        // Add new units
+        for (const data of newUnits) {
+            const y = data[1];
+            const x = data[0];
+            const cD = CreatureSelection[data[2][0]][data[2][1]];
+            new Creature(y, x, cD[0], cD[1], cD[2], cD[3], cD[4]);
         }
     }
 
@@ -1966,6 +2153,12 @@ const CreatureSelection = {
         "Eldrin": [true, "warrior", "eldrin", "large", "eldrinStaff"],
         "Forest Guardian": [true, "warrior", "forestGuardian", "forestGuardian", "forestSeed"],
         "Castle Guardian": [true, "warrior", "castleGuardian", "castleGuardian", "castleGuardianSword"],
+    },
+    "elfTab": {
+        "Foot Soldier": [true, "elf", "footSoldier", "elf", "elfDagger"],
+        "Archer": [true, "elf", "footSoldier", "elf", "blowDart"],
+        "Healer": [true, "elf", "healer", "elf", "heal"],
+        "Necromancer": [true, "elf", "necromancer", "elf", "resurect"],
     },
     "fishlingTab": {
         "Foot Soldier": [true, "fishling", "footSoldier", "swimmer", "trident"],
