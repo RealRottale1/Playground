@@ -76,6 +76,16 @@ const gameTextures = {
     elfNecromancer1: makeImage("creatures/elfs/Necromancer/Necromancer1"),
     elfNecromancer2: makeImage("creatures/elfs/Necromancer/Necromancer2"),
 
+    trollFootSoldier0: makeImage("creatures/trolls/footSoldier/footSoldier0"),
+    trollFootSoldier1: makeImage("creatures/trolls/footSoldier/footSoldier1"),
+    trollFootSoldier2: makeImage("creatures/trolls/footSoldier/footSoldier2"),
+    trollKnight0: makeImage("creatures/trolls/knight/knight0"),
+    trollKnight1: makeImage("creatures/trolls/knight/knight1"),
+    trollKnight2: makeImage("creatures/trolls/knight/knight2"),
+    trollInferno0: makeImage("creatures/trolls/Inferno/Inferno0"),
+    trollInferno1: makeImage("creatures/trolls/Inferno/Inferno1"),
+    trollInferno2: makeImage("creatures/trolls/Inferno/Inferno2"),
+
     goblinFootSoldier0: makeImage("creatures/goblins/footSoldier/footSoldier0"),
     goblinFootSoldier1: makeImage("creatures/goblins/footSoldier/footSoldier1"),
     goblinFootSoldier2: makeImage("creatures/goblins/footSoldier/footSoldier2"),
@@ -148,6 +158,7 @@ const gameTextures = {
     castleGuardianSword: makeImage("weapons/castleGuardianSword"),
     elfDagger: makeImage("weapons/elfDagger"),
     staff: makeImage("weapons/staff"),
+    rock: makeImage("weapons/rock"),
 
     bow: makeImage("weapons/bow"),
     loadedBow: makeImage("weapons/loadedBow"),
@@ -166,6 +177,7 @@ const gameTextures = {
     lightMagic: makeImage("arrows/lightMagic"),
     seed: makeImage("arrows/seed"),
     dart: makeImage("arrows/dart"),
+    rockArrow: makeImage("arrows/rockArrow"),
 
     unitBar: makeImage("tabUnitBar"),
     unitSelectBar: makeImage("tabUnitSelect"),
@@ -440,6 +452,16 @@ const ArrowData = {
         piercing: false,
         maxPierces: 0,
         posioned: true,
+    },
+    "rock": {
+        texture: "rockArrow",
+        damage: 100,
+        speed: 0.15,
+        lifeTime: 90,
+        size: 0.5,
+        hitboxSize: 0.125,
+        piercing: true,
+        maxPierces: 3,
     },
 }
 const WeaponData = {
@@ -730,6 +752,18 @@ const WeaponData = {
         width: 0.75,
         height: 0.75,
     },
+    "rock": {
+        range: 12,
+        attackRate: 100,
+        attackDuration: 10,
+        coolDownTime: 20,
+        isMelee: false,
+        texture: null,
+        loadedTexture: "rock",
+        arrowType: "rock",
+        width: 1,
+        height: 0.5,
+    },
 }
 const SoulData = {
     "normal": {
@@ -776,6 +810,18 @@ const SoulData = {
     },
     "large": {
         tileProps: { "grass": { risk: 1, speed: 0.5 }, "stone": { risk: Number.MAX_VALUE, speed: 0 }, "shallowwater": { risk: 5, speed: 0.125 }, "deepwater": { risk: Number.MAX_VALUE, speed: 0 }, "sand": { risk: 2, speed: 0.45 }, "lava": { risk: Number.MAX_VALUE, speed: 0 } },
+        detectVision: 20,
+        alertVision: 12,
+        wanderChance: 1,
+    },
+    "largeInferno": {
+        tileProps: { "grass": { risk: 1, speed: 0.5 }, "stone": { risk: Number.MAX_VALUE, speed: 0 }, "shallowwater": { risk: Number.MAX_VALUE, speed: 0 }, "deepwater": { risk: Number.MAX_VALUE, speed: 0 }, "sand": { risk: 2, speed: 0.45 }, "lava": { risk: 4, speed: 0.45 } },
+        detectVision: 20,
+        alertVision: 12,
+        wanderChance: 1,
+    },
+    "trollKnight": {
+        tileProps: { "grass": { risk: 1, speed: 0.25 }, "stone": { risk: Number.MAX_VALUE, speed: 0 }, "shallowwater": { risk: 5, speed: 0.0625 }, "deepwater": { risk: Number.MAX_VALUE, speed: 0 }, "sand": { risk: 2, speed: 0.225 }, "lava": { risk: Number.MAX_VALUE, speed: 0 } },
         detectVision: 20,
         alertVision: 12,
         wanderChance: 1,
@@ -924,6 +970,45 @@ const CreatureTypes = {
             healthLow: "warriorCastleGuardian2",
         },
     },
+    "fishling": {
+        "footSoldier": {
+            hitboxSize: 0.5,
+            width: 0.5,
+            height: 0.5,
+            health: 100,
+            healthHigh: "fishlingFootSoldier0",
+            healthMiddle: "fishlingFootSoldier1",
+            healthLow: "fishlingFootSoldier2",
+        },
+        "archer": {
+            hitboxSize: 0.5,
+            width: 0.5,
+            height: 0.5,
+            health: 100,
+            healthHigh: "fishlingArcher0",
+            healthMiddle: "fishlingArcher1",
+            healthLow: "fishlingArcher2",
+        },
+        "rusher": {
+            hitboxSize: 0.5,
+            width: 0.625,
+            height: 0.625,
+            health: 100,
+            healthHigh: "fishlingRusher0",
+            healthMiddle: "fishlingRusher1",
+            healthLow: "fishlingRusher2",
+        },
+        "diver": {
+            hitboxSize: 0.5,
+            width: 0.5,
+            height: 0.5,
+            health: 100,
+            healthHigh: "fishlingDiver0",
+            healthMiddle: "fishlingDiver1",
+            healthLow: "fishlingDiver2",
+            diver: true,
+        }
+    },
     "elf": {
         "footSoldier": {
             hitboxSize: 0.4,
@@ -952,6 +1037,48 @@ const CreatureTypes = {
             healthMiddle: "elfNecromancer1",
             healthLow: "elfNecromancer2",
             units: [["warriorTab", "Undead"]],
+        },
+    },
+    "troll": {
+        "footSoldier": {
+            hitboxSize: 0.75,
+            width: 0.75,
+            height: 0.75,
+            health: 250,
+            healthHigh: "trollFootSoldier0",
+            healthMiddle: "trollFootSoldier1",
+            healthLow: "trollFootSoldier2",
+            arrowResistant: true,
+        },
+        "archer": {
+            hitboxSize: 0.75,
+            width: 0.75,
+            height: 0.75,
+            health: 250,
+            healthHigh: "trollFootSoldier0",
+            healthMiddle: "trollFootSoldier1",
+            healthLow: "trollFootSoldier2",
+            arrowResistant: true,
+        },
+        "knight": {
+            hitboxSize: 0.75,
+            width: 1,
+            height: 1,
+            health: 500,
+            healthHigh: "trollKnight0",
+            healthMiddle: "trollKnight1",
+            healthLow: "trollKnight2",
+            arrowResistant: true,
+        },
+        "inferno": {
+            hitboxSize: 0.75,
+            width: 0.75,
+            height: 0.75,
+            health: 500,
+            healthHigh: "trollInferno0",
+            healthMiddle: "trollInferno1",
+            healthLow: "trollInferno2",
+            arrowResistant: true,
         },
     },
     "goblin": {
@@ -1082,45 +1209,6 @@ const CreatureTypes = {
             healthLow: "goblinAldrin2",
         },
     },
-    "fishling": {
-        "footSoldier": {
-            hitboxSize: 0.5,
-            width: 0.5,
-            height: 0.5,
-            health: 100,
-            healthHigh: "fishlingFootSoldier0",
-            healthMiddle: "fishlingFootSoldier1",
-            healthLow: "fishlingFootSoldier2",
-        },
-        "archer": {
-            hitboxSize: 0.5,
-            width: 0.5,
-            height: 0.5,
-            health: 100,
-            healthHigh: "fishlingArcher0",
-            healthMiddle: "fishlingArcher1",
-            healthLow: "fishlingArcher2",
-        },
-        "rusher": {
-            hitboxSize: 0.5,
-            width: 0.625,
-            height: 0.625,
-            health: 100,
-            healthHigh: "fishlingRusher0",
-            healthMiddle: "fishlingRusher1",
-            healthLow: "fishlingRusher2",
-        },
-        "diver": {
-            hitboxSize: 0.5,
-            width: 0.5,
-            height: 0.5,
-            health: 100,
-            healthHigh: "fishlingDiver0",
-            healthMiddle: "fishlingDiver1",
-            healthLow: "fishlingDiver2",
-            diver: true,
-        }
-    }
 }
 class Creature {
     // Positional
@@ -1476,9 +1564,11 @@ class Creature {
                                 if (unit.isGood != arrow.isGood && !unit.underWater && (dx * dx + dy * dy) <= arrowInfo.hitboxSize / 2) {
                                     if (!arrowInfo.piercing) {
                                         if (unit.classType != "mirror") {
-                                            unit.health -= arrowInfo.damage;
-                                            if (arrowInfo.posioned) {
-                                                unit.posioned.push(25);
+                                            if (!CreatureTypes[unit.subClass][unit.classType].arrowResistant) {
+                                                unit.health -= arrowInfo.damage;
+                                                if (arrowInfo.posioned) {
+                                                    unit.posioned.push(25);
+                                                }
                                             }
                                             return (true);
                                         } else {
@@ -2093,16 +2183,17 @@ class Creature {
                     }
                 }
                 
-                if (currentWeapon.texture) {
                     ctx.rotate(rotation);
                     const yOffset = (targetEnemy ? 1 : (1+creatureData.hitboxSize))
-                    ctx.drawImage(
-                    gameTextures[(!currentWeapon.isMelee && unit.attackTick < currentWeapon.attackRate ? currentWeapon.loadedTexture : currentWeapon.texture)],
-                    -yOffset*(size * weaponWidth + (targetEnemy ? 0 : (currentWeapon.isMelee ? size / 2 : 0))) / 2,
-                    -(size * weaponHeight * (targetEnemy ? 3 : 2) + (targetEnemy ? (unit.attacking && currentWeapon.isMelee ? size : 0) : 0)) / 2,
-                    size * weaponWidth,
-                    size * weaponHeight
-                    );
+                    const isLoaded = !currentWeapon.isMelee && unit.attackTick < currentWeapon.attackRate;
+                    if ((!isLoaded && currentWeapon.texture) || (isLoaded && currentWeapon.loadedTexture)) {
+                        ctx.drawImage(
+                        gameTextures[(isLoaded ? currentWeapon.loadedTexture : currentWeapon.texture)],
+                        -yOffset*(size * weaponWidth + (targetEnemy ? 0 : (currentWeapon.isMelee ? size / 2 : 0))) / 2,
+                        -(size * weaponHeight * (targetEnemy ? 3 : 2) + (targetEnemy ? (unit.attacking && currentWeapon.isMelee ? size : 0) : 0)) / 2,
+                        size * weaponWidth,
+                        size * weaponHeight
+                        );
                 }
                 ctx.restore();
             }
@@ -2161,7 +2252,10 @@ const CreatureSelection = {
         "Necromancer": [true, "elf", "necromancer", "elf", "resurect"],
     },
     "trollTab": {
-
+        "Foot Soldier": [true, "troll", "footSoldier", "large", "largeSword"],
+        "Archer": [true, "troll", "archer", "large", "rock"],
+        "Knight": [true, "troll", "knight", "trollKnight", "largeSword"],
+        "Inferno": [true, "troll", "inferno", "largeInferno", "largeSword"],
     },
     "fishlingTab": {
         "Foot Soldier": [true, "fishling", "footSoldier", "swimmer", "trident"],
