@@ -2160,6 +2160,9 @@ const CreatureSelection = {
         "Healer": [true, "elf", "healer", "elf", "heal"],
         "Necromancer": [true, "elf", "necromancer", "elf", "resurect"],
     },
+    "trollTab": {
+
+    },
     "fishlingTab": {
         "Foot Soldier": [true, "fishling", "footSoldier", "swimmer", "trident"],
         "Archer": [true, "fishling", "archer", "swimmer", "fishlingBow"],
