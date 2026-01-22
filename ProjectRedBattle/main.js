@@ -18,6 +18,7 @@ let GAMEtickRate = 2;
 let GAMEselectedUnitType;
 let GAMEloadedSelectedUnitType = false;
 let GAMEselectedUnit = null;
+let GAMEselectedUnitName = null;
 let GAMEGUIUnits = [];
 
 let GAMETrashcanSelected = false;
@@ -159,6 +160,7 @@ const gameTextures = {
     elfDagger: makeImage("weapons/elfDagger"),
     staff: makeImage("weapons/staff"),
     rock: makeImage("weapons/rock"),
+    trollSword: makeImage("weapons/trollSword"),
 
     bow: makeImage("weapons/bow"),
     loadedBow: makeImage("weapons/loadedBow"),
@@ -359,13 +361,16 @@ class GUI {
         this.height = height;
         this.zindex = zindex ? zindex : this.zindex;
     }
-    render() {
-        this.enabled = true;
-        ctx.drawImage(gameTextures[this.content], this.x, this.y, this.width, this.height);
+    renderDarkness() {
         if (this.darkness != 0) {
             ctx.fillStyle = `rgba(0, 0, 0, ${this.darkness})`;
             ctx.fillRect(this.x, this.y, this.width, this.height);
         }
+    }
+    render() {
+        this.enabled = true;
+        ctx.drawImage(gameTextures[this.content], this.x, this.y, this.width, this.height);
+        this.renderDarkness();
     }
     renderText() {
         this.enabled = true;
@@ -377,6 +382,7 @@ class GUI {
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(this.content, this.x+this.width/2, this.y+this.height/2);
+        this.renderDarkness();
     }
 }
 
@@ -763,6 +769,17 @@ const WeaponData = {
         arrowType: "rock",
         width: 1,
         height: 0.5,
+    },
+    "trollSword": {
+        range: 4,
+        damage: 50,
+        attackRate: 30,
+        attackDuration: 20,
+        coolDownTime: 16,
+        isMelee: true,
+        texture: "trollSword",
+        width: 1,
+        height: 1.5,
     },
 }
 const SoulData = {
@@ -2252,10 +2269,10 @@ const CreatureSelection = {
         "Necromancer": [true, "elf", "necromancer", "elf", "resurect"],
     },
     "trollTab": {
-        "Foot Soldier": [true, "troll", "footSoldier", "large", "largeSword"],
+        "Foot Soldier": [true, "troll", "footSoldier", "large", "trollSword"],
         "Archer": [true, "troll", "archer", "large", "rock"],
-        "Knight": [true, "troll", "knight", "trollKnight", "largeSword"],
-        "Inferno": [true, "troll", "inferno", "largeInferno", "largeSword"],
+        "Knight": [true, "troll", "knight", "trollKnight", "trollSword"],
+        "Inferno": [true, "troll", "inferno", "largeInferno", "trollSword"],
     },
     "fishlingTab": {
         "Foot Soldier": [true, "fishling", "footSoldier", "swimmer", "trident"],
@@ -2338,6 +2355,11 @@ function bootGame() {
         const removeButton = new GUI("removeButton", "removeButton", 0, 0, 0, 0, 0);
         removeButton.click = () => {
             if (GAMEselectedUnit) {
+                GAMEselectedUnit = null;
+                if (GAMEselectedUnitName) {
+                    GUI.instances.get(GAMEselectedUnitName).darkness = 0;
+                }
+                GAMEselectedUnitName = null;
                 GAMEselectedUnit = null;
             }
         }
@@ -2674,6 +2696,10 @@ function handleUnitSelectionTab() {
                 GAMEGUIUnits.push(displayName);
                 const xOffset = (index % 2 == 0) ? (x-100) - 150: (x-100) + 150;
                 const button = new GUI(displayName, displayName, xOffset, y-250 + 100*Math.floor(index/2), 200, 50, 2);
+                if (GAMEselectedUnit == unitData) {
+                    const clickedGUI = GUI.instances.get(displayName);
+                    clickedGUI.darkness = 0.65;
+                }
                 button.click = () => {
                     BM.currentTile = null;
                     for (const tile of BM.tiles) {
@@ -2683,8 +2709,15 @@ function handleUnitSelectionTab() {
                             break;
                         }
                     }
+                    if (GUI.instances.has(GAMEselectedUnitName)) {
+                        GUI.instances.get(GAMEselectedUnitName).darkness = 0;
+                    }
+                    const clickedGUI = GUI.instances.get(displayName);
+                    clickedGUI.darkness = 0.65;
+                    console.log(clickedGUI)
                     GAMETrashcanSelected = false;
                     GUI.instances.get("trashCanButton").darkness = 0;
+                    GAMEselectedUnitName = displayName;
                     GAMEselectedUnit = unitData;
                 }
                 index += 1;
