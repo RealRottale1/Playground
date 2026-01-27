@@ -141,6 +141,9 @@ const gameTextures = {
     goblinAldrin0: makeImage("creatures/goblins/Aldrin/Aldrin0"),
     goblinAldrin1: makeImage("creatures/goblins/Aldrin/Aldrin1"),
     goblinAldrin2: makeImage("creatures/goblins/Aldrin/Aldrin2"),
+    goblinNecromancer0: makeImage("creatures/goblins/necromancer/necromancer0"),
+    goblinNecromancer1: makeImage("creatures/goblins/necromancer/necromancer1"),
+    goblinNecromancer2: makeImage("creatures/goblins/necromancer/necromancer2"),
 
     fishlingFootSoldier0: makeImage("creatures/fishlings/footSoldier/footSoldier0"),
     fishlingFootSoldier1: makeImage("creatures/fishlings/footSoldier/footSoldier1"),
@@ -171,6 +174,7 @@ const gameTextures = {
     staff: makeImage("weapons/staff"),
     rock: makeImage("weapons/rock"),
     trollSword: makeImage("weapons/trollSword"),
+    necromancerBone: makeImage("weapons/necromancerBone"),
 
     bow: makeImage("weapons/bow"),
     loadedBow: makeImage("weapons/loadedBow"),
@@ -391,7 +395,7 @@ class GUI {
     renderText() {
         this.enabled = true;
         
-        ctx.fillStyle = `rgba(255, 0, 0)`;
+        ctx.fillStyle = "rgb(83, 83, 83)";
         ctx.fillRect(this.x, this.y, this.width, this.height);
         ctx.fillStyle = "rgba(255, 255, 255, 1)";
         ctx.font = "35px serif";
@@ -840,6 +844,18 @@ const WeaponData = {
         arrowType: "knightFledglingArrow",
         width: 1,
         height: 1,
+    },
+    "resurectBone": {
+        range: 16,
+        damage: 0,
+        attackRate: 35,
+        attackDuration: 200,
+        coolDownTime: 200,
+        isEvent: 2,
+        isMelee: true,
+        texture: "necromancerBone",
+        width: 0.75,
+        height: 0.75,
     },
 }
 const SoulData = {
@@ -2366,22 +2382,22 @@ class Creature {
 }
 const CreatureSelection = {
     "warriorTab": {
+        "Undead": [true, "warrior", "undead", "warriorUndead", "undeadSword"],
+        "Rusher": [true, "warrior", "rusher", "warriorRusher", "dagger"],
         "Foot Soldier": [true, "warrior", "footSoldier", "normal", "ironSword"],
         "Archer": [true, "warrior", "archer", "normal", "bow"],
         "Heavy Archer": [true, "warrior", "archer", "normal", "heavyBow"],
         "Knight": [true, "warrior", "knight", "warriorKnight", "knightSword"],
-        "Undead": [true, "warrior", "undead", "warriorUndead", "undeadSword"],
-        "Rusher": [true, "warrior", "rusher", "warriorRusher", "dagger"],
         "Bomber": [true, "warrior", "bomber", "bomber", "explode"],
         "King": [true, "warrior", "king", "warriorKing", "warriorKingSword"],
-        "Eldrin": [true, "warrior", "eldrin", "large", "eldrinStaff"],
         "Forest Guardian": [true, "warrior", "forestGuardian", "forestGuardian", "forestSeed"],
         "Castle Guardian": [true, "warrior", "castleGuardian", "castleGuardian", "castleGuardianSword"],
+        "Eldrin": [true, "warrior", "eldrin", "large", "eldrinStaff"],
     },
     "fishlingTab": {
+        "Rusher": [true, "fishling", "rusher", "rushingSwimmer", "fishlingDagger"],
         "Foot Soldier": [true, "fishling", "footSoldier", "swimmer", "trident"],
         "Archer": [true, "fishling", "archer", "swimmer", "fishlingBow"],
-        "Rusher": [true, "fishling", "rusher", "rushingSwimmer", "fishlingDagger"],
         "Diver": [true, "fishling", "diver", "fishlingDiver", "trident"],
     },
     "elfTab": {
@@ -2393,8 +2409,8 @@ const CreatureSelection = {
     "trollTab": {
         "Foot Soldier": [true, "troll", "footSoldier", "large", "trollSword"],
         "Archer": [true, "troll", "archer", "large", "rock"],
-        "Knight": [true, "troll", "knight", "trollKnight", "trollSword"],
         "Inferno": [true, "troll", "inferno", "largeInferno", "trollSword"],
+        "Knight": [true, "troll", "knight", "trollKnight", "trollSword"],
     },
     "fledglingTab": {
         "Archer": [true, "fledgling", "archer", "fledgling", "fledglingBow"],
@@ -2402,19 +2418,20 @@ const CreatureSelection = {
         "Bomber": [true, "fledgling", "bomber", "fledgling", "explode"],
     },
     "goblinTab": {
-        "Foot Soldier": [false, "goblin", "footSoldier", "normal", "ironSword"],
-        "Archer": [false, "goblin", "archer", "normal", "bow"],
-        "Large": [false, "goblin", "large", "large", "largeSword"],
-        "Berserker": [false, "goblin", "berserker", "warriorRusher", "strongIronSword"],
         "Biter": [false, "goblin", "biter", "biter", "bite"],
-        "Bomber": [false, "goblin", "bomber", "bomber", "explode"],
-        "Mirror": [false, "goblin", "mirror", "normal", "ironSword"],
         "Undead": [false, "goblin", "undead", "warriorUndead", "undeadSword"],
-        "Knight": [false, "goblin", "knight", "warriorKnight", "knightSword"],
-        "Kron": [false, "goblin", "kron", "kron", "kronSword"],
         "Ghost": [false, "goblin", "ghost", "ghost", "undeadSword"],
+        "Foot Soldier": [false, "goblin", "footSoldier", "normal", "ironSword"],
+        "Mirror": [false, "goblin", "mirror", "normal", "ironSword"],
         "Posion": [false, "goblin", "posion", "normal", "posion"],
+        "Archer": [false, "goblin", "archer", "normal", "bow"],
+        "Berserker": [false, "goblin", "berserker", "warriorRusher", "strongIronSword"],
+        "Large": [false, "goblin", "large", "large", "largeSword"],
+        "Knight": [false, "goblin", "knight", "warriorKnight", "knightSword"],
+        "Bomber": [false, "goblin", "bomber", "bomber", "explode"],
+        "Necromancer": [false, "goblin", "necromancer", "normal", "resurectBone"],
         "King": [false, "goblin", "king", "warriorKing", "goblinKingSword"],
+        "Kron": [false, "goblin", "kron", "kron", "kronSword"],
         "Aldrin": [false, "goblin", "aldrin", "large", "aldrinStaff"],
     }
 }
@@ -2808,15 +2825,15 @@ function handleUnitSelectionTab() {
     const x = WP.middle(0);
     const y = WP.center(120);
     const guiObject = GUI.instances.get("unitSelectBar");
-    if (WP.resized) { guiObject.update(x - width / 2, y - height / 2, width, height) };
+    if (WP.resized) { guiObject.update(x - width / 2, y - height / 2, width, height + 100) };
     if (GAMEselectedUnitType) {
         guiObject.render();
         if (!GAMEloadedSelectedUnitType) {
             let index = 0;
             for (const [displayName, unitData] of Object.entries(CreatureSelection[GAMEselectedUnitType])) {
                 GAMEGUIUnits.push(displayName);
-                const xOffset = (index % 2 == 0) ? (x-100) - 150: (x-100) + 150;
-                const button = new GUI(displayName, displayName, xOffset, y-250 + 100*Math.floor(index/2), 200, 50, 2);
+                const xOffset = (index % 2 == 0) ? (x-100) - 150: x;
+                const button = new GUI(displayName, displayName, xOffset, y-250 + 75*Math.floor(index/2), 250, 50, 2);
                 if (GAMEselectedUnit == unitData) {
                     const clickedGUI = GUI.instances.get(displayName);
                     clickedGUI.darkness = 0.65;
