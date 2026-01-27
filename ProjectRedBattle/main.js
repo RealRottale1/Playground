@@ -2586,27 +2586,66 @@ function bootGame() {
     function loadUploadButton() {
         const uploadIcon = new GUI("uploadTab", "uploadIcon", 0, 0, 0, 0, 0);
         uploadIcon.click = () => {
-            if (!BM.canEdit) { return };
+            if (!BM.canEdit || GAMEStarted) { return };
             const data = prompt("Insert World File");
             if (data && data.length > 0) {
-                const worldFile = data.split(" ");
-                if (worldFile.length === BM.maxRows * BM.maxColumns) {
-                    const validTiles = new Set(BM.tiles.map(s => s.toLowerCase().replace(/\s+/g, "")));
-                    let hasInvalidTile = false;
-                    for (const tile of worldFile) {
-                        if (!validTiles.has(tile)) {
-                            hasInvalidTile = true;
+                const fileData = data.split("},");
+                const validUnitData = [];
+                let invalidUnitData = false;
+                for (let i = 0; i < fileData.length - 1; i++) {
+                    const filePortion = fileData[i];
+                    if (i > 0) {
+                        const unitData = filePortion.split(",");
+                        let validData = false;
+                        try {
+                            const x = Number(unitData[0]);
+                            const y = Number(unitData[1]);
+                            if (Number.isInteger(x) && Number.isInteger(y) && x >= 0 && y >= 0 && x < BM.maxColumns && y < BM.maxRows) {
+                                const isGood = Boolean(unitData[2]);
+                                if (typeof isGood == "boolean") {
+                                    const subClass = unitData[3];
+                                    const classType = unitData[4];
+                                    const soulType = unitData[5];
+                                    const weaponType = unitData[6];
+                                    if (CreatureTypes[subClass] && CreatureTypes[subClass][classType]) {
+                                        if (SoulData[soulType] && WeaponData[weaponType]) {
+                                            validUnitData.push([x, y, isGood, subClass, classType, soulType, weaponType]);
+                                            validData = true;
+                                        }
+                                    }
+                                }
+                            }
+                        } catch {};
+                        if (!validData) {
+                            invalidUnitData = true;
                             break;
                         }
-                    }
-                    if (!hasInvalidTile) {
-                        for (let y = 0; y < BM.maxRows; y++) {
-                            for (let x = 0; x < BM.maxColumns; x++) {
-                                BM.map[y][x] = worldFile[y * BM.maxColumns + x];
+                    } else {
+                        const worldFile = filePortion.split(" ");
+                        if (worldFile.length === BM.maxRows * BM.maxColumns) {
+                            const validTiles = new Set(BM.tiles.map(s => s.toLowerCase().replace(/\s+/g, "")));
+                            let hasInvalidTile = false;
+                            for (const tile of worldFile) {
+                                if (!validTiles.has(tile)) {
+                                    hasInvalidTile = true;
+                                    break;
+                                }
+                            }
+                            if (!hasInvalidTile) {
+                                for (let y = 0; y < BM.maxRows; y++) {
+                                    for (let x = 0; x < BM.maxColumns; x++) {
+                                        BM.map[y][x] = worldFile[y * BM.maxColumns + x];
+                                    }
+                                }
                             }
                         }
-                        return;
                     }
+                }
+                if (!invalidUnitData) {
+                    for (const unit of validUnitData) {
+                        new Creature(unit[0], unit[1], unit[2], unit[3], unit[4], unit[5], unit[6]);
+                    }
+                    return;
                 }
             }
             alert("Invalid World File");
@@ -2615,12 +2654,19 @@ function bootGame() {
     function loadSaveButton() {
         const saveIcon = new GUI("saveTab", "saveIcon", 0, 0, 0, 0, 0);
         saveIcon.click = async () => {
-            if (!BM.canEdit) { return };
+            if (!BM.canEdit || GAMEStarted) { return };
             try {
                 const worldFile = BM.map.flat().map(
                     t => t.toLowerCase().replace(/\s+/g, "")
                 ).join(" ");
-                await navigator.clipboard.writeText(worldFile);
+
+                let unitFile = "";
+                for (const unit of Creature.allUnits) {
+                    unitFile += `${unit.xPos},${unit.yPos},${unit.isGood},${unit.subClass},${unit.classType},${unit.soulType},${unit.weaponType}},`;
+                }
+
+                alert("File Saved To Clipboard!");
+                await navigator.clipboard.writeText(""+worldFile+"},"+unitFile);
             } catch {
                 alert("Something Went Wrong Please Try Again");
             }
