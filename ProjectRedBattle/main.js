@@ -1328,6 +1328,16 @@ const CreatureTypes = {
             healthMiddle: "goblinAldrin1",
             healthLow: "goblinAldrin2",
         },
+        "necromancer": {
+            hitboxSize: 0.5,
+            width: 0.75,
+            height: 0.75,
+            health: 200,
+            healthHigh: "goblinNecromancer0",
+            healthMiddle: "goblinNecromancer1",
+            healthLow: "goblinNecromancer2",
+            units: [["goblinTab", "Undead"], ["goblinTab", "Ghost"]],
+        },
     },
 }
 class Creature {
