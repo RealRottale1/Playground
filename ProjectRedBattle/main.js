@@ -86,6 +86,16 @@ const gameTextures = {
     trollInferno0: makeImage("creatures/trolls/Inferno/Inferno0"),
     trollInferno1: makeImage("creatures/trolls/Inferno/Inferno1"),
     trollInferno2: makeImage("creatures/trolls/Inferno/Inferno2"),
+    
+    fledglingArcher0: makeImage("creatures/fledgling/archer/archer0"),
+    fledglingArcher1: makeImage("creatures/fledgling/archer/archer1"),
+    fledglingArcher2: makeImage("creatures/fledgling/archer/archer2"),
+    fledglingKnight0: makeImage("creatures/fledgling/knight/knight0"),
+    fledglingKnight1: makeImage("creatures/fledgling/knight/knight1"),
+    fledglingKnight2: makeImage("creatures/fledgling/knight/knight2"),
+    fledglingBomber0: makeImage("creatures/fledgling/bomber/bomber0"),
+    fledglingBomber1: makeImage("creatures/fledgling/bomber/bomber1"),
+    fledglingBomber2: makeImage("creatures/fledgling/bomber/bomber2"),
 
     goblinFootSoldier0: makeImage("creatures/goblins/footSoldier/footSoldier0"),
     goblinFootSoldier1: makeImage("creatures/goblins/footSoldier/footSoldier1"),
@@ -171,6 +181,10 @@ const gameTextures = {
     aldrinStaff: makeImage("weapons/aldrinStaff"),
     eldrinStaff: makeImage("weapons/eldrinStaff"),
     blowDart: makeImage("weapons/blowDart"),
+    fledglingBow: makeImage("weapons/fledglingBow"),
+    loadedFledglingBow: makeImage("weapons/loadedFledglingBow"),
+    knightFledglingBow: makeImage("weapons/knightFledglingBow"),
+    knightLoadedFledglingBow: makeImage("weapons/knightLoadedFledglingBow"),
 
     arrow: makeImage("arrows/arrow"),
     fishlingArrow: makeImage("arrows/fishlingArrow"),
@@ -180,6 +194,8 @@ const gameTextures = {
     seed: makeImage("arrows/seed"),
     dart: makeImage("arrows/dart"),
     rockArrow: makeImage("arrows/rockArrow"),
+    fledglingArrow: makeImage("arrows/fledglingArrow"),
+    knightFledglingArrow: makeImage("arrows/knightFledglingArrow"),
 
     unitBar: makeImage("tabUnitBar"),
     unitSelectBar: makeImage("tabUnitSelect"),
@@ -465,6 +481,26 @@ const ArrowData = {
         speed: 0.15,
         lifeTime: 90,
         size: 0.5,
+        hitboxSize: 0.125,
+        piercing: true,
+        maxPierces: 3,
+    },
+    "fledglingArrow": {
+        texture: "fledglingArrow",
+        damage: 15,
+        speed: 0.125,
+        lifeTime: 100,
+        size: 2,
+        hitboxSize: 0.125,
+        piercing: false,
+        maxPierces: 0,
+    },
+    "knightFledglingArrow": {
+        texture: "knightFledglingArrow",
+        damage: 25,
+        speed: 0.15,
+        lifeTime: 120,
+        size: 2,
         hitboxSize: 0.125,
         piercing: true,
         maxPierces: 3,
@@ -781,6 +817,30 @@ const WeaponData = {
         width: 1,
         height: 1.5,
     },
+    "fledglingBow": {
+        range: 10,
+        attackRate: 50,
+        attackDuration: 10,
+        coolDownTime: 20,
+        isMelee: false,
+        texture: "fledglingBow",
+        loadedTexture: "loadedFledglingBow",
+        arrowType: "fledglingArrow",
+        width: 1,
+        height: 1,
+    },
+    "knightFledglingBow": {
+        range: 10,
+        attackRate: 50,
+        attackDuration: 10,
+        coolDownTime: 20,
+        isMelee: false,
+        texture: "knightFledglingBow",
+        loadedTexture: "knightLoadedFledglingBow",
+        arrowType: "knightFledglingArrow",
+        width: 1,
+        height: 1,
+    },
 }
 const SoulData = {
     "normal": {
@@ -889,6 +949,12 @@ const SoulData = {
     },
     "elf": {
         tileProps: { "grass": { risk: 1, speed: 1.25 }, "stone": { risk: Number.MAX_VALUE, speed: 0 }, "shallowwater": { risk: 5, speed: 0.5 }, "deepwater": { risk: 25, speed: 0.150 }, "sand": { risk: 2, speed: 1.15 }, "lava": { risk: Number.MAX_VALUE, speed: 0 } },
+        detectVision: 15,
+        alertVision: 7,
+        wanderChance: 1,
+    },
+    "fledgling": {
+        tileProps: { "grass": { risk: 1, speed: 1 }, "stone": { risk: Number.MAX_VALUE, speed: 0 }, "shallowwater": { risk: 1, speed: 1 }, "deepwater": { risk: 1, speed: 1 }, "sand": { risk: 1, speed: 1 }, "lava": { risk: 1, speed: 1 } },
         detectVision: 15,
         alertVision: 7,
         wanderChance: 1,
@@ -1098,6 +1164,38 @@ const CreatureTypes = {
             arrowResistant: true,
         },
     },
+    "fledgling": {
+        "archer": {
+            hitboxSize: 0.5,
+            width: 0.5,
+            height: 0.5,
+            health: 100,
+            healthHigh: "fledglingArcher0",
+            healthMiddle: "fledglingArcher1",
+            healthLow: "fledglingArcher2",
+            flying: true,
+        },
+        "knight": {
+            hitboxSize: 0.5,
+            width: 0.75,
+            height: 0.75,
+            health: 300,
+            healthHigh: "fledglingKnight0",
+            healthMiddle: "fledglingKnight1",
+            healthLow: "fledglingKnight2",
+            flying: true,
+        },
+        "bomber": {
+            hitboxSize: 0.5,
+            width: 0.75,
+            height: 0.75,
+            health: 125,
+            healthHigh: "fledglingBomber0",
+            healthMiddle: "fledglingBomber1",
+            healthLow: "fledglingBomber2",
+            flying: true,
+        },
+    },
     "goblin": {
         "footSoldier": {
             hitboxSize: 0.5,
@@ -1125,6 +1223,7 @@ const CreatureTypes = {
             healthHigh: "goblinLarge0",
             healthMiddle: "goblinLarge1",
             healthLow: "goblinLarge2",
+            extendedReach: true,
         },
         "berserker": {
             hitboxSize: 0.5,
@@ -1179,6 +1278,7 @@ const CreatureTypes = {
             healthHigh: "goblinKnight0",
             healthMiddle: "goblinKnight1",
             healthLow: "goblinKnight2",
+            extendedReach: true,
         },
         "kron": {
             hitboxSize: 1.5,
@@ -1188,6 +1288,7 @@ const CreatureTypes = {
             healthHigh: "goblinKron0",
             healthMiddle: "goblinKron1",
             healthLow: "goblinKron2",
+            extendedReach: true,
         },
         "ghost": {
             hitboxSize: 0.5,
@@ -1197,6 +1298,7 @@ const CreatureTypes = {
             healthHigh: "goblinGhost0",
             healthMiddle: "goblinGhost1",
             healthLow: "goblinGhost2",
+            extendedReach: true,
         },
         "posion": {
             hitboxSize: 0.5,
@@ -1215,6 +1317,7 @@ const CreatureTypes = {
             healthHigh: "goblinKing0",
             healthMiddle: "goblinKing1",
             healthLow: "goblinKing2",
+            extendedReach: true,
         },
         "aldrin": {
             hitboxSize: 1.5,
@@ -1250,6 +1353,7 @@ class Creature {
     moving = false;
     justLostTarget = false;
     isDiver = false;    underWater = false;
+    isFlying = false;
     // Attack
     attackTick = 0;
     attacking = false;
@@ -1279,7 +1383,7 @@ class Creature {
                     continue;
                 }
                 if (unit.isGood != target.isGood) {
-                    if (!unit.isMelee && target.underWater) {
+                    if ((!unit.isMelee && target.underWater)) {
                         continue;
                     } else {
                         if (unit.targetChain.length > 0) {
@@ -1420,7 +1524,7 @@ class Creature {
                     const nX = eX + x;
                     if (Creature.allUnitPositions.has(nY) && Creature.allUnitPositions.get(nY).has(nX)) {
                         for (const unit of Creature.allUnitPositions.get(nY).get(nX)) {
-                            if (unit.isGood != p[5]) {
+                            if (unit.isGood != p[5] && !unit.isFlying) {
                                 const uY = unit.fluidYPos;
                                 const uX = unit.fluidXPos;
                                 if ((uY >= eY - i + 0.5 && uY <= eY + i - 0.5)
@@ -1444,7 +1548,7 @@ class Creature {
                     if (Creature.allUnitPositions.has(y) && Creature.allUnitPositions.get(y).has(x)) {
                         for (const unit of Creature.allUnitPositions.get(y).get(x)) {
                             if (unit != useUnit && unit.isGood == useUnit.isGood) {
-                                unit.health += Math.min(unit.health + 2.5, unit.maxHealth);
+                                unit.health = Math.min(unit.health + 2.5, unit.maxHealth);
                             }
                         }
                     }
@@ -1480,7 +1584,7 @@ class Creature {
         const coolDownTime = currentWeapon.coolDownTime;
 
         if (currentWeapon.isEvent == 1) {
-            if (unit.classType == "biter" && !unit.bit && targetUnit) {
+            if (unit.classType == "biter" && !unit.bit && targetUnit && !targetUnit.isFlying) {
                 unit.bit = targetUnit;
                 targetUnit.biters.add(unit);
                 targetUnit.health -= currentWeapon.damage;
@@ -1489,7 +1593,7 @@ class Creature {
             } else if (unit.classType == "posion") {
                 Creature.posionBurst(unit);
             }
-        } else {
+        } else if (!targetUnit || !currentWeapon.isMelee || unit.extendedReach || (targetUnit && !targetUnit.isFlying)) {
             unit.attackTick += 1;
             if (unit.attackTick == attackRate) {
                 // Lost target
@@ -1940,7 +2044,7 @@ class Creature {
             // Unit above broke chain
             if (unit.targetChain.length > 0 
                 && ((unit.targetChain[unit.targetChain.length - 1].targetChain.length <= 0 && unit.targetChain[unit.targetChain.length - 1].isGood == unit.isGood)
-                || !unit.isMelee && unit.targetChain[0].underWater)
+                || (!unit.isMelee && unit.targetChain[0].underWater))
             ) {
                 unit.allTargets.clear();
                 unit.targetChain = [];
@@ -2089,6 +2193,8 @@ class Creature {
         this.health = CreatureTypes[subClass][classType].health;
         this.maxHealth = this.health;
         this.isDiver = CreatureTypes[subClass][classType].diver;
+        this.isFlying = CreatureTypes[subClass][classType].flying;
+        this.extendedReach = CreatureTypes[subClass][classType].extendedReach;
         Creature.allUnits.add(this);
         Creature.updateAllUnitPositions(this);
     }
@@ -2262,6 +2368,12 @@ const CreatureSelection = {
         "Forest Guardian": [true, "warrior", "forestGuardian", "forestGuardian", "forestSeed"],
         "Castle Guardian": [true, "warrior", "castleGuardian", "castleGuardian", "castleGuardianSword"],
     },
+    "fishlingTab": {
+        "Foot Soldier": [true, "fishling", "footSoldier", "swimmer", "trident"],
+        "Archer": [true, "fishling", "archer", "swimmer", "fishlingBow"],
+        "Rusher": [true, "fishling", "rusher", "rushingSwimmer", "fishlingDagger"],
+        "Diver": [true, "fishling", "diver", "fishlingDiver", "trident"],
+    },
     "elfTab": {
         "Foot Soldier": [true, "elf", "footSoldier", "elf", "elfDagger"],
         "Archer": [true, "elf", "footSoldier", "elf", "blowDart"],
@@ -2274,11 +2386,10 @@ const CreatureSelection = {
         "Knight": [true, "troll", "knight", "trollKnight", "trollSword"],
         "Inferno": [true, "troll", "inferno", "largeInferno", "trollSword"],
     },
-    "fishlingTab": {
-        "Foot Soldier": [true, "fishling", "footSoldier", "swimmer", "trident"],
-        "Archer": [true, "fishling", "archer", "swimmer", "fishlingBow"],
-        "Rusher": [true, "fishling", "rusher", "rushingSwimmer", "fishlingDagger"],
-        "Diver": [true, "fishling", "diver", "fishlingDiver", "trident"],
+    "fledglingTab": {
+        "Archer": [true, "fledgling", "archer", "fledgling", "fledglingBow"],
+        "Knight": [true, "fledgling", "knight", "fledgling", "knightFledglingBow"],
+        "Bomber": [true, "fledgling", "bomber", "fledgling", "explode"],
     },
     "goblinTab": {
         "Foot Soldier": [false, "goblin", "footSoldier", "normal", "ironSword"],
