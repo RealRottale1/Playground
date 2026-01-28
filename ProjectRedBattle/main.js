@@ -2287,7 +2287,7 @@ class Creature {
             const healthPercentage = unit.health / unit.maxHealth;
 
             const waterDepth = unit.standingTile == "shallowwater" ? 1.25 : unit.standingTile == "deepwater" ? 2 : 0;
-            if (!unit.underWater && !SoulData[unit.soulType].floats) {
+            if (!unit.underWater && !SoulData[unit.soulType].floats && !unit.isFlying) {
                 if (waterDepth != 0) {
                     ctx.save();
                     ctx.beginPath();
@@ -2898,7 +2898,6 @@ function handleUnitSelectionTab() {
                     }
                     const clickedGUI = GUI.instances.get(displayName);
                     clickedGUI.darkness = 0.65;
-                    console.log(clickedGUI)
                     GAMETrashcanSelected = false;
                     GUI.instances.get("trashCanButton").darkness = 0;
                     GAMEselectedUnitName = displayName;
@@ -2911,8 +2910,8 @@ function handleUnitSelectionTab() {
         for (let i = 0; i < GAMEGUIUnits.length; i++) {
             const guiButton = GUI.instances.get(GAMEGUIUnits[i]);
             if (WP.resized) { 
-                const xOffset = (i % 2 == 0) ? (x-100) - 150: (x-100) + 150;
-                guiButton.update(xOffset, y-250 + 100*Math.floor(i/2), 200, 50)
+                const xOffset = (i % 2 == 0) ? (x-100) - 150: x;
+                guiButton.update(xOffset, y-250 + 75*Math.floor(i/2), 250, 50)
             }
             guiButton.renderText();
         } 
