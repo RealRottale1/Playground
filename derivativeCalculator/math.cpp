@@ -9,24 +9,25 @@
 class Equation {
     public:
 
-        static void displayBracketData(std::map<std::pair<int, int>, std::vector<std::pair<std::pair<int, int>, std::vector<int>>>> bracketData, std::string &eq) {
+        static void displayBracketData(std::map<int, std::vector<std::pair<std::pair<int, int>, std::vector<int>>>> bracketData, std::string &eq) {
             std::cout << "DisplayBracketData ---" << std::endl;
             for (auto it = bracketData.rbegin(); it != bracketData.rend(); it++) {
-                const auto& [keyData, data] = *it;
+                const auto& [depthAmount, data] = *it;
                 
-                std::cout << "Length: " << keyData.second << ", Depth: " << keyData.first << std::endl;
+                std::cout << "Depth: " << depthAmount << std::endl;
                 for (const auto& [rangeData, depthVector] : data) {
                     std::cout << "sI: " << rangeData.first << ", eI: " << rangeData.second << " | D: ";
                     for (int d : depthVector) {
                         std::cout << d << ", "; 
                     }
+                    std::cout << "| Str: " << eq.substr(rangeData.first, (rangeData.second - rangeData.first) + 1);
                     std::cout << std::endl;
                 }
             }
             std::cout << "---" << std::endl;
         }
 
-        static std::map<std::pair<int, int>, std::vector<std::pair<std::pair<int, int>, std::vector<int>>>> getBracketData(std::string &eq) {
+        static std::map<int, std::vector<std::pair<std::pair<int, int>, std::vector<int>>>> getBracketData(std::string &eq) {
             std::vector<std::pair<int, bool>> brackets = {};
             int i = 0;
             for (char c : eq) {
@@ -38,8 +39,8 @@ class Equation {
                 i ++;
             }
 
-            // <Depth, Length>: {<<sI, eI>, {DepthVector}>}
-            std::map<std::pair<int, int>, std::vector<std::pair<std::pair<int, int>, std::vector<int>>>> bracketData = {};
+            // Depth: {<<sI, eI>, {DepthVector}>}
+            std::map<int, std::vector<std::pair<std::pair<int, int>, std::vector<int>>>> bracketData = {};
             std::vector<int> openBrackets = {};
             i = 0;
             for (const auto& [stringIndex, isOpen] : brackets) {
@@ -52,14 +53,12 @@ class Equation {
                     std::vector<int> depth = {};
                     int openBracketsSize = openBrackets.size();
                     if (openBracketsSize > 0) {
-                        for (int j = openBracketsSize; j >= 0; j--) {
+                        for (int j = openBracketsSize - 1; j >= 0; j--) {
                             depth.push_back(brackets[openBrackets[j]].first);
                         }
                     }
                     int depthAmount = depth.size();
-
-                    int length = (stringIndex - openStringIndex) + 1;
-                    bracketData[{depthAmount, length}].push_back({{openStringIndex, stringIndex}, depth});
+                    bracketData[depthAmount].push_back({{openStringIndex, stringIndex}, depth});
                 }
                 i++;
             }
@@ -68,14 +67,25 @@ class Equation {
         }
 
         Equation(std::string &eq) {
-            std::map<std::pair<int, int>, std::vector<std::pair<std::pair<int, int>, std::vector<int>>>> bracketData = Equation::getBracketData(eq);
+            std::map<int, std::vector<std::pair<std::pair<int, int>, std::vector<int>>>> bracketData = Equation::getBracketData(eq);
             Equation::displayBracketData(bracketData, eq);
         }
 };
 
 int main() {
-    std::string eq = "((2/-3)*(x)^(5/3)+(3*(7+x))*(x)^(2))";
+    std::string eq = "((2/-3)*(x)^(5/3)+(32*(7+x))*(x)^(2))";
                 //"((2/-3)*(x)^(5/3)^((3/7)*(x/2)^(2)))";
     Equation newEquation(eq);
     return 0;
 }
+
+/*
+1. Get depth
+2. Get values and assign to memory location
+3. solve using EMDAS going down in depth
+
+Line memory
+[0] = Value
+[1] = Value
+
+*/
