@@ -49,7 +49,7 @@ let trieTree: trieManager = trieManager();
     t e e i o p h r e i t s w i f z u er u m c f h a o
     t r qu p n i a r a r t e o i r t l f d i s m u m u
 */
-let rawData: String = "d c n qu e th b g o f t n e i a f r t e f g n t e p".lowercased();
+let rawData: String = "t r qu p n i a r a r t e o i r t l f d i s m u m u".lowercased();
 let boardPieces: [String] = rawData.split(separator: " ").map({String($0)});
 var boardData: [[String]] = [];
 for i in 0..<5 {
