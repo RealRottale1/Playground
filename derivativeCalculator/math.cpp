@@ -78,14 +78,9 @@ int main() {
     Equation newEquation(eq);
     return 0;
 }
-
+  
 /*
-1. Get depth
-2. Get values and assign to memory location
-3. solve using EMDAS going down in depth
-
-Line memory
-[0] = Value
-[1] = Value
-
+This should work! Go get em tiger!
+Evaluate using EMPDAS
+In Map set endIndex as key and value as value. Once calculated skip to startIndex
 */
