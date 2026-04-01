@@ -2,14 +2,33 @@
 #include <string>
 #include <set>
 #include <map>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 #include <array>
+#include <optional>
+
+struct nugget {
+    bool isOperation;
+    bool isReference;
+    int numerator;
+    int denominator;
+    char operation;
+    int reference;
+    nugget(bool iO, bool iR, int n, int d, char o, int r) {
+        isOperation = iO;
+        isReference = iR;
+        numerator = n;
+        denominator = d;
+        operation = o;
+        reference = r;
+    }
+};
 
 class Equation {
     public:
 
-        static void displayBracketData(std::map<int, std::vector<std::pair<std::pair<int, int>, std::vector<int>>>> bracketData, std::string &eq) {
+        static void displayBracketData(std::map<int, std::vector<std::pair<std::pair<int, int>, std::vector<int>>>> &bracketData, std::string &eq) {
             std::cout << "DisplayBracketData ---" << std::endl;
             for (auto it = bracketData.rbegin(); it != bracketData.rend(); it++) {
                 const auto& [depthAmount, data] = *it;
@@ -66,14 +85,59 @@ class Equation {
             return bracketData;
         }
 
+        static void getSolvedPieces(std::map<int, std::vector<std::pair<std::pair<int, int>, std::vector<int>>>> &bracketData, std::string &eq) {
+            // Id, []
+            for (auto it = bracketData.rbegin(); it != bracketData.rend(); it++) {
+                const auto& [depthAmount, data] = *it;
+                for (const auto& [rangeData, depthVector] : data) {
+                    int sI = rangeData.first;
+                    int eI = rangeData.second;
+                    std::vector<nugget> bracketMemoryVector = {};
+/*
+Add to a map with key=endindex
+when getting in data if i == key then link it and skip over it
+*/
+                    int lastSnipIndex = eI - 1;
+                    bool priorWasNumber = false;
+                    std::set<char> opMarks= {'-', '+', '*', '/', '^'};
+                    for (int i = eI - 1; i >= sI; i--) {
+                        std::optional<char> r = (i - 1 >= sI) ? std::optional<char>(eq[i-1]) : std::nullopt;
+                        if (opMarks.count(eq[i]) || (i == sI)) {
+                            std::optional<char> l = (i + 1 < eI) ? std::optional<char>(eq[i+1]) : std::nullopt;
+                            bool isNegative = (eq[i] == '-' && r.has_value() && opMarks.count(r.value()) && l.has_value() && !opMarks.count(l.value()));
+                            if (!isNegative) {
+                                int numerator = std::stoi(eq.substr(i+1, lastSnipIndex - i));
+                                nugget n1(false, false, numerator, 1, ' ', 0);
+                                bracketMemoryVector.push_back(n1);
+
+                                if (eq[i] != '(' && eq[i] != ')') {
+                                    nugget n2(true, false, 0, 0, eq[i], 0);
+                                    bracketMemoryVector.push_back(n2);
+                                }
+                                
+                                std::cout << "Nums: " << eq.substr(i+1, lastSnipIndex - i) << std::endl;
+                                std::cout << "Op: " << eq[i] << std::endl;
+                                std::cout << lastSnipIndex << std::endl;
+                                lastSnipIndex = i-1;
+                            }
+                        }
+                        //std::cout << eq[i] << std::endl;
+                    }
+                    std::cout << std::endl;
+                }
+            }
+        }
+
         Equation(std::string &eq) {
             std::map<int, std::vector<std::pair<std::pair<int, int>, std::vector<int>>>> bracketData = Equation::getBracketData(eq);
             Equation::displayBracketData(bracketData, eq);
+            
+            Equation::getSolvedPieces(bracketData, eq);
         }
 };
 
 int main() {
-    std::string eq = "((2/-3)*(x)^(5/3)+(32*(7+x))*(x)^(2))";
+    std::string eq = "((2/-3)*(4)^(5/3)+(32*(7+3))*(2)^(2))";
                 //"((2/-3)*(x)^(5/3)^((3/7)*(x/2)^(2)))";
     Equation newEquation(eq);
     return 0;
