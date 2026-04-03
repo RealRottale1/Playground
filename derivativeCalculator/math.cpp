@@ -7,6 +7,7 @@
 #include <vector>
 #include <array>
 #include <optional>
+#include <cmath>
 
 struct nugget {
     bool isOperation;
@@ -64,7 +65,7 @@ class Equation {
                         } else if (n.isReference) {
                             std::cout << "Ref" << n.reference;
                         } else if (n.isVariable) {
-                            std::cout << "(" << n.numerator << 'x' << "/" << n.denominator << ")";
+                            std::cout << "(" << n.numerator << "/" << n.denominator << ")x";
                         } else {
                             std::cout << "(" << n.numerator << "/" << n.denominator << ")";
                         }
@@ -89,6 +90,24 @@ class Equation {
             return SEESRange;
         }
 
+        static std::optional<int> getPerfectRoot(long long base, int rootIndex) {
+            if (rootIndex < 1) return std::nullopt; 
+            if (base == 0) return 0;
+            if (base == 1) return 1;
+            bool isNegative = (base < 0);
+            if (isNegative && (rootIndex % 2 == 0)) return std::nullopt;
+            double guess = std::pow(static_cast<double>(std::abs(base)), 1.0 / rootIndex);
+            int roundedGuess = static_cast<int>(std::round(guess));
+            long long check = 1;
+            for (int i = 0; i < rootIndex; ++i) {
+                check *= roundedGuess;
+                if (check > std::abs(base) && i < rootIndex - 1) return std::nullopt;
+            }
+            if (check == std::abs(base)) {
+                return isNegative ? -roundedGuess : roundedGuess;
+            }
+            return std::nullopt;
+        }
 
         /* Cores */
         static std::map<int, std::vector<std::pair<std::pair<int, int>, std::vector<int>>>> getBracketData(std::string &eq) {
@@ -187,26 +206,59 @@ class Equation {
             return equationMemoryMap;
         }
 
-        static void solveSimpleMath(nugget& n, nugget& prevNugget, nugget& nextNugget) {
+        static bool solveSimpleMath(nugget& n, nugget& prevNugget, nugget& nextNugget) {
             int newNumerator = 0;
             int newDenominator = 0;
-            if (n.operation == '^') {
-                // Skip this for now
-            } else if (n.operation == '*') {
+            bool bothAreNumbers = (!prevNugget.isVariable && !nextNugget.isVariable);
+            bool bothAreVariables = (prevNugget.isVariable && nextNugget.isVariable);
+            if (n.operation == '^') { // Power
+                if (bothAreVariables) {
+                    return false; // x^x is as simple as it gets
+                }
+                if (nextNugget.numerator < 0) {
+                    nextNugget.numerator *= -1;
+                    int savedNumerator = prevNugget.numerator;
+                    prevNugget.numerator = prevNugget.denominator;
+                    prevNugget.denominator = savedNumerator;
+                }
+                long long powerNum = std::pow(prevNugget.numerator, nextNugget.numerator);
+                long long powerDen = std::pow(prevNugget.denominator, nextNugget.numerator);
+                std::optional<int> rootNum = getPerfectRoot(powerNum, nextNugget.denominator);
+                std::optional<int> rootDen = getPerfectRoot(powerDen, nextNugget.denominator);
+                if (rootNum.has_value() && rootDen.has_value()) {
+                    newNumerator = rootNum.value();
+                    newDenominator = rootDen.value();
+                } else {
+                    return false;
+                }
+            } else if (n.operation == '*') { // Multiplication
                 newNumerator = prevNugget.numerator * nextNugget.numerator;
                 newDenominator = prevNugget.denominator * nextNugget.denominator;
-            } else if (n.operation == '/') {
-                    newNumerator = prevNugget.numerator * nextNugget.denominator;
-                    newDenominator = prevNugget.denominator * nextNugget.numerator;
-            } else {
-                int cross1 = prevNugget.numerator * nextNugget.denominator;
-                int cross2 = prevNugget.denominator * nextNugget.numerator;
-                if (n.operation == '+') {
-                    newNumerator = cross1 + cross2;
-                } else {
-                    newNumerator = cross1 - cross2;
+                if (bothAreVariables) {
+                    
                 }
-                newDenominator = prevNugget.denominator * nextNugget.denominator;
+                if (nextNugget.isVariable) {
+                    prevNugget.isVariable = true;
+                }
+            } else if (n.operation == '/') { // Division
+                newNumerator = prevNugget.numerator * nextNugget.denominator;
+                newDenominator = prevNugget.denominator * nextNugget.numerator;
+                if (bothAreVariables) {
+                    prevNugget.isVariable = false;
+                }
+            } else { // Addition & Subtraction
+                if (bothAreVariables || bothAreNumbers) {
+                    int cross1 = prevNugget.numerator * nextNugget.denominator;
+                    int cross2 = prevNugget.denominator * nextNugget.numerator;
+                    if (n.operation == '+') {
+                        newNumerator = cross1 + cross2;
+                    } else {
+                        newNumerator = cross1 - cross2;
+                    }
+                    newDenominator = prevNugget.denominator * nextNugget.denominator;
+                } else {
+                    return false; // Cant simplify x + 2
+                }
             }
 
             // ensures numerator is the only one negative
@@ -217,6 +269,7 @@ class Equation {
 
             prevNugget.numerator = newNumerator;
             prevNugget.denominator = newDenominator;
+            return true;
         }
 
         static void simplifyEquation(std::map<int, std::unordered_map<int, std::vector<nugget>>> &chunckedEquation, std::pair<std::unordered_map<int, int>, std::unordered_map<int, int>> &SEESRange) {
@@ -230,23 +283,18 @@ class Equation {
 
                         auto it2 = equationData.rbegin();
                         while (it2 != equationData.rend()) {
-                            std::cout << "HELP ME MICHAEAL!" << std::endl;
                             auto& n = *it2;
                             if (n.isOperation && currentOperations.count(n.operation)) {
                                 std::cout << "Operation: " << n.operation << std::endl;
                                 auto& prevNugget = *std::prev(it2);
                                 auto& nextNugget = *std::next(it2);
                                 if (!prevNugget.isReference && !nextNugget.isReference) {
-                                    if (!prevNugget.isVariable && !nextNugget.isVariable) {
-                                        solveSimpleMath(n, prevNugget, nextNugget);
+                                    bool simplified = solveSimpleMath(n, prevNugget, nextNugget);
+                                    if (simplified) {
                                         auto opBaseIt = it2.base(); 
-
-                                            // Erase the operation and the 'next' nugget (which is physically BEFORE the op in memory)
-                                            equationData.erase(opBaseIt - 1); // Erases the Operation
-                                            equationData.erase(opBaseIt - 2); // Erases the NextNugget (the one on the right)
-
-                                            // Crucial: reset your iterator so it doesn't point to deleted memory
-                                            it2 = equationData.rbegin();
+                                        equationData.erase(opBaseIt - 1);
+                                        equationData.erase(opBaseIt - 2);
+                                        it2 = equationData.rbegin();
                                     } else {
                                         ++it2;
                                     }
@@ -278,7 +326,7 @@ class Equation {
 };
 
 int main() {
-    std::string eq = "(3/2)";//"((2+-x/2+2)*(-2))";
+    std::string eq = "(x^x^x)";//"((2+-x/2+2)*(-2))";
     Equation newEquation(eq);
     return 0;
 }
