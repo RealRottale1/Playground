@@ -11,17 +11,21 @@
 struct nugget {
     bool isOperation;
     bool isReference;
+    bool isVariable;
     int numerator;
     int denominator;
     char operation;
     int reference;
-    nugget(bool iO, bool iR, int n, int d, char o, int r) {
+    char variable;
+    nugget(bool iO, bool iR, bool iV, int n, int d, char o, int r, char v) {
         isOperation = iO;
         isReference = iR;
+        isVariable = iV;
         numerator = n;
         denominator = d;
         operation = o;
         reference = r;
+        variable = v;
     }
 };
 
@@ -53,11 +57,14 @@ class Equation {
                 std::cout << "Depth:" << it->first << std::endl;
                 for (const auto& [eI, equationData] : it->second) {
                     std::cout << "eI: " << eI << "| Eq: ";
-                    for (const auto& n : equationData) {
+                    for (auto it2 = equationData.rbegin(); it2 != equationData.rend(); it2++) {
+                        const auto& n = *it2;
                         if (n.isOperation) {
                             std::cout << n.operation;
                         } else if (n.isReference) {
                             std::cout << "Ref" << n.reference;
+                        } else if (n.isVariable) {
+                            std::cout << "(" << n.numerator << 'x' << "/" << n.denominator << ")";
                         } else {
                             std::cout << "(" << n.numerator << "/" << n.denominator << ")";
                         }
@@ -143,21 +150,26 @@ class Equation {
                         } else {
                             if (opMarks.count(eq[i]) || (i == sI)) {
                                 std::optional<char> l = (i + 1 < eI) ? std::optional<char>(eq[i+1]) : std::nullopt;
-                                bool isNegative = (eq[i] == '-' && r.has_value() && opMarks.count(r.value()) && l.has_value() && !opMarks.count(l.value()));
+                                bool isNegative = (eq[i] == '-' && r.has_value() && (opMarks.count(r.value()) || r.value() == '(') && l.has_value() && !opMarks.count(l.value()));
                                 if (!isNegative) {
                                     // Uses reference
                                     if (eq[i+1] == '(') {
-                                        nugget n1(false, true, 0, 0, ' ', SEESRange.first.at(i+1));
+                                        nugget n1(false, true, false, 0, 0, ' ', SEESRange.first.at(i+1), ' ');
+                                        bracketMemoryVector.push_back(n1);
+                                    } else if (eq[i+1] == 'x' || eq[i+2] == 'x') { // Uses variable
+                                        nugget n1(false, false, true, 1 * (eq[i+1]=='-' ? -1 : 1), 1, ' ', 0, 'x');
                                         bracketMemoryVector.push_back(n1);
                                     } else { // Uses number
+                                        std::cout << eq[i] <<  eq[i+1] <<  eq[i+2] << std::endl;
+                                        std::cout << "Num:" << eq.substr(i+1, lastSnipIndex - i) << std::endl;
                                         int numerator = std::stoi(eq.substr(i+1, lastSnipIndex - i));
-                                        nugget n1(false, false, numerator, 1, ' ', 0);
+                                        nugget n1(false, false, false, numerator, 1, ' ', 0, ' ');
                                         bracketMemoryVector.push_back(n1);
                                     }
 
                                     // Uses operation
                                     if (eq[i] != '(' && eq[i] != ')') {
-                                        nugget n2(true, false, 0, 0, eq[i], 0);
+                                        nugget n2(true, false, false, 0, 0, eq[i], 0, ' ');
                                         bracketMemoryVector.push_back(n2);
                                     }
                                     
@@ -175,6 +187,28 @@ class Equation {
             return equationMemoryMap;
         }
 
+        static void simplifyEquation(std::map<int, std::unordered_map<int, std::vector<nugget>>> &chunckedEquation, std::pair<std::unordered_map<int, int>, std::unordered_map<int, int>> &SEESRange) {
+            std::cout << "--- ___ --- ___ ---" << std::endl;
+            for (auto it = chunckedEquation.rbegin(); it != chunckedEquation.rend(); it++) {
+                for (const auto& [eI, equationData] : it->second) {
+
+                    std::vector<std::set<char>> EMDAS = {{'^'},{'/','*'},{'+','-'}};
+                    for (int i = 0; i < EMDAS.size(); i++) {
+                        std::set<char> currentOperations = EMDAS[i];
+
+                        auto it2 = equationData.rbegin();
+                        while (it2 != equationData.rend()) {
+                            const auto& n = *it2;
+                            if (n.isOperation && currentOperations.count(n.operation)) {
+                                std::cout << "Operation: " << n.operation << std::endl;
+                            }
+                            ++it2;
+                        }
+                    }
+                }
+           }
+        }
+
         Equation(std::string &eq) {
             // Gets bracket data
             std::map<int, std::vector<std::pair<std::pair<int, int>, std::vector<int>>>> bracketData = Equation::getBracketData(eq);
@@ -182,15 +216,15 @@ class Equation {
             
             // Gets raw components and order of solving
             std::pair<std::unordered_map<int, int>, std::unordered_map<int, int>> SEESRange = Equation::getSEESRange(bracketData);
-            // [Note!]: std::vector<nugget> is backwards so read from left to right when solving
             std::map<int, std::unordered_map<int, std::vector<nugget>>> chunckedEquation = Equation::getChunckedEquation(bracketData, eq, SEESRange);
             Equation::displayChunckedEquation(chunckedEquation, SEESRange);
+
+            Equation::simplifyEquation(chunckedEquation, SEESRange);
         }
 };
 
 int main() {
-    std::string eq = "((2/-3)*(4)^(5/3)+(32*(7+3))*(2)^(2))";
-                //"((2/-3)*(x)^(5/3)^((3/7)*(x/2)^(2)))";
+    std::string eq = "((2+-x/2+2)*(-2))";
     Equation newEquation(eq);
     return 0;
 }
