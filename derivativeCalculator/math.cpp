@@ -187,10 +187,42 @@ class Equation {
             return equationMemoryMap;
         }
 
+        static void solveSimpleMath(nugget& n, nugget& prevNugget, nugget& nextNugget) {
+            int newNumerator = 0;
+            int newDenominator = 0;
+            if (n.operation == '^') {
+                // Skip this for now
+            } else if (n.operation == '*') {
+                newNumerator = prevNugget.numerator * nextNugget.numerator;
+                newDenominator = prevNugget.denominator * nextNugget.denominator;
+            } else if (n.operation == '/') {
+                    newNumerator = prevNugget.numerator * nextNugget.denominator;
+                    newDenominator = prevNugget.denominator * nextNugget.numerator;
+            } else {
+                int cross1 = prevNugget.numerator * nextNugget.denominator;
+                int cross2 = prevNugget.denominator * nextNugget.numerator;
+                if (n.operation == '+') {
+                    newNumerator = cross1 + cross2;
+                } else {
+                    newNumerator = cross1 - cross2;
+                }
+                newDenominator = prevNugget.denominator * nextNugget.denominator;
+            }
+
+            // ensures numerator is the only one negative
+            if (newDenominator < 0) {
+                newDenominator *= -1;
+                newNumerator *= -1;
+            }
+
+            prevNugget.numerator = newNumerator;
+            prevNugget.denominator = newDenominator;
+        }
+
         static void simplifyEquation(std::map<int, std::unordered_map<int, std::vector<nugget>>> &chunckedEquation, std::pair<std::unordered_map<int, int>, std::unordered_map<int, int>> &SEESRange) {
             std::cout << "--- ___ --- ___ ---" << std::endl;
             for (auto it = chunckedEquation.rbegin(); it != chunckedEquation.rend(); it++) {
-                for (const auto& [eI, equationData] : it->second) {
+                for (auto& [eI, equationData] : it->second) {
 
                     std::vector<std::set<char>> EMDAS = {{'^'},{'/','*'},{'+','-'}};
                     for (int i = 0; i < EMDAS.size(); i++) {
@@ -198,11 +230,32 @@ class Equation {
 
                         auto it2 = equationData.rbegin();
                         while (it2 != equationData.rend()) {
-                            const auto& n = *it2;
+                            std::cout << "HELP ME MICHAEAL!" << std::endl;
+                            auto& n = *it2;
                             if (n.isOperation && currentOperations.count(n.operation)) {
                                 std::cout << "Operation: " << n.operation << std::endl;
+                                auto& prevNugget = *std::prev(it2);
+                                auto& nextNugget = *std::next(it2);
+                                if (!prevNugget.isReference && !nextNugget.isReference) {
+                                    if (!prevNugget.isVariable && !nextNugget.isVariable) {
+                                        solveSimpleMath(n, prevNugget, nextNugget);
+                                        auto opBaseIt = it2.base(); 
+
+                                            // Erase the operation and the 'next' nugget (which is physically BEFORE the op in memory)
+                                            equationData.erase(opBaseIt - 1); // Erases the Operation
+                                            equationData.erase(opBaseIt - 2); // Erases the NextNugget (the one on the right)
+
+                                            // Crucial: reset your iterator so it doesn't point to deleted memory
+                                            it2 = equationData.rbegin();
+                                    } else {
+                                        ++it2;
+                                    }
+                                } else {
+                                    ++it2;
+                                }
+                            } else {
+                                ++it2;
                             }
-                            ++it2;
                         }
                     }
                 }
@@ -220,11 +273,12 @@ class Equation {
             Equation::displayChunckedEquation(chunckedEquation, SEESRange);
 
             Equation::simplifyEquation(chunckedEquation, SEESRange);
+            Equation::displayChunckedEquation(chunckedEquation, SEESRange);
         }
 };
 
 int main() {
-    std::string eq = "((2+-x/2+2)*(-2))";
+    std::string eq = "(3/2)";//"((2+-x/2+2)*(-2))";
     Equation newEquation(eq);
     return 0;
 }
