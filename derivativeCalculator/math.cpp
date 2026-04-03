@@ -190,9 +190,14 @@ class Equation {
             return equationMemoryMap;
         }
 
+        static void refOnRefMath() {
+
+        }
+
         static void simplifyEquation(std::map<int, std::unordered_map<int, std::vector<nugget>>> &chunckedEquation, std::pair<std::unordered_map<int, int>, std::unordered_map<int, int>> &SEESRange) {
             std::cout << "--- ___ --- ___ ---" << std::endl;
-            for (auto it = chunckedEquation.rbegin(); it != chunckedEquation.rend(); it++) {
+            for (auto it = std::next(chunckedEquation.rbegin()); it != chunckedEquation.rend(); it++) {
+                std::cout << "Depth:" << it->first << std::endl;
                 for (auto& [eI, equationData] : it->second) {
 
                     std::vector<std::set<char>> EMDAS = {{'^'},{'/','*'},{'+','-'}};
@@ -204,9 +209,15 @@ class Equation {
                             auto& n = *it2;
                             if (n.isOperation && currentOperations.count(n.operation)) {
                                 std::cout << "Operation: " << n.operation << std::endl;
-                                auto& leftNugget = *std::prev(it2);
-                                auto& rightNugget = *std::next(it2);
+                                auto& leftRefNugget = *std::prev(it2);
+                                auto& rightRefNugget = *std::next(it2);
+                                if (leftRefNugget.isReference && rightRefNugget.isReference) {
                                     
+                                }
+
+
+
+
                                     // if (simplified) {
                                     //     auto opBaseIt = it2.base(); 
                                     //     equationData.erase(opBaseIt - 1);
@@ -241,7 +252,9 @@ class Equation {
 };
 
 int main() {
-    std::string eq = "((2+-x/2+2)*(-2))";
+                   //"((x)^((2)^(x)))";
+                   //"((x)*((2)*(x)+(3)))";
+    std::string eq = "((x)*(3)+((7)+(x)))";
     Equation newEquation(eq);
     return 0;
 }
