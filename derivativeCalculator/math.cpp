@@ -8,28 +8,23 @@
 #include <array>
 #include <optional>
 #include <cmath>
+#include <memory>
 
 struct nugget {
     bool isOperation;
     bool isReference;
-    bool isVariable;
     int numerator;
     int denominator;
     char operation;
     int reference;
-    char variable;
 
-    std::vector<nugget> exponents = {};
-
-    nugget(bool iO, bool iR, bool iV, int n, int d, char o, int r, char v) {
+    nugget(bool iO, bool iR, int n, int d, char o, int r) {
         isOperation = iO;
         isReference = iR;
-        isVariable = iV;
         numerator = n;
         denominator = d;
         operation = o;
         reference = r;
-        variable = v;
     }
 };
 
@@ -67,8 +62,6 @@ class Equation {
                             std::cout << n.operation;
                         } else if (n.isReference) {
                             std::cout << "Ref" << n.reference;
-                        } else if (n.isVariable) {
-                            std::cout << "(" << n.numerator << "/" << n.denominator << ")x";
                         } else {
                             std::cout << "(" << n.numerator << "/" << n.denominator << ")";
                         }
@@ -94,6 +87,16 @@ class Equation {
         }
 
         /* Cores */
+        static void setXValue(std::string &eq, int xNumerator, int xDenominator) {
+            std::string replaceWith = "(("+std::to_string(xNumerator)+")/("+std::to_string(xDenominator)+"))";
+            int replaceWithSize = replaceWith.size();
+            size_t i = 0;
+            while ((i = eq.find('x', i)) != std::string::npos) {
+                eq.replace(i, 1, replaceWith);
+                i += replaceWithSize;
+            }
+        }
+
         static std::map<int, std::vector<std::pair<std::pair<int, int>, std::vector<int>>>> getBracketData(std::string &eq) {
             std::vector<std::pair<int, bool>> brackets = {};
             int i = 0;
@@ -157,22 +160,17 @@ class Equation {
                                 if (!isNegative) {
                                     // Uses reference
                                     if (eq[i+1] == '(') {
-                                        nugget n1(false, true, false, 0, 0, ' ', SEESRange.first.at(i+1), ' ');
-                                        bracketMemoryVector.push_back(n1);
-                                    } else if (eq[i+1] == 'x' || eq[i+2] == 'x') { // Uses variable
-                                        nugget n1(false, false, true, 1 * (eq[i+1]=='-' ? -1 : 1), 1, ' ', 0, 'x');
+                                        nugget n1(false, true, 0, 0, ' ', SEESRange.first.at(i+1));
                                         bracketMemoryVector.push_back(n1);
                                     } else { // Uses number
-                                        std::cout << eq[i] <<  eq[i+1] <<  eq[i+2] << std::endl;
-                                        std::cout << "Num:" << eq.substr(i+1, lastSnipIndex - i) << std::endl;
                                         int numerator = std::stoi(eq.substr(i+1, lastSnipIndex - i));
-                                        nugget n1(false, false, false, numerator, 1, ' ', 0, ' ');
+                                        nugget n1(false, false, numerator, 1, ' ', 0);
                                         bracketMemoryVector.push_back(n1);
                                     }
 
                                     // Uses operation
                                     if (eq[i] != '(' && eq[i] != ')') {
-                                        nugget n2(true, false, false, 0, 0, eq[i], 0, ' ');
+                                        nugget n2(true, false, 0, 0, eq[i], 0);
                                         bracketMemoryVector.push_back(n2);
                                     }
                                     
@@ -190,16 +188,50 @@ class Equation {
             return equationMemoryMap;
         }
 
-        static void refOnRefMath() {
+        static void solveSimpleMath(nugget& n, nugget& lN, nugget& rN) {
+            int newNumerator = 0;
+            int newDenominator = 0;
+            if (n.operation == '^') {
+                if (rN.numerator < 0) {
+                    rN.numerator *= -1;
+                    int savedNumerator = lN.numerator;
+                    lN.numerator = lN.denominator;
+                    lN.denominator = savedNumerator;
+                }
+                
+            } else if (n.operation == '*') {
+                newNumerator = lN.numerator * rN.numerator;
+                newDenominator = lN.denominator * rN.denominator;
+            } else if (n.operation == '/') {
+                newNumerator = lN.numerator * rN.denominator;
+                newDenominator = lN.denominator * rN.numerator;
+            } else {
+                int cross1 = lN.numerator * rN.denominator;
+                int cross2 = lN.denominator * rN.numerator;
+                if (n.operation == '+') {
+                    newNumerator = cross1 + cross2;
+                } else {
+                    newNumerator = cross1 - cross2;
+                }
+                newDenominator = lN.denominator * rN.denominator;
+            }
 
+            // ensures numerator is the only one negative
+            if (newDenominator < 0) {
+                newDenominator *= -1;
+                newNumerator *= -1;
+            }
+
+            lN.numerator = newNumerator;
+            lN.denominator = newDenominator;
         }
-
-        static void simplifyEquation(std::map<int, std::unordered_map<int, std::vector<nugget>>> &chunckedEquation, std::pair<std::unordered_map<int, int>, std::unordered_map<int, int>> &SEESRange) {
+        
+        static void solveForY(std::map<int, std::unordered_map<int, std::vector<nugget>>> &chunckedEquation, std::pair<std::unordered_map<int, int>, std::unordered_map<int, int>> &SEESRange) {
             std::cout << "--- ___ --- ___ ---" << std::endl;
-            for (auto it = std::next(chunckedEquation.rbegin()); it != chunckedEquation.rend(); it++) {
+            std::unordered_map<int, nugget> solvedNuggets = {};
+            for (auto it = chunckedEquation.rbegin(); it != chunckedEquation.rend(); it++) {
                 std::cout << "Depth:" << it->first << std::endl;
                 for (auto& [eI, equationData] : it->second) {
-
                     std::vector<std::set<char>> EMDAS = {{'^'},{'/','*'},{'+','-'}};
                     for (int i = 0; i < EMDAS.size(); i++) {
                         std::set<char> currentOperations = EMDAS[i];
@@ -209,35 +241,45 @@ class Equation {
                             auto& n = *it2;
                             if (n.isOperation && currentOperations.count(n.operation)) {
                                 std::cout << "Operation: " << n.operation << std::endl;
-                                auto& leftRefNugget = *std::prev(it2);
-                                auto& rightRefNugget = *std::next(it2);
-                                if (leftRefNugget.isReference && rightRefNugget.isReference) {
-                                    
+                                auto& lN = *std::prev(it2);
+                                auto& rN = *std::next(it2);
+                                if (lN.isReference) {
+                                    std::cout << "Using ref: " << lN.reference << std::endl;
+                                    lN = solvedNuggets.at(lN.reference);
                                 }
+                                if (rN.isReference) {
+                                    rN = solvedNuggets.at(rN.reference);
+                                }
+                                std::cout << "lN: " << lN.numerator << '/' << lN.denominator << ", rN: " << rN.numerator << '/' << rN.denominator << std::endl;
+                                solveSimpleMath(n, lN, rN);
+                                lN.isReference = false;
+                                std::cout << "Answer: " << lN.numerator << '/' << lN.denominator << std::endl;
 
-
-
-
-                                    // if (simplified) {
-                                    //     auto opBaseIt = it2.base(); 
-                                    //     equationData.erase(opBaseIt - 1);
-                                    //     equationData.erase(opBaseIt - 2);
-                                    //     it2 = equationData.rbegin();
-                                    // } else {
-                                    //     ++it2;
-                                    // }
+                                auto opBaseIt = it2.base(); 
+                                equationData.erase(opBaseIt - 1);
+                                equationData.erase(opBaseIt - 2);
+                                it2 = equationData.rbegin();
                                 ++it2;
                             } else {
                                 ++it2;
                             }
                         }
                     }
+                    std::cout << "eI: " << eI << ",nextRef:" << equationData[0].reference << std::endl;
+                    nugget valueNugget = equationData[0];
+                    while (valueNugget.isReference) {
+                        valueNugget = solvedNuggets.at(valueNugget.reference);
+                    }
+                    solvedNuggets.insert({eI, valueNugget});
                 }
            }
         }
 
 
-        Equation(std::string &eq) {
+        Equation(std::string &eq, int xNumerator, int xDenominator) {
+            // Replaces X with numbers
+            Equation::setXValue(eq, xNumerator, xDenominator);
+
             // Gets bracket data
             std::map<int, std::vector<std::pair<std::pair<int, int>, std::vector<int>>>> bracketData = Equation::getBracketData(eq);
             Equation::displayBracketData(bracketData, eq);
@@ -247,14 +289,15 @@ class Equation {
             std::map<int, std::unordered_map<int, std::vector<nugget>>> chunckedEquation = Equation::getChunckedEquation(bracketData, eq, SEESRange);
             Equation::displayChunckedEquation(chunckedEquation, SEESRange);
 
-            Equation::simplifyEquation(chunckedEquation, SEESRange);
+            Equation::solveForY(chunckedEquation, SEESRange);
+            Equation::displayChunckedEquation(chunckedEquation, SEESRange);
         }
 };
 
 int main() {
                    //"((x)^((2)^(x)))";
-                   //"((x)*((2)*(x)+(3)))";
-    std::string eq = "((x)*(3)+((7)+(x)))";
-    Equation newEquation(eq);
+                   //"(((x)^((2)-(x)))+((2)*(x))+(3))";
+    std::string eq = "(((2)/(3))^((1)/(3)))";
+    Equation newEquation(eq, 3, 1);
     return 0;
 }
