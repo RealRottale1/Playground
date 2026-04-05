@@ -1,15 +1,13 @@
 #include <iostream>
 #include <string>
-#include <set>
-#include <map>
-#include <unordered_map>
-#include <utility>
 #include <vector>
 #include <array>
 #include <optional>
+#include <cctype>
+#include <utility>
+#include <string>
 #include <cmath>
-#include <memory>
-
+#include <numeric>
 
 int main() {
 
