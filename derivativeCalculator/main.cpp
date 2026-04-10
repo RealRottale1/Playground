@@ -46,7 +46,7 @@ class Fraction {
                 long long p =  static_cast<long long>(std::pow(10, (data.size() - dI)));
                 n = (n * p) + d;
                 d = 10*p;
-            }
+            } 
             std::cout << "RAW " << n << " , " << d << std::endl;
             long long g = std::gcd(n, d);
             this->numerator = n / g;
