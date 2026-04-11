@@ -82,6 +82,7 @@ async function sweepMines() {
             if (currentPieces[y][x]) {
                 const nearbyMines = getMineNumber(y, x);
                 if (nearbyMines == 0) {continue;}
+                let localClicks = 0;
 
                 const nearbyMineNumbers = [];
                 let possibleMineSpots = 0;
@@ -100,7 +101,7 @@ async function sweepMines() {
                         if (nearbyMineNumbers[i] == '_') {
                             const targetTile = currentPieces[currentPieces[y][x][1][i][0]][currentPieces[y][x][1][i][1]][0];
                             simulateClick(targetTile, false);
-                            clicks++;
+                            localClicks++;
                         }
                     }
                 } else if ((knownMineSpots + possibleMineSpots) == nearbyMines) {
@@ -108,11 +109,25 @@ async function sweepMines() {
                         if (nearbyMineNumbers[i] == '_') {
                             const targetTile = currentPieces[currentPieces[y][x][1][i][0]][currentPieces[y][x][1][i][1]][0];
                             simulateClick(targetTile, true);
-                            clicks++;
+                            localClicks++;
                         }
                     }
                 }
-                //await wait(50);
+
+                // Pattern recognition
+                if (localClicks == 0 && possibleMineSpots != 0) {
+                    /*
+                        - B -
+                        1 2 1
+                        - B -
+
+                        - B B -
+                        1 2 2 1
+                        _ _ _ _
+                    */
+                }
+                
+                clicks += localClicks;
             }
         }
     }
