@@ -1,11 +1,13 @@
 const mainWindow = document.getElementById("game");
 if (!mainWindow) {console.warn("Unable to find [game]!");}
+const faceButton = document.getElementById("face");
+if (!faceButton) {console.warn("Unable to find [face]!");}
 
 // Core Variables
 let currentPieces = {};
 
-const boardXSize = 31;
-const boardYSize = 17;
+const boardXSize = 10;
+const boardYSize = 10;
 
 
 
@@ -87,6 +89,7 @@ function getNeighborData(y, x) {
     }
     return [nearbyMineNumbers, possibleMineSpots, knownMineSpots];
 }
+
 async function sweepMines() {
     let clicks = 0;
     for (let y = 0; y < boardYSize; y++) {
@@ -98,13 +101,14 @@ async function sweepMines() {
                 const [nearbyMineNumbers, possibleMineSpots, knownMineSpots] = getNeighborData(y, x);
 
                 if (possibleMineSpots == 0) {continue;}
+                let localClicks = 0;
 
                 if (knownMineSpots == nearbyMines) {
                     for (let i = 0; i < currentPieces[y][x][1].length; i++) {
                         if (nearbyMineNumbers[i] == '_') {
                             const targetTile = currentPieces[currentPieces[y][x][1][i][0]][currentPieces[y][x][1][i][1]][0];
                             simulateClick(targetTile, false);
-                            clicks++;
+                            localClicks++;
                         }
                     }
                 } else if ((knownMineSpots + possibleMineSpots) == nearbyMines) {
@@ -112,10 +116,49 @@ async function sweepMines() {
                         if (nearbyMineNumbers[i] == '_') {
                             const targetTile = currentPieces[currentPieces[y][x][1][i][0]][currentPieces[y][x][1][i][1]][0];
                             simulateClick(targetTile, true);
-                            clicks++;
+                            localClicks++;
                         }
                     }
                 }
+
+                // Pattern Recognition
+                if (localClicks == 0 && nearbyMines == 2 && !knownMineSpots) {
+                    // Horizontal 1 2 1 check
+                    if ((x - 1 >= 0 && x + 1 < boardXSize)) {
+                        if (getMineNumber(y, x-1) == 1 && getMineNumber(y, x+1) == 1) {
+                            const leftTile = currentPieces[y][x-1][0];
+                            const rightTile = currentPieces[y][x+1][0];
+                            for (const yDir of [-1, 1]) {
+                                const nY = y + yDir;
+                                if (nY >= 0 && nY < boardYSize) {
+                                    if (getTile(nY, x) == '_') {
+                                        console.log("Used special move")
+                                        simulateClick(currentPieces[nY][x][0], false);
+                                        localClicks++;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if ((y - 1 >= 0 && y + 1 < boardYSize)) {
+                        if (getMineNumber(y, y-1) == 1 && getMineNumber(y, y+1) == 1) {
+                            const upTile = currentPieces[y-1][x][0];
+                            const downTile = currentPieces[y+1][x][0];
+                            for (const xDir of [-1, 1]) {
+                                const nX = x + xDir;
+                                if (nX >= 0 && nX < boardXSize) {
+                                    if (getTile(y, nX) == '_') {
+                                        console.log("Used special move")
+                                        simulateClick(currentPieces[y][nX][0], false);
+                                        localClicks++;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                clicks += localClicks;
             }
         }
     }
@@ -170,11 +213,23 @@ async function heavySweepMines() {
     simulateClick(targetTile, false);
 }
 
-simulateClick(currentPieces[Math.floor(boardYSize/2)][Math.floor(boardXSize/2)][0], false);
 do {
-    const clicks = await sweepMines();
-    if (clicks == 0) {
-        heavySweepMines();
+    setGamePieces();
+    simulateClick(currentPieces[Math.floor(boardYSize/2)][Math.floor(boardXSize/2)][0], false);
+    do {
+        const clicks = await sweepMines();
+        if (clicks == 0) {
+            heavySweepMines();
+        }
+        await wait(100);
+    } while (!document.getElementsByClassName("facewin").length && !document.getElementsByClassName("facedead").length);
+    if (document.getElementsByClassName("facedead").length) {
+        console.warn("Awaiting Reset!")
+        do {
+            await wait(100);
+        } while (document.getElementsByClassName("facedead").length);
+        await wait(1000);
+    } else {
+        break;
     }
-    await wait(100);
-} while (!document.getElementsByClassName("facewin").length);
+} while (true);
