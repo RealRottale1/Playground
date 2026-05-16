@@ -28,6 +28,39 @@ let cartR = 0;
 let cartSpeed = 0;
 let reversing = false;
 
+class Walls {
+    static instances = new Set();
+    x;  y;  xSize; ySize; rotation;
+
+    static getCollisions() {
+        for (const wall of Walls.instances) {
+            const xMin = x - xSize/2;   const xMax = x + xSize/2;
+            const yMin = y - ySize/2;   const yMax = y + ySize/2;
+        }
+    }
+
+    static render() {
+        for (const wall of Walls.instances) {
+            ctx.save();
+            ctx.fillStyle = "black";
+            ctx.fillRect(
+                wall.x - cartX,
+                wall.y- cartY,
+                wall.xSize,
+                wall.ySize
+            );
+            ctx.restore();
+        }
+    }
+
+    constructor(x, y, xSize, ySize, rotation) {
+        this.x = x; this.y = y;
+        this.xSize = xSize; this.ySize = ySize;
+        this.rotation = rotation;
+        Walls.instances.add(this);
+    }
+}
+
 function render() {
     // Wipe
     ctx.fillStyle = "white";
@@ -57,6 +90,8 @@ function render() {
         cartSize
     );
     ctx.restore();
+
+    Walls.render();
     requestAnimationFrame(render);
 }
 
@@ -114,4 +149,6 @@ async function startGame() {
         await wait(0.1);
     } while (true);
 }
+
+const wall1 = new Walls(350, 350, 10, 10, 0);
 startGame()
