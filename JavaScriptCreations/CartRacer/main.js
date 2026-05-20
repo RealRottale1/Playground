@@ -81,7 +81,6 @@ class Walls {
                 if (blarioInfo) {
                     const wallInfo = Walls.getWallCollisionInfo(wall, nDX, nDY);
                     if (wallInfo[1] > blarioInfo[0] || blarioInfo[1] > wallInfo[0]) {
-                        console.log(blarioInfo)
                         pTW.delete(wall);
                     }
                 } else {
@@ -90,7 +89,6 @@ class Walls {
                     const localBlarioInfo = Walls.getBlarioCollisionInfo(localNDX, localNDY);
                     const wallInfo = Walls.getWallCollisionInfo(wall, localNDX, localNDY);
                     if (wallInfo[1] > localBlarioInfo[0] || localBlarioInfo[1] > wallInfo[0]) {
-                        console.log("P2")
                         pTW.delete(wall);
                     }
                 }
@@ -100,9 +98,11 @@ class Walls {
     }
 
     static render() {
+        const centerX = mainWindow.width / 2;
+        const centerY = mainWindow.height / 2;
         for (const wall of Walls.instances) {
             ctx.save();
-            ctx.translate(wall.x - cartX, wall.y - cartY);
+            ctx.translate(centerX + (wall.x - cartX), centerY + (wall.y - cartY));
             ctx.rotate(wall.rotation);
             ctx.fillStyle = "black";
             ctx.fillRect(
