@@ -21,8 +21,8 @@ const gameTextures = {
 }
 
 
-let cartX = -mainWindow.width;
-let cartY = -mainWindow.height;
+let cartX = 0;
+let cartY = 0;
 let cartSize = 100;
 let cartR = 0;
 let cartSpeed = 0;
@@ -32,20 +32,82 @@ class Walls {
     static instances = new Set();
     x;  y;  xSize; ySize; rotation;
 
+    static getBlarioCollisionInfo(nDX, nDY) {
+        const blarioSize = cartSize/2;
+        const bXW = blarioSize*Math.cos(cartR);
+        const bYW = blarioSize*Math.sin(cartR);
+        const bXH = -blarioSize*Math.sin(cartR);
+        const bYH = blarioSize*Math.cos(cartR);
+       
+        const blarioFlat1 = ((cartX + bXW + bXH) * nDX) + ((cartY + bYW + bYH) * nDY);
+        const blarioFlat2 = ((cartX - bXW - bXH) * nDX) + ((cartY - bYW - bYH) * nDY);
+        const blarioFlat3 = ((cartX + bXW - bXH) * nDX) + ((cartY + bYW - bYH) * nDY);
+        const blarioFlat4 = ((cartX - bXW + bXH) * nDX) + ((cartY - bYW + bYH) * nDY);
+
+        const blarioMax = Math.max(blarioFlat1, blarioFlat2, blarioFlat3, blarioFlat4);
+        const blarioMin = Math.min(blarioFlat1, blarioFlat2, blarioFlat3, blarioFlat4);
+        return [blarioMax, blarioMin];
+    }
+
+    static getWallCollisionInfo(wall, nDX, nDY) {
+        const xWidth = wall.xSize / 2;   const yWidth = wall.ySize / 2;
+        const wXW = xWidth * Math.cos(wall.rotation);
+        const wYW = xWidth * Math.sin(wall.rotation);
+        const wXH = -yWidth * Math.sin(wall.rotation);
+        const wYH = yWidth * Math.cos(wall.rotation);
+        
+        const wallFlat1 = ((wall.x + wXW + wXH) * nDX) + ((wall.y + wYW + wYH) * nDY);
+        const wallFlat2 = ((wall.x - wXW - wXH) * nDX) + ((wall.y - wYW - wYH) * nDY);
+        const wallFlat3 = ((wall.x + wXW - wXH) * nDX) + ((wall.y + wYW - wYH) * nDY);
+        const wallFlat4 = ((wall.x - wXW + wXH) * nDX) + ((wall.y - wYW + wYH) * nDY);
+        const wallMax = Math.max(wallFlat1, wallFlat2, wallFlat3, wallFlat4);
+        const wallMin = Math.min(wallFlat1, wallFlat2, wallFlat3, wallFlat4);
+        return [wallMax, wallMin];
+    }
+
     static getCollisions() {
-        for (const wall of Walls.instances) {
-            const xMin = x - xSize/2;   const xMax = x + xSize/2;
-            const yMin = y - ySize/2;   const yMax = y + ySize/2;
+    
+        const pTW = new Set([...Walls.instances]);
+        for (let i = 0; i < 4; i++) {
+            let nDX = null;
+            let nDY = null;
+            let blarioInfo = null;
+            if (i <= 1) {
+                nDX = i ? Math.cos(cartR) : -Math.sin(cartR);
+                nDY = i ? Math.sin(cartR) : Math.cos(cartR);
+                blarioInfo = Walls.getBlarioCollisionInfo(nDX, nDY);
+            }
+            for (const wall of pTW) {
+                if (blarioInfo) {
+                    const wallInfo = Walls.getWallCollisionInfo(wall, nDX, nDY);
+                    if (wallInfo[1] > blarioInfo[0] || blarioInfo[1] > wallInfo[0]) {
+                        console.log(blarioInfo)
+                        pTW.delete(wall);
+                    }
+                } else {
+                    const localNDX = i == 2 ? Math.cos(wall.rotation) : -Math.sin(wall.rotation);
+                    const localNDY = i == 2 ? Math.sin(wall.rotation) : Math.cos(wall.rotation);
+                    const localBlarioInfo = Walls.getBlarioCollisionInfo(localNDX, localNDY);
+                    const wallInfo = Walls.getWallCollisionInfo(wall, localNDX, localNDY);
+                    if (wallInfo[1] > localBlarioInfo[0] || localBlarioInfo[1] > wallInfo[0]) {
+                        console.log("P2")
+                        pTW.delete(wall);
+                    }
+                }
+            }
         }
+        console.log(pTW.size);
     }
 
     static render() {
         for (const wall of Walls.instances) {
             ctx.save();
+            ctx.translate(wall.x - cartX, wall.y - cartY);
+            ctx.rotate(wall.rotation);
             ctx.fillStyle = "black";
             ctx.fillRect(
-                wall.x - cartX,
-                wall.y- cartY,
+                -wall.xSize/2,
+                -wall.ySize/2,
                 wall.xSize,
                 wall.ySize
             );
@@ -56,7 +118,7 @@ class Walls {
     constructor(x, y, xSize, ySize, rotation) {
         this.x = x; this.y = y;
         this.xSize = xSize; this.ySize = ySize;
-        this.rotation = rotation;
+        this.rotation = rotation * Math.PI/180;
         Walls.instances.add(this);
     }
 }
@@ -97,7 +159,6 @@ function render() {
 
 function handleInput() {
     // Turning
-    console.log(cartX, cartY)
     const accelerate = USERINPUT.has(87);
     const decelerate = USERINPUT.has(83);
     const drifting = USERINPUT.has(16);
@@ -126,6 +187,7 @@ function handleInput() {
         cartX += Math.cos(cartR) * cartSpeed;
     }
     cartSpeed = Math.round(cartSpeed * 1000)/1000;
+    Walls.getCollisions()
 }
 
 
@@ -150,5 +212,5 @@ async function startGame() {
     } while (true);
 }
 
-const wall1 = new Walls(350, 350, 10, 10, 0);
+const wall1 = new Walls(350, 350, 50, 50, 45);
 startGame()
