@@ -7,6 +7,7 @@ const ACCELERATIONAMMOUNT = 0.125;
 const REVERSEACCELERATIONAMMOUNT = 0.0625;
 const NATURALDECELERATEAMMOUNT = 0.1;
 const MAXSPEED = 15;
+const MAXBOOSTEDSPEED = MAXSPEED + 15;
 const TURNAMOUNT = .5 * (Math.PI / 180);
 const DRIFTAMOUNT = TURNAMOUNT * 2;
 const BRICKPIXELAMOUNT = 100;
@@ -19,6 +20,7 @@ const gameTextures = {
     blario: makeImage("blario"),
     blarioReversing: makeImage("blarioReversed"),
     brick: makeImage("brick"),
+    booster: makeImage("booster"),
     map: makeImage("map"),
 }
 
@@ -31,17 +33,15 @@ let cartSpeed = 0;
 let reversing = false;
 
 class InteractableObject {
-    x;  y;  xSize; ySize; rotation;
-    constructor(x, y, xSize, ySize, rotation) {
+    static instances = new Set();
+    x;  y;  xSize; ySize; rotation; className;
+    constructor(x, y, xSize, ySize, rotation, className) {
         this.x = x; this.y = y;
         this.xSize = xSize; this.ySize = ySize;
         this.rotation = rotation * Math.PI/180;
+        this.className = className;
+        InteractableObject.instances.add(this);
     }
-}
-
-class Walls extends InteractableObject {
-    static instances = new Set();
-    x;  y;  xSize; ySize; rotation;
 
     static getBlarioCollisionInfo(nDX, nDY) {
         const blarioSize = cartSize/2;
@@ -60,7 +60,7 @@ class Walls extends InteractableObject {
         return [blarioMax, blarioMin];
     }
 
-    static getWallCollisionInfo(wall, nDX, nDY) {
+    static getObjectCollisionInfo(wall, nDX, nDY) {
         const xWidth = wall.xSize / 2;   const yWidth = wall.ySize / 2;
         const wXW = xWidth * Math.cos(wall.rotation);
         const wYW = xWidth * Math.sin(wall.rotation);
@@ -86,18 +86,19 @@ class Walls extends InteractableObject {
             const smallestAxisX = d < 0 ? -nDX : nDX;
             const smallestAxisY = d < 0 ? -nDY : nDY;
             if (!wallInMap) {
-                intercectingWalls.set(wall, [overlap, smallestAxisX, smallestAxisY]);
+                intercectingWalls.set(wall, [overlap, smallestAxisX, smallestAxisY, wall.className]);
             } else {
                 intercectingWalls.get(wall)[0] = overlap;
                 intercectingWalls.get(wall)[1] = smallestAxisX;
                 intercectingWalls.get(wall)[2] = smallestAxisY;
+                intercectingWalls.get(wall)[3] = wall.className;
             }
         }
     }
 
     static getCollisions() {
         const intercectingWalls = new Map();
-        const pTW = new Set([...Walls.instances]);
+        const pTW = new Set([...InteractableObject.instances]);
         for (let i = 0; i < 4; i++) {
             let nDX = null;
             let nDY = null;
@@ -105,25 +106,25 @@ class Walls extends InteractableObject {
             if (i <= 1) {
                 nDX = i ? Math.cos(cartR) : -Math.sin(cartR);
                 nDY = i ? Math.sin(cartR) : Math.cos(cartR);
-                blarioInfo = Walls.getBlarioCollisionInfo(nDX, nDY);
+                blarioInfo = InteractableObject.getBlarioCollisionInfo(nDX, nDY);
             }
             for (const wall of pTW) {
                 if (blarioInfo) {
-                    const wallInfo = Walls.getWallCollisionInfo(wall, nDX, nDY);
+                    const wallInfo = InteractableObject.getObjectCollisionInfo(wall, nDX, nDY);
                     if (wallInfo[1] > blarioInfo[0] || blarioInfo[1] > wallInfo[0]) {
                         pTW.delete(wall);
                     } else {
-                        Walls.getOverlapAmount(wall, blarioInfo, wallInfo, nDY, nDX, intercectingWalls);
+                        InteractableObject.getOverlapAmount(wall, blarioInfo, wallInfo, nDY, nDX, intercectingWalls);
                     }
                 } else {
                     const localNDX = i == 2 ? Math.cos(wall.rotation) : -Math.sin(wall.rotation);
                     const localNDY = i == 2 ? Math.sin(wall.rotation) : Math.cos(wall.rotation);
-                    const localBlarioInfo = Walls.getBlarioCollisionInfo(localNDX, localNDY);
-                    const wallInfo = Walls.getWallCollisionInfo(wall, localNDX, localNDY);
+                    const localBlarioInfo = InteractableObject.getBlarioCollisionInfo(localNDX, localNDY);
+                    const wallInfo = InteractableObject.getObjectCollisionInfo(wall, localNDX, localNDY);
                     if (wallInfo[1] > localBlarioInfo[0] || localBlarioInfo[1] > wallInfo[0]) {
                         pTW.delete(wall);
                     } else {
-                        Walls.getOverlapAmount(wall, localBlarioInfo, wallInfo, localNDY, localNDX, intercectingWalls);
+                        InteractableObject.getOverlapAmount(wall, localBlarioInfo, wallInfo, localNDY, localNDX, intercectingWalls);
                     }
                 }
             }
@@ -136,10 +137,14 @@ class Walls extends InteractableObject {
         return intercectingWalls;
     }
 
+}
+
+class Walls extends InteractableObject {
+    static localInstances = new Set();
     static render() {
         const centerX = mainWindow.width / 2;
         const centerY = mainWindow.height / 2;
-        for (const wall of Walls.instances) {
+        for (const wall of Walls.localInstances) {
             ctx.save();
             ctx.translate(centerX + (wall.x - cartX), centerY + (wall.y - cartY));
             ctx.rotate(wall.rotation);
@@ -159,8 +164,34 @@ class Walls extends InteractableObject {
     }
 
     constructor(x, y, xSize, ySize, rotation) {
-        super(x, y, xSize, ysize, rotation);
-        Walls.instances.add(this);
+        super(x, y, xSize, ySize, rotation, "wall");
+        Walls.localInstances.add(this);
+    }
+}
+
+class Boosters extends InteractableObject {
+    static localInstances = new Set();
+    static render() {
+        const centerX = mainWindow.width / 2;
+        const centerY = mainWindow.height / 2;
+        for (const booster of Boosters.localInstances) {
+            ctx.save();
+            ctx.translate(centerX + (booster.x - cartX), centerY + (booster.y - cartY));
+            ctx.rotate(booster.rotation);
+            ctx.drawImage(
+                gameTextures.booster,
+                -(booster.xSize/2),
+                -(booster.ySize/2),
+                booster.xSize,
+                booster.ySize
+            );
+            ctx.restore();
+        }
+    }
+
+    constructor(x, y, xSize, ySize, rotation) {
+        super(x, y, xSize, ySize, rotation, "booster");
+        Boosters.localInstances.add(this);
     }
 }
 
@@ -180,6 +211,7 @@ function render() {
         DEVICEPIXELRATIO * 10000
     );
 
+    Boosters.render();
 
     // Cart
     ctx.save();
@@ -222,15 +254,19 @@ function handleInput() {
     } else if (!accelerate && !decelerate) {
         const newSpeed = cartSpeed + NATURALDECELERATEAMMOUNT * Math.sign(cartSpeed) * -1;
         cartSpeed = Math.max(Math.abs(newSpeed), 0) * Math.sign(newSpeed);
-    }
+    }s
     cartY += Math.sin(cartR) * cartSpeed;
     cartX += Math.cos(cartR) * cartSpeed;
 
-    const hitWalls = Walls.getCollisions();
-    for (const wallInfo of hitWalls.values()) {
-        cartX += wallInfo[1] * (wallInfo[0]);
-        cartY += wallInfo[2] * (wallInfo[0]);
-        cartSpeed -= (1-ACCELERATIONAMMOUNT) * Math.sign(cartSpeed);
+    const hitObjects = InteractableObject.getCollisions();
+    for (const objectInfo of hitObjects.values()) {
+        if (objectInfo[3] == "wall") {
+            cartX += objectInfo[1] * (objectInfo[0]);
+            cartY += objectInfo[2] * (objectInfo[0]);
+            cartSpeed -= (1-ACCELERATIONAMMOUNT) * Math.sign(cartSpeed);
+        } else if (objectInfo[3] == "booster") {
+            cartSpeed = Math.min(Math.abs(cartSpeed) + .125, MAXBOOSTEDSPEED) * Math.sign(cartSpeed);
+        }
     }
 
     cartSpeed = Math.round(cartSpeed * 1000)/1000;
@@ -259,6 +295,7 @@ async function startGame() {
 }
 
 for (let i = 0; i < 15; i++) {
-    const wall1 = new Walls(350, 350, 100, 200, 0);
+    const o1 = new Walls(350, -50, 150, 200, 0);
+    const o2 = new Boosters(350, 550, 150, 200, 0);
 }
 startGame()
