@@ -21,6 +21,7 @@ const gameTextures = {
     blarioReversing: makeImage("blarioReversed"),
     brick: makeImage("brick"),
     booster: makeImage("booster"),
+    directionalBooster: makeImage("evilBooster"),
     map: makeImage("map"),
 }
 
@@ -41,6 +42,24 @@ class InteractableObject {
         this.rotation = rotation * Math.PI/180;
         this.className = className;
         InteractableObject.instances.add(this);
+    }
+
+    static renderSquareImages(localInstances, textureName) {
+        const centerX = mainWindow.width / 2;
+        const centerY = mainWindow.height / 2;
+        for (const instance of localInstances) {
+            ctx.save();
+            ctx.translate(centerX + (instance.x - cartX), centerY + (instance.y - cartY));
+            ctx.rotate(instance.rotation + Math.PI/2);
+            ctx.drawImage(
+                gameTextures[textureName],
+                -(instance.xSize/2),
+                -(instance.ySize/2),
+                instance.xSize,
+                instance.ySize
+            );
+            ctx.restore();
+        }
     }
 
     static getBlarioCollisionInfo(nDX, nDY) {
@@ -172,21 +191,7 @@ class Walls extends InteractableObject {
 class Boosters extends InteractableObject {
     static localInstances = new Set();
     static render() {
-        const centerX = mainWindow.width / 2;
-        const centerY = mainWindow.height / 2;
-        for (const booster of Boosters.localInstances) {
-            ctx.save();
-            ctx.translate(centerX + (booster.x - cartX), centerY + (booster.y - cartY));
-            ctx.rotate(booster.rotation);
-            ctx.drawImage(
-                gameTextures.booster,
-                -(booster.xSize/2),
-                -(booster.ySize/2),
-                booster.xSize,
-                booster.ySize
-            );
-            ctx.restore();
-        }
+        InteractableObject.renderSquareImages(Boosters.localInstances, "booster")
     }
 
     constructor(x, y, xSize, ySize, rotation) {
@@ -194,6 +199,19 @@ class Boosters extends InteractableObject {
         Boosters.localInstances.add(this);
     }
 }
+
+class DirectionalBoosters extends InteractableObject {
+    static localInstances = new Set();
+    static render() {
+        InteractableObject.renderSquareImages(DirectionalBoosters.localInstances, "directionalBooster")
+    }
+
+    constructor(x, y, xSize, ySize, rotation) {
+        super(x, y, xSize, ySize, rotation, "diBooster");
+        DirectionalBoosters.localInstances.add(this);
+    }
+}
+
 
 function render() {
     // Wipe
@@ -212,6 +230,7 @@ function render() {
     );
 
     Boosters.render();
+    DirectionalBoosters.render();
 
     // Cart
     ctx.save();
@@ -254,20 +273,24 @@ function handleInput() {
     } else if (!accelerate && !decelerate) {
         const newSpeed = cartSpeed + NATURALDECELERATEAMMOUNT * Math.sign(cartSpeed) * -1;
         cartSpeed = Math.max(Math.abs(newSpeed), 0) * Math.sign(newSpeed);
-    }s
+    }
     cartY += Math.sin(cartR) * cartSpeed;
     cartX += Math.cos(cartR) * cartSpeed;
 
     const hitObjects = InteractableObject.getCollisions();
-    for (const objectInfo of hitObjects.values()) {
+    for (const [obj, objectInfo] of hitObjects) {
         if (objectInfo[3] == "wall") {
             cartX += objectInfo[1] * (objectInfo[0]);
             cartY += objectInfo[2] * (objectInfo[0]);
             cartSpeed -= (1-ACCELERATIONAMMOUNT) * Math.sign(cartSpeed);
-        } else if (objectInfo[3] == "booster") {
+        } else {
             cartSpeed = Math.min(Math.abs(cartSpeed) + .125, MAXBOOSTEDSPEED) * Math.sign(cartSpeed);
+            if (objectInfo[3] == "diBooster") {
+                cartR = obj.rotation;
+            }
         }
     }
+    console.log(cartR*180/Math.PI)
 
     cartSpeed = Math.round(cartSpeed * 1000)/1000;
 }
@@ -295,7 +318,8 @@ async function startGame() {
 }
 
 for (let i = 0; i < 15; i++) {
-    const o1 = new Walls(350, -50, 150, 200, 0);
-    const o2 = new Boosters(350, 550, 150, 200, 0);
+    const o1 = new Walls(350, -50, 350, 400, 0);
+    //const o2 = new Boosters(350, 550, 150, 200, 45);
+    const o3 = new DirectionalBoosters(350, 550, 150, 200, 180);
 }
 startGame()
