@@ -9,6 +9,7 @@ const NATURALDECELERATEAMMOUNT = 0.1;
 const MAXSPEED = 15;
 const TURNAMOUNT = .5 * (Math.PI / 180);
 const DRIFTAMOUNT = TURNAMOUNT * 2;
+const BRICKPIXELAMOUNT = 100;
 
 async function wait(duration) {return new Promise((resolve) => {setTimeout(() => {resolve()})}, duration)};
 function makeImage(url) { const image = new Image(); try { image.src = ("textures/" + url + ".png"); } catch { image.src = 'textures/missing.png'; } return image; }
@@ -17,6 +18,7 @@ const gameTextures = {
     missingTexture: makeImage("missing"),
     blario: makeImage("blario"),
     blarioReversing: makeImage("blarioReversed"),
+    brick: makeImage("brick"),
     map: makeImage("map"),
 }
 
@@ -28,7 +30,16 @@ let cartR = 0;
 let cartSpeed = 0;
 let reversing = false;
 
-class Walls {
+class InteractableObject {
+    x;  y;  xSize; ySize; rotation;
+    constructor(x, y, xSize, ySize, rotation) {
+        this.x = x; this.y = y;
+        this.xSize = xSize; this.ySize = ySize;
+        this.rotation = rotation * Math.PI/180;
+    }
+}
+
+class Walls extends InteractableObject {
     static instances = new Set();
     x;  y;  xSize; ySize; rotation;
 
@@ -65,8 +76,27 @@ class Walls {
         return [wallMax, wallMin];
     }
 
+    static getOverlapAmount(wall, blarioInfo, wallInfo, nDY, nDX, intercectingWalls) {
+        const overlap = Math.min(blarioInfo[0], wallInfo[0]) - Math.max(blarioInfo[1], wallInfo[1]);
+        const wallInMap = intercectingWalls.has(wall);
+        if (!wallInMap || ((overlap < intercectingWalls.get(wall)[0]))) {
+            const wallToCartX = cartX - wall.x;
+            const wallToCartY = cartY - wall.y;
+            const d = wallToCartX * nDX + wallToCartY * nDY;
+            const smallestAxisX = d < 0 ? -nDX : nDX;
+            const smallestAxisY = d < 0 ? -nDY : nDY;
+            if (!wallInMap) {
+                intercectingWalls.set(wall, [overlap, smallestAxisX, smallestAxisY]);
+            } else {
+                intercectingWalls.get(wall)[0] = overlap;
+                intercectingWalls.get(wall)[1] = smallestAxisX;
+                intercectingWalls.get(wall)[2] = smallestAxisY;
+            }
+        }
+    }
+
     static getCollisions() {
-    
+        const intercectingWalls = new Map();
         const pTW = new Set([...Walls.instances]);
         for (let i = 0; i < 4; i++) {
             let nDX = null;
@@ -82,6 +112,8 @@ class Walls {
                     const wallInfo = Walls.getWallCollisionInfo(wall, nDX, nDY);
                     if (wallInfo[1] > blarioInfo[0] || blarioInfo[1] > wallInfo[0]) {
                         pTW.delete(wall);
+                    } else {
+                        Walls.getOverlapAmount(wall, blarioInfo, wallInfo, nDY, nDX, intercectingWalls);
                     }
                 } else {
                     const localNDX = i == 2 ? Math.cos(wall.rotation) : -Math.sin(wall.rotation);
@@ -90,11 +122,18 @@ class Walls {
                     const wallInfo = Walls.getWallCollisionInfo(wall, localNDX, localNDY);
                     if (wallInfo[1] > localBlarioInfo[0] || localBlarioInfo[1] > wallInfo[0]) {
                         pTW.delete(wall);
+                    } else {
+                        Walls.getOverlapAmount(wall, localBlarioInfo, wallInfo, localNDY, localNDX, intercectingWalls);
                     }
                 }
             }
         }
-        console.log(pTW.size);
+        for (const wall of intercectingWalls.keys()) {
+            if (!pTW.has(wall)) {
+                intercectingWalls.delete(wall);
+            }
+        }
+        return intercectingWalls;
     }
 
     static render() {
@@ -104,21 +143,23 @@ class Walls {
             ctx.save();
             ctx.translate(centerX + (wall.x - cartX), centerY + (wall.y - cartY));
             ctx.rotate(wall.rotation);
-            ctx.fillStyle = "black";
-            ctx.fillRect(
-                -wall.xSize/2,
-                -wall.ySize/2,
-                wall.xSize,
-                wall.ySize
-            );
+            for (let y = 0; y < wall.ySize/BRICKPIXELAMOUNT; y++) {
+                for (let x = 0; x < wall.xSize/BRICKPIXELAMOUNT; x++) {
+                    ctx.drawImage(
+                    gameTextures.brick,
+                    -(wall.xSize/2)+BRICKPIXELAMOUNT*x,
+                    -(wall.ySize/2)+BRICKPIXELAMOUNT*y,
+                    BRICKPIXELAMOUNT,
+                    BRICKPIXELAMOUNT
+                    );
+                }
+            }
             ctx.restore();
         }
     }
 
     constructor(x, y, xSize, ySize, rotation) {
-        this.x = x; this.y = y;
-        this.xSize = xSize; this.ySize = ySize;
-        this.rotation = rotation * Math.PI/180;
+        super(x, y, xSize, ysize, rotation);
         Walls.instances.add(this);
     }
 }
@@ -178,16 +219,21 @@ function handleInput() {
     if ((!accelerate && decelerate) || (accelerate && !decelerate)) {
         const newSpeed = cartSpeed + (accelerate ? ACCELERATIONAMMOUNT : -REVERSEACCELERATIONAMMOUNT);
         cartSpeed = Math.min(Math.abs(newSpeed), MAXSPEED) * Math.sign(newSpeed);
-        cartY += Math.sin(cartR) * cartSpeed;
-        cartX += Math.cos(cartR) * cartSpeed;
     } else if (!accelerate && !decelerate) {
         const newSpeed = cartSpeed + NATURALDECELERATEAMMOUNT * Math.sign(cartSpeed) * -1;
         cartSpeed = Math.max(Math.abs(newSpeed), 0) * Math.sign(newSpeed);
-        cartY += Math.sin(cartR) * cartSpeed;
-        cartX += Math.cos(cartR) * cartSpeed;
     }
+    cartY += Math.sin(cartR) * cartSpeed;
+    cartX += Math.cos(cartR) * cartSpeed;
+
+    const hitWalls = Walls.getCollisions();
+    for (const wallInfo of hitWalls.values()) {
+        cartX += wallInfo[1] * (wallInfo[0]);
+        cartY += wallInfo[2] * (wallInfo[0]);
+        cartSpeed -= (1-ACCELERATIONAMMOUNT) * Math.sign(cartSpeed);
+    }
+
     cartSpeed = Math.round(cartSpeed * 1000)/1000;
-    Walls.getCollisions()
 }
 
 
@@ -212,5 +258,7 @@ async function startGame() {
     } while (true);
 }
 
-const wall1 = new Walls(350, 350, 50, 50, 45);
+for (let i = 0; i < 15; i++) {
+    const wall1 = new Walls(350, 350, 100, 200, 0);
+}
 startGame()
