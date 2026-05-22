@@ -26,6 +26,7 @@ const gameTextures = {
     directionalBooster: makeImage("evilBooster"),
     oil: makeImage("oil"),
     ice: makeImage("ice"),
+    tire: makeImage("tire"),
     map: makeImage("map"),
 }
 
@@ -48,6 +49,28 @@ class InteractableObject {
         this.rotation = rotation * Math.PI/180;
         this.className = className;
         InteractableObject.instances.add(this);
+    }
+
+    static renderCoveredImages(localInstances, textureName, pixelAmount) {
+        const centerX = mainWindow.width / 2;
+        const centerY = mainWindow.height / 2;
+        for (const wall of localInstances) {
+            ctx.save();
+            ctx.translate(centerX + (wall.x - cartX), centerY + (wall.y - cartY));
+            ctx.rotate(wall.rotation);
+            for (let y = 0; y < wall.ySize/pixelAmount; y++) {
+                for (let x = 0; x < wall.xSize/pixelAmount; x++) {
+                    ctx.drawImage(
+                    gameTextures[textureName],
+                    -(wall.xSize/2)+pixelAmount*x,
+                    -(wall.ySize/2)+pixelAmount*y,
+                    pixelAmount,
+                    pixelAmount
+                    );
+                }
+            }
+            ctx.restore();
+        }
     }
 
     static renderSquareImages(localInstances, textureName) {
@@ -167,30 +190,24 @@ class InteractableObject {
 class Walls extends InteractableObject {
     static localInstances = new Set();
     static render() {
-        const centerX = mainWindow.width / 2;
-        const centerY = mainWindow.height / 2;
-        for (const wall of Walls.localInstances) {
-            ctx.save();
-            ctx.translate(centerX + (wall.x - cartX), centerY + (wall.y - cartY));
-            ctx.rotate(wall.rotation);
-            for (let y = 0; y < wall.ySize/BRICKPIXELAMOUNT; y++) {
-                for (let x = 0; x < wall.xSize/BRICKPIXELAMOUNT; x++) {
-                    ctx.drawImage(
-                    gameTextures.brick,
-                    -(wall.xSize/2)+BRICKPIXELAMOUNT*x,
-                    -(wall.ySize/2)+BRICKPIXELAMOUNT*y,
-                    BRICKPIXELAMOUNT,
-                    BRICKPIXELAMOUNT
-                    );
-                }
-            }
-            ctx.restore();
-        }
+        InteractableObject.renderCoveredImages(Walls.localInstances, "brick", BRICKPIXELAMOUNT);
     }
 
     constructor(x, y, xSize, ySize, rotation) {
         super(x, y, xSize, ySize, rotation, "wall");
         Walls.localInstances.add(this);
+    }
+}
+
+class Tires extends InteractableObject {
+    static localInstances = new Set();
+    static render() {
+        InteractableObject.renderCoveredImages(Tires.localInstances, "tire", BRICKPIXELAMOUNT);
+    }
+
+    constructor(x, y, xSize, ySize, rotation) {
+        super(x, y, xSize, ySize, rotation, "tire");
+        Tires.localInstances.add(this);
     }
 }
 
@@ -233,7 +250,7 @@ class OilSpill extends InteractableObject {
 class Ice extends InteractableObject {
     static localInstances = new Set();
     static render() {
-        InteractableObject.renderSquareImages(Ice.localInstances, "ice")
+        InteractableObject.renderCoveredImages(Ice.localInstances, "ice", BRICKPIXELAMOUNT*2);
     }
 
     constructor(x, y, xSize, ySize, rotation) {
@@ -278,6 +295,7 @@ function render() {
     ctx.restore();
 
     Walls.render();
+    Tires.render();
     requestAnimationFrame(render);
 }
 
@@ -316,6 +334,10 @@ function handleInput() {
             cartX += objectInfo[1] * (objectInfo[0]);
             cartY += objectInfo[2] * (objectInfo[0]);
             cartSpeed -= (1-ACCELERATIONAMMOUNT) * Math.sign(cartSpeed);
+        } else if (objectInfo[3] == "tire") {
+            cartX += objectInfo[1] * (objectInfo[0]);
+            cartY += objectInfo[2] * (objectInfo[0]);
+            cartSpeed *= -1;
         } else if (objectInfo[3] == "oil") {
             if ((accelerate || decelerate) && Math.abs(cartSpeed) > MAXSPEEDONOILBEFORETRACTIONLOSS) {
                 cartNoTraction = OILTRACTIONLOSSAMOUNT;
@@ -355,9 +377,10 @@ async function startGame() {
 
 for (let i = 0; i < 15; i++) {
     const o1 = new Walls(350, -50, 350, 400, 0);
-    //const o2 = new Boosters(350, 550, 150, 200, 45);
-    //const o3 = new DirectionalBoosters(350, 550, 150, 200, 45);
-    // const o4 = new OilSpill(1400, 550, 900, 900, 0);
-    // const o5 = new Ice(350, 550, 900, 900, 0);
+    const o2 = new Boosters(350, 450, 350, 400, 0);
+    const o3 = new DirectionalBoosters(350, 750, 350, 400, 0);
+    const o4 = new OilSpill(350, 1150, 350, 400, 0);
+    const o5 = new Ice(350, 1550, 350, 400, 0);
+    const o6 = new Tires(350, 1950, 350, 400, 0);
 }
 startGame()
