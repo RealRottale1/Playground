@@ -11,6 +11,8 @@ const MAXBOOSTEDSPEED = MAXSPEED + 15;
 const TURNAMOUNT = .5 * (Math.PI / 180);
 const DRIFTAMOUNT = TURNAMOUNT * 2;
 const BRICKPIXELAMOUNT = 100;
+const OILTRACTIONLOSSAMOUNT = 150;
+const MAXSPEEDONOILBEFORETRACTIONLOSS = MAXSPEED / 4;
 
 async function wait(duration) {return new Promise((resolve) => {setTimeout(() => {resolve()})}, duration)};
 function makeImage(url) { const image = new Image(); try { image.src = ("textures/" + url + ".png"); } catch { image.src = 'textures/missing.png'; } return image; }
@@ -22,6 +24,8 @@ const gameTextures = {
     brick: makeImage("brick"),
     booster: makeImage("booster"),
     directionalBooster: makeImage("evilBooster"),
+    oil: makeImage("oil"),
+    ice: makeImage("ice"),
     map: makeImage("map"),
 }
 
@@ -32,6 +36,8 @@ let cartSize = 100;
 let cartR = 0;
 let cartSpeed = 0;
 let reversing = false;
+let cartNoTraction = 0;
+let cartOnIce = false;
 
 class InteractableObject {
     static instances = new Set();
@@ -212,6 +218,30 @@ class DirectionalBoosters extends InteractableObject {
     }
 }
 
+class OilSpill extends InteractableObject {
+    static localInstances = new Set();
+    static render() {
+        InteractableObject.renderSquareImages(OilSpill.localInstances, "oil")
+    }
+
+    constructor(x, y, xSize, ySize, rotation) {
+        super(x, y, xSize, ySize, rotation, "oil");
+        OilSpill.localInstances.add(this);
+    }
+}
+
+class Ice extends InteractableObject {
+    static localInstances = new Set();
+    static render() {
+        InteractableObject.renderSquareImages(Ice.localInstances, "ice")
+    }
+
+    constructor(x, y, xSize, ySize, rotation) {
+        super(x, y, xSize, ySize, rotation, "ice");
+        Ice.localInstances.add(this);
+    }
+}
+
 
 function render() {
     // Wipe
@@ -231,6 +261,8 @@ function render() {
 
     Boosters.render();
     DirectionalBoosters.render();
+    OilSpill.render();
+    Ice.render();
 
     // Cart
     ctx.save();
@@ -257,32 +289,39 @@ function handleInput() {
     const turningLeft = USERINPUT.has(65);
     const turningRight = USERINPUT.has(68);
     reversing = decelerate;
-    if ((!turningLeft && turningRight) || (turningLeft && !turningRight)) {
-        cartR += (drifting && cartSpeed != 0 ? (turningLeft ? -DRIFTAMOUNT : DRIFTAMOUNT) : (turningLeft ? -TURNAMOUNT : TURNAMOUNT));
-        if (cartR > Math.PI * 2) {
-            cartR = 0;
-        } else if (cartR < 0) {
-            cartR = Math.PI * 2;
-        }
-    }
 
-    // Moving
-    if ((!accelerate && decelerate) || (accelerate && !decelerate)) {
-        const newSpeed = cartSpeed + (accelerate ? ACCELERATIONAMMOUNT : -REVERSEACCELERATIONAMMOUNT);
-        cartSpeed = Math.min(Math.abs(newSpeed), MAXSPEED) * Math.sign(newSpeed);
-    } else if (!accelerate && !decelerate) {
-        const newSpeed = cartSpeed + NATURALDECELERATEAMMOUNT * Math.sign(cartSpeed) * -1;
-        cartSpeed = Math.max(Math.abs(newSpeed), 0) * Math.sign(newSpeed);
+    if (!cartOnIce || Math.abs(cartSpeed) < 1) {
+        if ((!turningLeft && turningRight) || (turningLeft && !turningRight)) {
+            cartR += (drifting && cartSpeed != 0 ? (turningLeft ? -DRIFTAMOUNT : DRIFTAMOUNT) : (turningLeft ? -TURNAMOUNT : TURNAMOUNT)) *  (1 + (cartNoTraction/OILTRACTIONLOSSAMOUNT) * 3);
+        }
+        if (cartNoTraction == 0) {
+            if ((!accelerate && decelerate) || (accelerate && !decelerate)) {
+                const newSpeed = cartSpeed + (accelerate ? ACCELERATIONAMMOUNT : -REVERSEACCELERATIONAMMOUNT);
+                cartSpeed = Math.min(Math.abs(newSpeed), MAXSPEED) * Math.sign(newSpeed);
+            } else if (!accelerate && !decelerate) {
+                const newSpeed = cartSpeed + NATURALDECELERATEAMMOUNT * Math.sign(cartSpeed) * -1;
+                cartSpeed = Math.max(Math.abs(newSpeed), 0) * Math.sign(newSpeed);
+            }
+        } else {
+            cartNoTraction -= 1;
+        }
     }
     cartY += Math.sin(cartR) * cartSpeed;
     cartX += Math.cos(cartR) * cartSpeed;
 
+    cartOnIce = false;
     const hitObjects = InteractableObject.getCollisions();
     for (const [obj, objectInfo] of hitObjects) {
         if (objectInfo[3] == "wall") {
             cartX += objectInfo[1] * (objectInfo[0]);
             cartY += objectInfo[2] * (objectInfo[0]);
             cartSpeed -= (1-ACCELERATIONAMMOUNT) * Math.sign(cartSpeed);
+        } else if (objectInfo[3] == "oil") {
+            if ((accelerate || decelerate) && Math.abs(cartSpeed) > MAXSPEEDONOILBEFORETRACTIONLOSS) {
+                cartNoTraction = OILTRACTIONLOSSAMOUNT;
+            }
+        } else if (objectInfo[3] == "ice") {
+            cartOnIce = true;
         } else {
             cartSpeed = Math.min(Math.abs(cartSpeed) + .125, MAXBOOSTEDSPEED) * Math.sign(cartSpeed);
             if (objectInfo[3] == "diBooster") {
@@ -290,11 +329,8 @@ function handleInput() {
             }
         }
     }
-    console.log(cartR*180/Math.PI)
-
     cartSpeed = Math.round(cartSpeed * 1000)/1000;
 }
-
 
 document.addEventListener("keydown", function(event) {
     USERINPUT.add(event.keyCode);
@@ -320,6 +356,8 @@ async function startGame() {
 for (let i = 0; i < 15; i++) {
     const o1 = new Walls(350, -50, 350, 400, 0);
     //const o2 = new Boosters(350, 550, 150, 200, 45);
-    const o3 = new DirectionalBoosters(350, 550, 150, 200, 180);
+    //const o3 = new DirectionalBoosters(350, 550, 150, 200, 45);
+    // const o4 = new OilSpill(1400, 550, 900, 900, 0);
+    // const o5 = new Ice(350, 550, 900, 900, 0);
 }
 startGame()
