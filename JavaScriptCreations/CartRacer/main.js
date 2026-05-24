@@ -27,6 +27,7 @@ const gameTextures = {
     oil: makeImage("oil"),
     ice: makeImage("ice"),
     tire: makeImage("tire"),
+    bouncer: makeImage("bouncer"),
     map: makeImage("map"),
 }
 
@@ -211,6 +212,18 @@ class Tires extends InteractableObject {
     }
 }
 
+class Bouncers extends InteractableObject {
+    static localInstances = new Set();
+    static render() {
+        InteractableObject.renderCoveredImages(Bouncers.localInstances, "bouncer", BRICKPIXELAMOUNT);
+    }
+
+    constructor(x, y, xSize, ySize, rotation) {
+        super(x, y, xSize, ySize, rotation, "bouncer");
+        Bouncers.localInstances.add(this);
+    }
+}
+
 class Boosters extends InteractableObject {
     static localInstances = new Set();
     static render() {
@@ -296,6 +309,7 @@ function render() {
 
     Walls.render();
     Tires.render();
+    Bouncers.render();
     requestAnimationFrame(render);
 }
 
@@ -338,6 +352,14 @@ function handleInput() {
             cartX += objectInfo[1] * (objectInfo[0]);
             cartY += objectInfo[2] * (objectInfo[0]);
             cartSpeed *= -1;
+        } else if (objectInfo[3] == "bouncer") {
+            console.log(objectInfo[1], cartX)
+            cartX += objectInfo[1] * (objectInfo[0]);
+            cartY += objectInfo[2] * (objectInfo[0]);
+            cartR = -cartR + Math.PI;
+            if (objectInfo[1] == 0) {
+                cartSpeed *= -1;
+            } 
         } else if (objectInfo[3] == "oil") {
             if ((accelerate || decelerate) && Math.abs(cartSpeed) > MAXSPEEDONOILBEFORETRACTIONLOSS) {
                 cartNoTraction = OILTRACTIONLOSSAMOUNT;
@@ -382,5 +404,6 @@ for (let i = 0; i < 15; i++) {
     const o4 = new OilSpill(350, 1150, 350, 400, 0);
     const o5 = new Ice(350, 1550, 350, 400, 0);
     const o6 = new Tires(350, 1950, 350, 400, 0);
+    const o7 = new Bouncers(450, 2350, 350, 400, 0);
 }
 startGame()
