@@ -28,6 +28,7 @@ const gameTextures = {
     ice: makeImage("ice"),
     tire: makeImage("tire"),
     bouncer: makeImage("bouncer"),
+    fire: makeImage("fire"),
     map: makeImage("map"),
 }
 
@@ -272,6 +273,18 @@ class Ice extends InteractableObject {
     }
 }
 
+class Fire extends InteractableObject {
+    static localInstances = new Set();
+    static render() {
+        InteractableObject.renderSquareImages(Fire.localInstances, "fire");
+    }
+
+    constructor(x, y, xSize, ySize, rotation) {
+        super(x, y, xSize, ySize, rotation, "fire");
+        Fire.localInstances.add(this);
+    }
+}
+
 
 function render() {
     // Wipe
@@ -293,6 +306,7 @@ function render() {
     DirectionalBoosters.render();
     OilSpill.render();
     Ice.render();
+    Fire.render();
 
     // Cart
     ctx.save();
@@ -338,9 +352,6 @@ function handleInput() {
             cartNoTraction -= 1;
         }
     }
-    cartY += Math.sin(cartR) * cartSpeed;
-    cartX += Math.cos(cartR) * cartSpeed;
-
     cartOnIce = false;
     const hitObjects = InteractableObject.getCollisions();
     for (const [obj, objectInfo] of hitObjects) {
@@ -357,7 +368,7 @@ function handleInput() {
             cartX += objectInfo[1] * (objectInfo[0]);
             cartY += objectInfo[2] * (objectInfo[0]);
             if (objectInfo[1] == 0) {
-                cartR = cartR + Math.PI;
+                cartR = -cartR + Math.PI*2;
             } else {
                 cartR = -cartR + Math.PI;
             }
@@ -367,6 +378,10 @@ function handleInput() {
             }
         } else if (objectInfo[3] == "ice") {
             cartOnIce = true;
+        } else if (objectInfo[3] == "fire") {
+            if (!accelerate && !decelerate) {
+                cartSpeed = 0;
+            }
         } else {
             cartSpeed = Math.min(Math.abs(cartSpeed) + .125, MAXBOOSTEDSPEED) * Math.sign(cartSpeed);
             if (objectInfo[3] == "diBooster") {
@@ -374,6 +389,9 @@ function handleInput() {
             }
         }
     }
+
+    cartY += Math.sin(cartR) * cartSpeed;
+    cartX += Math.cos(cartR) * cartSpeed;
     cartSpeed = Math.round(cartSpeed * 1000)/1000;
 }
 
@@ -406,5 +424,6 @@ for (let i = 0; i < 15; i++) {
     const o5 = new Ice(350, 1550, 350, 400, 0);
     const o6 = new Tires(350, 1950, 350, 400, 0);
     const o7 = new Bouncers(450, 2350, 350, 400, 0);
+    const o8 = new Fire(350, 2750, 350, 400, 0);
 }
 startGame()
