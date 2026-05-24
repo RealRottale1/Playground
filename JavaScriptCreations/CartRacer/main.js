@@ -356,10 +356,11 @@ function handleInput() {
             console.log(objectInfo[1], cartX)
             cartX += objectInfo[1] * (objectInfo[0]);
             cartY += objectInfo[2] * (objectInfo[0]);
-            cartR = -cartR + Math.PI;
             if (objectInfo[1] == 0) {
-                cartSpeed *= -1;
-            } 
+                cartR = cartR + Math.PI;
+            } else {
+                cartR = -cartR + Math.PI;
+            }
         } else if (objectInfo[3] == "oil") {
             if ((accelerate || decelerate) && Math.abs(cartSpeed) > MAXSPEEDONOILBEFORETRACTIONLOSS) {
                 cartNoTraction = OILTRACTIONLOSSAMOUNT;
