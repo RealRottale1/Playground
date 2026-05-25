@@ -33,8 +33,8 @@ const gameTextures = {
 }
 
 
-let cartX = 0;
-let cartY = 0;
+let cartX = 10000;
+let cartY = 10000;
 let cartSize = 100;
 let cartR = 0;
 let cartSpeed = 0;
@@ -416,14 +416,24 @@ async function startGame() {
     } while (true);
 }
 
-for (let i = 0; i < 15; i++) {
-    const o1 = new Walls(350, -50, 350, 400, 0);
-    const o2 = new Boosters(350, 450, 350, 400, 0);
-    const o3 = new DirectionalBoosters(350, 750, 350, 400, 0);
-    const o4 = new OilSpill(350, 1150, 350, 400, 0);
-    const o5 = new Ice(350, 1550, 350, 400, 0);
-    const o6 = new Tires(350, 1950, 350, 400, 0);
-    const o7 = new Bouncers(450, 2350, 350, 400, 0);
-    const o8 = new Fire(350, 2750, 350, 400, 0);
-}
+// const o1 = new Walls(350, -50, 350, 400, 0);
+// const o2 = new Boosters(350, 450, 350, 400, 0);
+// const o3 = new DirectionalBoosters(350, 750, 350, 400, 0);
+// const o4 = new OilSpill(350, 1150, 350, 400, 0);
+// const o5 = new Ice(350, 1550, 350, 400, 0);
+// const o6 = new Tires(350, 1950, 350, 400, 0);
+// const o7 = new Bouncers(450, 2350, 350, 400, 0);
+// const o8 = new Fire(350, 2750, 350, 400, 0);
+
+//Main Straight
+new Walls(10000, 10000, 50, 10000, 0);
+new Walls(11000, 10000, 50, 10000, 0);
+new Boosters(10250, 10000, 500, 200, 270);
+new Boosters(10750, 7500, 500, 200, 270);
+
+//Bend
+new Walls(10000+ 9, 5000-50, 100, 100, 347.5);
+new Walls(10000+ 9*2 - 25, 5000- 50*2, 100, 100, 335);
+new Walls(10000+ 9*3 - 25*2, 5000- 50*3, 100, 100, 322.5);
+
 startGame()
