@@ -416,6 +416,28 @@ async function startGame() {
     } while (true);
 }
 
+function makeWallCurve(midX, y, diameter) {
+
+    let oRadius = diameter/2;
+    let iRadius = oRadius/2;
+    for (let i = 1; i < oRadius; i++) {
+        const useX = 10000 - BRICKPIXELAMOUNT*i;
+        const useY = (y) - ((oRadius - Math.abs(iRadius - i)) - iRadius) * BRICKPIXELAMOUNT/2;
+        new Walls(useX, useY, 50, 50, 0);
+    }
+
+    let oldORadius = oRadius
+    oRadius = diameter;
+    iRadius = oldORadius;
+    for (let i = 1; i < oRadius; i++) {
+        const useX = 10000 - BRICKPIXELAMOUNT*i + (diameter/2)*BRICKPIXELAMOUNT;
+        const useY = (y) - ((oRadius - Math.abs(iRadius - i)) - iRadius) * BRICKPIXELAMOUNT/2;
+        new Walls(useX, useY, 50, 50, 0);
+    }
+} 
+
+
+
 // const o1 = new Walls(350, -50, 350, 400, 0);
 // const o2 = new Boosters(350, 450, 350, 400, 0);
 // const o3 = new DirectionalBoosters(350, 750, 350, 400, 0);
@@ -432,8 +454,6 @@ new Boosters(10250, 10000, 500, 200, 270);
 new Boosters(10750, 7500, 500, 200, 270);
 
 //Bend
-new Walls(10000+ 9, 5000-50, 100, 100, 347.5);
-new Walls(10000+ 9*2 - 25, 5000- 50*2, 100, 100, 335);
-new Walls(10000+ 9*3 - 25*2, 5000- 50*3, 100, 100, 322.5);
-
+//new Walls(10000+ 9, 5000-50, 100, 100, 0);
+makeWallCurve(10500, 5000, 32)
 startGame()
