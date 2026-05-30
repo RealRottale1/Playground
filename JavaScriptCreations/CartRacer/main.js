@@ -416,24 +416,33 @@ async function startGame() {
     } while (true);
 }
 
-function makeWallCurve(midX, y, diameter) {
+function makeWallCurve(x, y) {
+    const d = 1000;
+    const bD = d/BRICKPIXELAMOUNT;
+    const hD = d/2;
+    
+    //Outer Right Wall
+    new Walls(x+d, y-d/2, 50, d, 0);
 
-    let oRadius = diameter/2;
-    let iRadius = oRadius/2;
-    for (let i = 1; i < oRadius; i++) {
-        const useX = 10000 - BRICKPIXELAMOUNT*i;
-        const useY = (y) - ((oRadius - Math.abs(iRadius - i)) - iRadius) * BRICKPIXELAMOUNT/2;
-        new Walls(useX, useY, 50, 50, 0);
+    //Outer Left Wall
+    new Walls(x-d*2, y-d/2, 50, d, 0);
+
+    // Inner Turn
+    for (let i = 0; i < bD/2; i++) {
+        new Walls(x-BRICKPIXELAMOUNT*i, y-BRICKPIXELAMOUNT*(i+1), 50, 50, 0);
+        new Walls(x-BRICKPIXELAMOUNT*(i+1) - BRICKPIXELAMOUNT*bD/2, y-(BRICKPIXELAMOUNT*bD/2 - BRICKPIXELAMOUNT*(i)), 50, 50, 0);
+    }
+    new Walls(x-BRICKPIXELAMOUNT*(bD/2), y-BRICKPIXELAMOUNT*(bD/2), 50, 50, 0);
+
+    //Outer Right Turn
+    for (let i = 0; i < bD/2; i++) {
+        new Walls((x+d)-BRICKPIXELAMOUNT*i, y-d-BRICKPIXELAMOUNT*(i+1), 50, 50, 0);
+        new Walls((x-d)-BRICKPIXELAMOUNT*(i+1) - BRICKPIXELAMOUNT*bD/2, y-d-(BRICKPIXELAMOUNT*bD/2 - BRICKPIXELAMOUNT*(i)), 50, 50, 0);
     }
 
-    let oldORadius = oRadius
-    oRadius = diameter;
-    iRadius = oldORadius;
-    for (let i = 1; i < oRadius; i++) {
-        const useX = 10000 - BRICKPIXELAMOUNT*i + (diameter/2)*BRICKPIXELAMOUNT;
-        const useY = (y) - ((oRadius - Math.abs(iRadius - i)) - iRadius) * BRICKPIXELAMOUNT/2;
-        new Walls(useX, useY, 50, 50, 0);
-    }
+    //Outer Upper Wall
+    new Walls(x-BRICKPIXELAMOUNT*(bD/2), y-d*1.5, d*2+50, 50, 0);
+
 } 
 
 
@@ -453,7 +462,10 @@ new Walls(11000, 10000, 50, 10000, 0);
 new Boosters(10250, 10000, 500, 200, 270);
 new Boosters(10750, 7500, 500, 200, 270);
 
+new Walls(9000, 10000, 50, 10000, 0);
+new Walls(8000, 10000, 50, 10000, 0);
+
 //Bend
 //new Walls(10000+ 9, 5000-50, 100, 100, 0);
-makeWallCurve(10500, 5000, 32)
+makeWallCurve(10000, 5000)
 startGame()
