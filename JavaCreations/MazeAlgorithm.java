@@ -10,11 +10,17 @@ public class Main {
 
 
     public static void main(String[] args) {
-        Maze testMaze = new Maze("0,0,1,0/1,0,1,0/0,0,0,0/0,0,1,0", true);
+        // Maze testMaze = new Maze("0,0,1,0/1,0,1,0/0,0,0,0/0,0,1,0", true);
+        // System.out.println("Created Maze Network!");
+        // List<String> solution = BFSSolver.solve(testMaze, "0,0", "0,3");
+        // System.out.println("Finished!");
+        // System.out.println(solution);
+
+        Maze testMaze2 = new Maze("0,0,1,0/1,0,1,0/0,0,0,0/0,0,1,0", false);
         System.out.println("Created Maze Network!");
-        List<String> solution = BFSSolver.solve(testMaze, "0,0", "0,3");
+        List<String> solution2 = DijkstraSolver.solve(testMaze2, "0,0", "0,3");
         System.out.println("Finished!");
-        System.out.println(solution);
+        System.out.println(solution2);
     }
 
     /*
@@ -134,4 +140,8 @@ class BFSSolver {
         } while (true);
         return solvedMaze.reversed();
     }
+}
+
+class DijkstraSolver {
+    
 }
