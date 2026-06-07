@@ -8,41 +8,47 @@ import java.util.Set;
 
 enum AlgorithmType {BFS, DIJKSTRAS}
 record Pair<k, v>(k key, v value){}
+record Cord(int y, int x){}
 
 public class Main {
-
-
     public static void main(String[] args) {
-        Maze testMaze = new Maze("0,0,1,0/1,0,1,0/0,0,0,0/0,0,1,0", AlgorithmType.BFS);
-        System.out.println("Created Maze Network!");
-        List<String> solution = BFSSolver.solve(testMaze, "0,0", "0,3");
-        System.out.println("Finished!");
-        System.out.println(solution);
+        Cord startCord = new Cord(0, 0);
+        Cord endCord = new Cord(1, 3);
 
-        Maze testMaze2 = new Maze("0,0,1,0/1,1,1,0/0,0,2,0/0,0,1,0", AlgorithmType.DIJKSTRAS);
-        System.out.println("Created Maze Network!");
-        List<String> solution2 = DijkstraSolver.solve(testMaze2, "0,0", "1,3");
-        System.out.println("Finished!");
-        System.out.println(solution2);
+        Maze BFSMaze = new Maze("0,0,1,0/1,0,1,0/0,0,0,0/0,0,1,0", AlgorithmType.BFS);
+        BFSSolver.solve(BFSMaze, startCord, endCord);
+        Maze.displaySolution(BFSMaze);
+
+        Maze DIJKSTRASMaze = new Maze("0,0,1,0/1,1,1,0/0,0,2,0/0,0,1,0", AlgorithmType.DIJKSTRAS);
+        DijkstraSolver.solve(DIJKSTRASMaze, startCord, endCord);
+        Maze.displaySolution(DIJKSTRASMaze);
     }
 }
 
 class MazeNode {
     Integer Weight;
-    Set<String> Children;
-    String Parent;
-    public MazeNode(Integer Weight, Set<String> Children) {
+    Set<Cord> Children;
+    Cord Parent;
+    public MazeNode(Integer Weight, Set<Cord> Children) {
         this.Weight = Weight;
         this.Children = Children;
     }
 }
 
 class Maze {
-    HashMap<String, MazeNode> MapNetwork;
+    HashMap<Cord, MazeNode> MapNetwork;
+    List<Cord> Solution;
 
-    static List<String> reconstruct(Maze unsolvedMaze, String endNode, List<String> solvedMaze) {
+    static void displaySolution(Maze maze) {
+        for (Cord c : maze.Solution) {
+            System.out.print(c.x() + "," + c.y() + " ");
+        }
+        System.out.println("");
+    }
+
+    static void reconstruct(Maze unsolvedMaze, Cord endNode, List<Cord> solvedMaze) {
         // Converts the completed network into a linear path
-        String lastNode = endNode;
+        Cord lastNode = endNode;
         do {
             solvedMaze.add(lastNode);
             if (unsolvedMaze.MapNetwork.get(lastNode) == null || unsolvedMaze.MapNetwork.get(lastNode).Parent == null) {
@@ -50,11 +56,11 @@ class Maze {
             }
             lastNode = unsolvedMaze.MapNetwork.get(lastNode).Parent;
         } while (true);
-        return solvedMaze.reversed();
+        unsolvedMaze.Solution = solvedMaze.reversed();
     }
 
     public Maze(String rawData, AlgorithmType useAlgorithm) {
-        List<List<Pair<String, Integer>>> transformedData = new ArrayList<>();
+        List<List<Pair<Cord, Integer>>> transformedData = new ArrayList<>();
         int xSize;
         int ySize;
 
@@ -64,11 +70,11 @@ class Maze {
         int rawY = 0;
         for (String rawRow : rawRowData) {
             String[] rawColumnData = rawRow.split(",");
-            List<Pair<String, Integer>> transformedColumnData = new ArrayList<>();
+            List<Pair<Cord, Integer>> transformedColumnData = new ArrayList<>();
             int rawX = 0;
             for (String rawColumn : rawColumnData) {
-                Pair<String, Integer> pair = new Pair<>(
-                    Integer.toString(rawY) + "," + Integer.toString(rawX),
+                Pair<Cord, Integer> pair = new Pair<>(
+                    new Cord(rawY, rawX),
                     Integer.parseInt(rawColumn)
                 );
                 transformedColumnData.add(pair);
@@ -84,13 +90,13 @@ class Maze {
         if (useAlgorithm == AlgorithmType.DIJKSTRAS) {
             wallValue = -1;
         }
-        HashMap<String, MazeNode> MapNetwork = new HashMap<>();
+        HashMap<Cord, MazeNode> MapNetwork = new HashMap<>();
         for (int y = 0; y < ySize; y++) {
             for (int x = 0; x < xSize; x++) {
-                String NetworkKey = transformedData.get(y).get(x).key();
+                Cord NetworkKey = transformedData.get(y).get(x).key();
                 Integer Weight = transformedData.get(y).get(x).value();
 
-                Set<String> Children = new HashSet<>();
+                Set<Cord> Children = new HashSet<>();
                 if (y + 1 < ySize) {if (transformedData.get(y+1).get(x).value() != wallValue) {Children.add(transformedData.get(y+1).get(x).key());}}
                 if (y - 1 >= 0)    {if (transformedData.get(y-1).get(x).value() != wallValue) {Children.add(transformedData.get(y-1).get(x).key());}}
                 if (x + 1 < xSize) {if (transformedData.get(y).get(x+1).value() != wallValue) {Children.add(transformedData.get(y).get(x+1).key());}}
@@ -105,22 +111,22 @@ class Maze {
 }
 
 class BFSSolver {
-    static List<String> solve(Maze unsolvedMaze, String startNode, String endNode) {
-        List<String> solvedMaze = new ArrayList<>();
+    static void solve(Maze unsolvedMaze, Cord startNode, Cord endNode) {
         if ((unsolvedMaze.MapNetwork.get(endNode) == null || unsolvedMaze.MapNetwork.get(endNode).Weight == 1)|| (unsolvedMaze.MapNetwork.get(startNode) == null || unsolvedMaze.MapNetwork.get(startNode).Weight == 1)) {
-            return solvedMaze; // Unable to solve maze as start or end is blocked
+            return; // Unable to solve maze as start or end is blocked
         }
+        List<Cord> solvedMaze = new ArrayList<>();
         
         // Attempts to solve the network
-        Set<String> currentNodes = new HashSet<>();
+        Set<Cord> currentNodes = new HashSet<>();
         currentNodes.add(startNode);
-        Set<String> nextNodes = new HashSet<>();
-        Set<String> oldNodes = new HashSet<>();
+        Set<Cord> nextNodes = new HashSet<>();
+        Set<Cord> oldNodes = new HashSet<>();
         oldNodes.add(startNode);
         boolean foundExit = false;
         do {
-            for (String parent : currentNodes) {
-                for (String child : unsolvedMaze.MapNetwork.get(parent).Children) {
+            for (Cord parent : currentNodes) {
+                for (Cord child : unsolvedMaze.MapNetwork.get(parent).Children) {
                     if (!oldNodes.contains(child)) {
                         oldNodes.add(child);
                         nextNodes.add(child);
@@ -138,31 +144,32 @@ class BFSSolver {
             currentNodes = nextNodes;
             nextNodes = new HashSet<>();
         } while (!foundExit || currentNodes.size() <= 0);
-
-        if (!foundExit) {
-            return solvedMaze;
-        }
-        return Maze.reconstruct(unsolvedMaze, endNode, solvedMaze);
+        if (!foundExit) {return;}
+        Maze.reconstruct(unsolvedMaze, endNode, solvedMaze);
     }
 }
 
 class DijkstraSolver {
-    static List<String> solve(Maze unsolvedMaze, String startNode, String endNode) {
-        List<String> solvedMaze = new ArrayList<>();
+    static void solve(Maze unsolvedMaze, Cord startNode, Cord endNode) {
+        if ((unsolvedMaze.MapNetwork.get(endNode) == null || unsolvedMaze.MapNetwork.get(endNode).Weight == -1)|| (unsolvedMaze.MapNetwork.get(startNode) == null || unsolvedMaze.MapNetwork.get(startNode).Weight == -1)) {
+            return; // Unable to solve maze as start or end is blocked
+        }
+        List<Cord> solvedMaze = new ArrayList<>();
 
+        // Attempts to solve the network
         unsolvedMaze.MapNetwork.get(startNode).Weight = 0;
         unsolvedMaze.MapNetwork.get(endNode).Weight = 0;
-        TreeMap<Integer, Set<String>> nextNodes = new TreeMap<>();
-        Set<String> starter = new HashSet<>();
+        TreeMap<Integer, Set<Cord>> nextNodes = new TreeMap<>();
+        Set<Cord> starter = new HashSet<>();
         starter.add(startNode);
         nextNodes.put(0, starter);
 
-        Set<String> oldNodes = new HashSet<>();
+        Set<Cord> oldNodes = new HashSet<>();
         oldNodes.add(startNode);
         boolean foundExit = false;
         do {
             int lowestNodeWeight = nextNodes.firstKey(); 
-            String currentNodeKey = nextNodes.get(lowestNodeWeight).iterator().next();
+            Cord currentNodeKey = nextNodes.get(lowestNodeWeight).iterator().next();
             MazeNode currentNode = unsolvedMaze.MapNetwork.get(currentNodeKey);
             if (nextNodes.get(lowestNodeWeight).size() <= 1) {
                 nextNodes.remove(lowestNodeWeight);
@@ -170,13 +177,13 @@ class DijkstraSolver {
                 nextNodes.get(lowestNodeWeight).remove(currentNodeKey);
             }
 
-            for (String child : currentNode.Children) {
+            for (Cord child : currentNode.Children) {
                 if (!oldNodes.contains(child)) {
                     MazeNode childNode = unsolvedMaze.MapNetwork.get(child);
                     childNode.Weight += currentNode.Weight;
                     int childWeight = childNode.Weight;
                     if (nextNodes.get(childWeight) == null) {
-                        Set<String> newSet = new HashSet<>();
+                        Set<Cord> newSet = new HashSet<>();
                         newSet.add(child);
                         nextNodes.put(childWeight, newSet);
                     } else {
@@ -191,10 +198,7 @@ class DijkstraSolver {
                 }
             }
         } while (!foundExit || nextNodes.size() > 0);
-
-        if (!foundExit) {
-            return solvedMaze;
-        }
-        return Maze.reconstruct(unsolvedMaze, endNode, solvedMaze);
+        if (!foundExit) {return;}
+        Maze.reconstruct(unsolvedMaze, endNode, solvedMaze);
     }
 }
