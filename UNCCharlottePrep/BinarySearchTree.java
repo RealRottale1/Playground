@@ -15,6 +15,7 @@ public class Main {
 
 class Node {
     private int value;
+    private Node parent;
     private Node lNode;
     private Node rNode;
     public Node(int value) {
@@ -37,6 +38,13 @@ class Node {
     public void setRNode(Node newNode) {
         this.rNode = newNode;
     }
+
+    public Node getParentNode() {
+        return this.parent;
+    }
+    public void setParentNode(Node newNode) {
+        this.parent = newNode;
+    }
 }
 
 class BinarySearchTree {
@@ -53,6 +61,7 @@ class BinarySearchTree {
             Node nextNode = usesLNode ? currentNode.getLNode() : currentNode.getRNode();
             if (nextNode == null) {
                 if (usesLNode) {currentNode.setLNode(newNode);} else {currentNode.setRNode(newNode);}
+                newNode.setParentNode(currentNode);
                 break;
             } else {
                 currentNode = nextNode;
@@ -61,40 +70,6 @@ class BinarySearchTree {
     }
 
     public void remove(int removeValue) {
-        // Scrap this all I wrote it poorly!
-        Node removeNode = rootNode;
-        boolean foundRemoveNode = true;
-        if (removeNode.getValue() != removeValue) {
-            do {
-                removeNode = (removeValue < removeNode.getValue()) ? removeNode.getLNode() : removeNode.getRNode();
-                if (removeNode.getValue() == removeValue) {
-                    break;
-                }
-                if (removeNode == null) {
-                    foundRemoveNode = false;
-                    break;
-                }
-            } while (true);
-            if (!foundRemoveNode) {return;}
-        }
-        
-        Node useNode = removeNode;
-        // Move to the right one (if possible)
-        Node rightRemoveNode = removeNode.getRNode();
-        if (rightRemoveNode != null) {
-            useNode = rightRemoveNode;
-            // Get the left most value
-            do {
-                Node nextNode = useNode.getLNode();
-                if (nextNode == null) {
-                    break;
-                }
-                useNode = nextNode;
-            } while (true);
-
-        } else {
-            // No right nodes so re
-            this.rootNode = useNode.getLNode();
-        }
+        /* Learn to code*/
     }
 }
