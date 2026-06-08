@@ -1,4 +1,5 @@
-
+import java.util.HashSet;
+import java.util.Set;
 
 public class Main {
     public static void main(String[] args) {
@@ -9,7 +10,9 @@ public class Main {
         BST.insert(85);
         BST.insert(80);
         BST.insert(75);
-        BST.removeViaRecursion(70);
+        BST.removeViaIteration(70);
+        //BST.removeViaRecursion(70);
+        BST.printInBFS();
     }
 }
 
@@ -23,6 +26,9 @@ class Node {
     }
     public int getValue() {
         return this.value;
+    }
+    public void setValue(int value) {
+        this.value = value;
     }
 
     public Node getLNode() {
@@ -53,6 +59,7 @@ class BinarySearchTree {
         this.rootNode = new Node(rootValue);
     }
 
+    // Insert method
     public void insert(int newValue) {
         Node newNode = new Node(newValue);
         Node currentNode = rootNode;
@@ -69,19 +76,8 @@ class BinarySearchTree {
         } while (true);
     }
 
+    // Remove methods
     public void removeViaIteration(int removeValue) {
-        /*
-            Key
-            No children
-                - remove the parent and the connection to it
-            Only left child
-                - Shift the left child up
-            A single right child
-                - Shift the right child up
-            Else
-                - swap the node and move its right child up to its old position
-        */
-
        // Finds the node to remove
        Node currentNode = rootNode;
         do {
@@ -200,7 +196,73 @@ class BinarySearchTree {
         }
     }
 
-    public void removeViaRecursion(int removeValue) {
+    private Node remove(Node currentNode, int removeValue) {
+        if (currentNode == null) {return null;}
 
+        int currentValue = currentNode.getValue();
+        if (removeValue < currentValue) {
+            currentNode.setLNode(remove(currentNode.getLNode(), removeValue));
+            Node currentLNode = currentNode.getLNode();
+            if (currentLNode != null) {
+                currentLNode.setParentNode(currentNode);
+            }
+        } else if (removeValue > currentValue) {
+            currentNode.setRNode(remove(currentNode.getRNode(), removeValue));
+            Node currentRNode = currentNode.getRNode();
+            if (currentRNode != null) {
+                currentRNode.setParentNode(currentNode);
+            }
+        } else {
+            if (currentNode.getLNode() == null) {return currentNode.getRNode();}
+            if (currentNode.getRNode() == null) {return currentNode.getLNode();}
+
+            Node lMostNode = currentNode.getRNode();
+            int lMostValue = lMostNode.getValue();
+            do {
+                Node nextLNode = lMostNode.getLNode();
+                if (nextLNode == null) {
+                    break;
+                }
+                lMostNode = nextLNode;
+                lMostValue = lMostNode.getValue();
+            } while (true);
+
+            currentNode.setValue(lMostValue);
+            currentNode.setRNode(remove(currentNode.getRNode(), lMostNode.getValue()));
+            Node lMostRNode = lMostNode.getRNode();
+            if (lMostRNode != null) {
+                lMostRNode.setParentNode(currentNode);
+            }
+
+        }
+        return currentNode;
+    }
+    public void removeViaRecursion(int removeValue) {
+        this.rootNode = remove(this.rootNode, removeValue);
+    }
+
+    public void printInBFS() {
+        Set<Node> unprintedNodes = new HashSet<>();
+        Set<Node> nextNodes = new HashSet<>();
+        unprintedNodes.add(this.rootNode);
+        System.out.println(this.rootNode.getValue());
+        do {
+            for (Node parent : unprintedNodes) {
+                Node lNode = parent.getLNode();
+                Node rNode = parent.getRNode();
+                if (lNode != null) {
+                    nextNodes.add(lNode);
+                    System.out.print(lNode.getValue() + ",");
+                }
+                if (rNode != null) {
+                    nextNodes.add(rNode);
+                    System.out.print(rNode.getValue());
+                }
+                System.out.print("|");
+            }
+            System.out.println("");
+            unprintedNodes = nextNodes;
+            nextNodes = new HashSet<>();
+        } while(unprintedNodes.size() > 0);
     }
 }
