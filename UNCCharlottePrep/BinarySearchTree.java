@@ -3,7 +3,7 @@ import java.util.Set;
 
 public class Main {
     public static void main(String[] args) {
-        BinarySearchTree BST = new BinarySearchTree(50);
+        BinarySearchTree<Integer> BST = new BinarySearchTree<>(50);
         BST.insert(40);
         BST.insert(70);
         BST.insert(60);
@@ -16,56 +16,56 @@ public class Main {
     }
 }
 
-class Node {
-    private int value;
-    private Node parent;
-    private Node lNode;
-    private Node rNode;
-    public Node(int value) {
+class Node<T extends Comparable<T>> {
+    private T value;
+    private Node<T> parent;
+    private Node<T> lNode;
+    private Node<T> rNode;
+    public Node(T value) {
         this.value = value;
     }
-    public int getValue() {
+    public T getValue() {
         return this.value;
     }
-    public void setValue(int value) {
+    public void setValue(T value) {
         this.value = value;
     }
 
-    public Node getLNode() {
+    public Node<T> getLNode() {
         return this.lNode;
     }
-    public void setLNode(Node newNode) {
+    public void setLNode(Node<T> newNode) {
         this.lNode = newNode;
     }
 
-    public Node getRNode() {
+    public Node<T> getRNode() {
         return this.rNode;
     }
-    public void setRNode(Node newNode) {
+    public void setRNode(Node<T> newNode) {
         this.rNode = newNode;
     }
 
-    public Node getParentNode() {
+    public Node<T> getParentNode() {
         return this.parent;
     }
-    public void setParentNode(Node newNode) {
+    public void setParentNode(Node<T> newNode) {
         this.parent = newNode;
     }
 }
 
-class BinarySearchTree {
-    private Node rootNode;
-    public BinarySearchTree(int rootValue) {
-        this.rootNode = new Node(rootValue);
+class BinarySearchTree<T extends Comparable<T>> {
+    private Node<T> rootNode;
+    public BinarySearchTree(T rootValue) {
+        this.rootNode = new Node<>(rootValue);
     }
 
     // Insert method
-    public void insert(int newValue) {
-        Node newNode = new Node(newValue);
-        Node currentNode = rootNode;
+    public void insert(T newValue) {
+        Node<T> newNode = new Node<>(newValue);
+        Node<T> currentNode = rootNode;
         do {
-            boolean usesLNode = newValue < currentNode.getValue();
-            Node nextNode = usesLNode ? currentNode.getLNode() : currentNode.getRNode();
+            boolean usesLNode = newValue.compareTo(currentNode.getValue()) < 0;
+            Node<T> nextNode = usesLNode ? currentNode.getLNode() : currentNode.getRNode();
             if (nextNode == null) {
                 if (usesLNode) {currentNode.setLNode(newNode);} else {currentNode.setRNode(newNode);}
                 newNode.setParentNode(currentNode);
@@ -77,31 +77,31 @@ class BinarySearchTree {
     }
 
     // Remove methods
-    public void removeViaIteration(int removeValue) {
+    public void removeViaIteration(T removeValue) {
        // Finds the node to remove
-       Node currentNode = rootNode;
+       Node<T> currentNode = rootNode;
         do {
             if (currentNode == null) {
                 return; // No such value exists
             }
-            int currentNodeValue = currentNode.getValue();
+            T currentNodeValue = currentNode.getValue();
             if (currentNodeValue != removeValue) {
-                currentNode = (removeValue < currentNodeValue) ? currentNode.getLNode() : currentNode.getRNode();
+                currentNode = (removeValue.compareTo(currentNodeValue) < 0) ? currentNode.getLNode() : currentNode.getRNode();
             } else {
                 break;
             }
         } while (true);
 
         //Gets children of removeNode
-        Node currentParentNode = currentNode.getParentNode();
-        Node currentLNode = currentNode.getLNode();
-        Node currentRNode = currentNode.getRNode();
+        Node<T> currentParentNode = currentNode.getParentNode();
+        Node<T> currentLNode = currentNode.getLNode();
+        Node<T> currentRNode = currentNode.getRNode();
 
         // Handles no children
         if (currentLNode == null && currentRNode == null) {
             // Handles current parent
             if (currentParentNode != null) {
-                if (removeValue < currentParentNode.getValue()) {
+                if (removeValue.compareTo(currentParentNode.getValue()) < 0) {
                     currentParentNode.setLNode(null);
                 } else {
                     currentParentNode.setRNode(null);
@@ -121,7 +121,7 @@ class BinarySearchTree {
             if (currentParentNode == null) {
                 this.rootNode = currentLNode;
             } else {
-                if (currentLNode.getValue() < currentParentNode.getValue()) {
+                if (currentLNode.getValue().compareTo(currentParentNode.getValue()) < 0) {
                     currentParentNode.setLNode(currentLNode);
                 } else {
                     currentParentNode.setRNode(currentLNode);
@@ -131,9 +131,9 @@ class BinarySearchTree {
         }
 
         // Gets left most node (from the right child of the current node)
-        Node currentLMostNode = currentRNode;
+        Node<T> currentLMostNode = currentRNode;
         do {
-            Node nextNode = currentLMostNode.getLNode();
+            Node<T> nextNode = currentLMostNode.getLNode();
             if (nextNode == null) {
                 break;
             }
@@ -155,7 +155,7 @@ class BinarySearchTree {
             if (currentParentNode == null) {
                 this.rootNode = currentRNode;
             } else {
-                if (currentRNode.getValue() < currentParentNode.getValue()) {
+                if (currentRNode.getValue().compareTo(currentParentNode.getValue()) < 0) {
                     currentParentNode.setLNode(currentRNode);
                 } else {
                     currentParentNode.setRNode(currentRNode);
@@ -165,7 +165,7 @@ class BinarySearchTree {
         }
 
         // Handles left most node
-        Node currentLMostRNode = currentLMostNode.getRNode();
+        Node<T> currentLMostRNode = currentLMostNode.getRNode();
 
         // Handles moving up potential right node of currentLMostNode
         if (currentLMostRNode != null) {
@@ -178,7 +178,7 @@ class BinarySearchTree {
         if (currentParentNode == null) {
             this.rootNode = currentLMostNode;
         } else {
-            if (currentLMostNode.getValue() < currentParentNode.getValue()) {
+            if (currentLMostNode.getValue().compareTo(currentParentNode.getValue()) < 0) {
                 currentParentNode.setLNode(currentLMostNode);
             } else {
                 currentParentNode.setRNode(currentLMostNode);
@@ -196,19 +196,20 @@ class BinarySearchTree {
         }
     }
 
-    private Node remove(Node currentNode, int removeValue) {
+    private Node<T> remove(Node<T> currentNode, T removeValue) {
         if (currentNode == null) {return null;}
 
-        int currentValue = currentNode.getValue();
-        if (removeValue < currentValue) {
+        T currentValue = currentNode.getValue();
+        int compareValue = removeValue.compareTo(currentValue);
+        if (compareValue < 0) {
             currentNode.setLNode(remove(currentNode.getLNode(), removeValue));
-            Node currentLNode = currentNode.getLNode();
+            Node<T> currentLNode = currentNode.getLNode();
             if (currentLNode != null) {
                 currentLNode.setParentNode(currentNode);
             }
-        } else if (removeValue > currentValue) {
+        } else if (compareValue > 0) {
             currentNode.setRNode(remove(currentNode.getRNode(), removeValue));
-            Node currentRNode = currentNode.getRNode();
+            Node<T> currentRNode = currentNode.getRNode();
             if (currentRNode != null) {
                 currentRNode.setParentNode(currentNode);
             }
@@ -216,10 +217,10 @@ class BinarySearchTree {
             if (currentNode.getLNode() == null) {return currentNode.getRNode();}
             if (currentNode.getRNode() == null) {return currentNode.getLNode();}
 
-            Node lMostNode = currentNode.getRNode();
-            int lMostValue = lMostNode.getValue();
+            Node<T> lMostNode = currentNode.getRNode();
+            T lMostValue = lMostNode.getValue();
             do {
-                Node nextLNode = lMostNode.getLNode();
+                Node<T> nextLNode = lMostNode.getLNode();
                 if (nextLNode == null) {
                     break;
                 }
@@ -229,7 +230,7 @@ class BinarySearchTree {
 
             currentNode.setValue(lMostValue);
             currentNode.setRNode(remove(currentNode.getRNode(), lMostNode.getValue()));
-            Node lMostRNode = lMostNode.getRNode();
+            Node<T> lMostRNode = lMostNode.getRNode();
             if (lMostRNode != null) {
                 lMostRNode.setParentNode(currentNode);
             }
@@ -237,19 +238,19 @@ class BinarySearchTree {
         }
         return currentNode;
     }
-    public void removeViaRecursion(int removeValue) {
+    public void removeViaRecursion(T removeValue) {
         this.rootNode = remove(this.rootNode, removeValue);
     }
 
     public void printInBFS() {
-        Set<Node> unprintedNodes = new HashSet<>();
-        Set<Node> nextNodes = new HashSet<>();
+        Set<Node<T>> unprintedNodes = new HashSet<>();
+        Set<Node<T>> nextNodes = new HashSet<>();
         unprintedNodes.add(this.rootNode);
         System.out.println(this.rootNode.getValue());
         do {
-            for (Node parent : unprintedNodes) {
-                Node lNode = parent.getLNode();
-                Node rNode = parent.getRNode();
+            for (Node<T> parent : unprintedNodes) {
+                Node<T> lNode = parent.getLNode();
+                Node<T> rNode = parent.getRNode();
                 if (lNode != null) {
                     nextNodes.add(lNode);
                     System.out.print(lNode.getValue() + ",");
