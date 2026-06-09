@@ -1,0 +1,10 @@
+1. Maze Algorithm                   .java
+2. Binary Search Tree               .java
+3. Recursive Premutation Generator  .java
+4. Sorting Algorithms               .java
+5. Max Heap Structure               .java
+6.
+7.
+8.
+9.
+10.
