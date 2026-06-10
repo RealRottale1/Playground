@@ -2,8 +2,8 @@
 2. Binary Search Tree               .java
 3. Recursive Premutation Generator  .java
 4. Sorting Algorithms               .java
-5. Max & Min Heap Structure               .java
-6.
+5. Max & Min Heap Structure         .java
+6. Kruskal's Algorithm              .java
 7.
 8.
 9.
