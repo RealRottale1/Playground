@@ -4,7 +4,7 @@
 4. Sorting Algorithms               .java
 5. Max & Min Heap Structure         .java
 6. Kruskal's Algorithm              .java
-7.
+7. Knapsack Problem                 .java
 8.
 9.
 10.
