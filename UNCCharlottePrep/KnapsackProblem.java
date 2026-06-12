@@ -46,15 +46,16 @@ class House {
         }
         
         // Gathers data
-        
-
-        for (int i = 0; i < itemsCount; i++) {
-            for (int j = 0; j < weightRange; j++) {
-                System.out.print(data[i][j] + ", ");
+        System.out.println("Stole:");
+        int w = this.maxWeight;
+        for (int i = itemsCount - 1; i > 0; i--) {
+            if (data[i][w] != data[i - 1][w]) {
+                Item stolenItem = this.items.get(i-1);
+                System.out.print(stolenItem.getName() + ": W=" + stolenItem.getWeight() + ", $=" + stolenItem.getValue() + ", ");
+                w -= stolenItem.getWeight();
             }
-            System.out.println();
         }
-        
+        System.out.println();
     }
 
     public ArrayList<Item> getItems() {
