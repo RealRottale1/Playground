@@ -8,7 +8,9 @@ public class Main {
         LRUobj.put("Banana");
         LRUobj.put("Carrot"); 
         LRUobj.put("Durian");
+        LRUobj.print();
         LRUobj.get("Apple");
+        LRUobj.print();
         LRUobj.put("Eggplant");
         LRUobj.print();
         LRUobj.put("Eggplant2");
@@ -23,7 +25,7 @@ class LRU {
     private HashMap<String, Chain> chainMap = new HashMap<>();
 
     public LRU(int capacity) {
-        this.capacity = Math.max(0, capacity);
+        this.capacity = Math.max(1, capacity);
     }
 
     public Chain get(String value) {
@@ -43,9 +45,6 @@ class LRU {
                 this.head = c;
             }
         }
-
-        System.out.println(this.tail.getValue());
-        this.print();
         return c;
     }
 
@@ -68,8 +67,6 @@ class LRU {
             this.tail = this.head;
         }
 
-        System.out.println(this.tail.getValue());
-        this.print();
         if (this.chainMap.size() > this.capacity) {
             Chain currentTail = this.tail;
             this.tail = this.tail.getPrev();
