@@ -7,5 +7,5 @@
 6. Kruskal's Algorithm              .java
 7. Knapsack Problem                 .java
 8. Longest Common SubString         .java
-9.
+9. Least Recently Used Cache        .java
 10.
