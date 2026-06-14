@@ -8,4 +8,9 @@
 7. Knapsack Problem                 .java
 8. Longest Common SubString         .java
 9. Least Recently Used Cache        .java
-10.
+                      Sailing the high C!
+1. Inventory Managment                 .C
+2.
+3.
+4.
+5.
