@@ -46,9 +46,35 @@ int addToInventory(struct LinkedList *list, struct Item *obj) {
 
 int removeFromInventory(struct LinkedList *list, char *string) {
     struct Item *current = list->head;
-    while (current != null) {
+    while (current != NULL) {
         if (strncmp(current->name, string, 11) == 0) {
-            
+            list->currentWeight -= current->weight;
+            if (list->head == current) {
+                struct Item *next = current->next;
+                if (next != NULL) {
+                    next->prev = NULL;
+                }
+                if (list->tail == current) {
+                    list->tail = NULL;
+                }
+                list->head = next;
+                current->next = NULL;
+            } else if (list->tail == current) {
+                struct Item *prev = current->prev;
+                if (prev != NULL) {
+                    prev->next = NULL;
+                }
+                list->tail = prev;
+                current->prev = NULL;
+            } else {
+                struct Item *next = current->next;
+                struct Item *prev = current->prev;
+                next->prev = prev;
+                prev->next = next;
+                current->next = NULL;
+                current->prev = NULL;
+            }
+            return 1;
         }
         current = current->next;
     } 
@@ -79,6 +105,7 @@ int main() {
     addToInventory(&inventory, &stimpack1);
     addToInventory(&inventory, &stimpack2);
     addToInventory(&inventory, &radAway1);
+    removeFromInventory(&inventory, "Stimpack");
     removeFromInventory(&inventory, "Stimpack");
     printInventory(&inventory);
 
