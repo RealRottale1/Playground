@@ -47,3 +47,28 @@ factorial:
 
     addi sp, sp, 8
     ret
+
+# Takes a0: Array, a1: size, a2: target params
+findIndex:
+    li t0, 0
+    loop:
+    bge t0, a1, endLoop
+
+    slli t1, t0, 2
+    add t1, t1, a0
+    lw t2, 0(t1)
+    beq a2, t2, foundI
+
+    addi t0, t0, 1
+    j loop
+
+    endLoop:
+    # If index not found
+    li a0, -1
+    ret
+
+    foundI:
+    # If index found
+    li a0, t0
+    ret
+
