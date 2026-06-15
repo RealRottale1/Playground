@@ -10,7 +10,7 @@
 9. Least Recently Used Cache        .java
                       Sailing the high C!
 1. Inventory Managment                 .C
-2. Malloc Testing                      .C
-3.
+2. Array List                          .C
+3. HashMap                             .C
 4.
 5.

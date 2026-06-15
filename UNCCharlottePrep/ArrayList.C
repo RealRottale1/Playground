@@ -44,10 +44,6 @@ int get(struct Array *list, int index) {
     return list->data[index];
 }
 
-int pop(struct Array *list) {
-    
-}
-
 int indexOf(struct Array *list, int value) {
     for (int i = 0; i < list->dataCapacity; i++) {
         if (list->data[i] == value) {
