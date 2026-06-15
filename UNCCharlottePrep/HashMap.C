@@ -9,7 +9,7 @@ struct Node {
     struct Node* next;
 };
 
-struct HashSet {
+struct HashMap {
     struct Node* buckets[200];
     int totalNodes;
 };
@@ -23,8 +23,8 @@ unsigned int getHash(char *key) {
     return hash % 200;
 }
 
-struct HashSet* makeHashSet() {
-    struct HashSet* set = (struct HashSet*)calloc(1, sizeof(struct HashSet));
+struct HashMap* makeHashMap() {
+    struct HashMap* set = (struct HashMap*)calloc(1, sizeof(struct HashMap));
     return set;
 }
 
@@ -36,7 +36,7 @@ struct Node* makeNode(char* key, int value) {
     return node;
 }
 
-void put(struct HashSet* set, char* key, int value) {
+void put(struct HashMap* set, char* key, int value) {
     unsigned int hash = getHash(key);
     if (set->buckets[hash] == NULL) {
         set->buckets[hash] = makeNode(key, value);
@@ -57,7 +57,34 @@ void put(struct HashSet* set, char* key, int value) {
     }
 }
 
-void print(struct HashSet* set) {
+void rem(struct HashMap* set, char* key) {
+    unsigned int hash = getHash(key);
+    if (set->buckets[hash] != NULL) {
+        struct Node* current = set->buckets[hash];
+        if (strcmp(current->key, key) == 0) {
+            struct Node* next = current->next;
+            free(current);
+            set->buckets[hash] = next;
+            return;
+        }
+
+        while (true) {
+            struct Node* next = current->next;
+            if (next == NULL) {
+                return;
+            }
+            if (strcmp(next->key, key) == 0) {
+                struct Node* nextnext = next->next;
+                free(current->next);
+                current->next = nextnext;
+                return;
+            }
+            current = next;
+        } 
+    }
+}
+
+void print(struct HashMap* set) {
     for (int i = 0; i < 200; i++) {
         struct Node* current = set->buckets[i];
         while (current != NULL) {
@@ -65,9 +92,10 @@ void print(struct HashSet* set) {
             current = current->next;
         }
     }
+    printf("\n");
 }
 
-void unMap(struct HashSet* set) {
+void unMap(struct HashMap* set) {
     for (int i = 0; i < 200; i++) {
         struct Node* current = set->buckets[i];
         while (current != NULL) {
@@ -80,11 +108,20 @@ void unMap(struct HashSet* set) {
 }
 
 int main() {
-    struct HashSet* set = makeHashSet();
+    struct HashMap* set = makeHashMap();
     put(set, "hello", 1);
     put(set, "hello", 2);
     put(set, "goodbye", 3);
+    rem(set, "hello");
+    put(set, "at", 22);
+    put(set, "be", 4);
     print(set);
+        
+    rem(set, "be");
+    rem(set, "at");
+
+    print(set);
+
     unMap(set);
     return 0;
 }
