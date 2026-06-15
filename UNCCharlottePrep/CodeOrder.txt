@@ -14,3 +14,4 @@
 3. HashMap                             .C
                              Binary Break
                            Assembly Hell!
+1. Assembly Practice                 .asm
