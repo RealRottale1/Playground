@@ -140,3 +140,56 @@ packBits:
     endLoop:
     mv a0, t0                           # Moves t0 to a0 to return result
     ret
+
+packBitsFaster:
+    li t0, 1
+    slli t0, t0, a3
+    addi t0, t0, -1
+    slli t0, t0, a2
+
+    mv t1, t0
+    not t1, t1
+    and a1, a1, t1
+    and a0, a0, t0
+
+    or a0, a0, a1
+    ret
+
+# Takes a0 params
+isEven:
+    mv t0, a0
+    addi t0, t0, -1
+    and a0, a0, t0
+    beqz a0, even
+    li a0, 1
+    even:
+    ret
+
+# Takes a0: array, a1: size params
+sumArray:
+    li t0, 0                    # Iterator
+    li t1, 0                    # Return value
+
+    bgt a1, t0, skipEarlyReturn # Checks if size <= 0
+        li a0, 0
+        ret
+    skipEarlyReturn:
+
+    loop:
+        sll t2, t0, 2           # Multiply iterator by 4
+        add t2, t2, a0          # Add a0 to t2
+        lw t3, 0(t2)            # Load data from array at index
+        add t1, t1, t3          # Add data to total
+
+        addi t0, t0, 1          # Increment index
+        beq t0, a1, endLoop     # Break condition
+        j loop    
+    endLoop:
+
+    mv a0, t1
+    ret
+
+
+
+
+
