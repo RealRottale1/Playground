@@ -16,7 +16,7 @@ sumToN:
         ble t0, a0, done
         j loop
     done:
-        li a0, t1
+        mv a0, t1
         ret
 
 # Takes a0: array & a1: size params
@@ -31,7 +31,7 @@ getLastElement:
 factorial:
     li t0, 1
     bgt a0, t0, returnCase
-        li a0, t0
+        mv a0, t0
         ret
     returnCase:
 
@@ -69,6 +69,74 @@ findIndex:
 
     foundI:
     # If index found
-    li a0, t0
+    mv a0, t0
     ret
 
+# Takes a0 params
+countOnBits:
+    li t0, 0
+    li t1, 32
+
+    loop:
+    andi t2, a0, 1
+    add t0, t0, t2
+    srli a0, a0, 1
+
+    addi t1, t1, -1
+    bnez t1, endLoop
+    j loop
+
+    endLoop:
+    mv a0, t0
+    ret
+
+# Takes a0 params
+flipInt:
+    li t0, 0
+    li t2, 32
+    loop:
+        andi t1, a0, 1
+        srli a0, a0, 1
+        slli t0, t0, 1
+        or t0, t0, t1
+        addi t2, t2, -1
+        beqz t2, endLoop 
+        j loop
+    endLoop:
+    mv a0, t0
+    ret
+
+# Takes a0: a, a1: b, a2: startA, a3: lenA params 
+packBits:
+    li t0, 0                            # Return variable
+    li t1, 32                           # Iterator
+
+    mv t4, a2                           # Begins creating leftMost index
+    add t4, t4, a3                      # Adds lengthA to startA
+    addi t4, t4, -1                     # Subtracts one to maintain inclusivity
+
+    li t5, t5, 2147483648               # Left most bit
+    
+    loop:                   
+        bgt t1, t4, elseBlock           # Check if index is greater than left bound
+        blt t1, a2, elseBlock           # Check if index is less than right bound
+            and t2, a0, t5              # Gets left most value from a0
+            j finallyBlock
+        elseBlock:
+            and t2, a1, t5              # Gets left most value from a1
+        finallyBlock:
+
+        srli a0, a0, 1                  # Shift right a0 by 1
+        srli a1, a1, 1                  # Shift right a1 by 1
+
+        srli t2, t2, 31
+        ori t0, t0, t2                  # Set first t0 bit to t2 bit
+
+        beqz t1, endLoop                # Exit case for index loop
+        slli t0, t0, 1                  # Shift left t0 by 1
+
+        addi t1, t1, -1                 # Decrements iterator by 1
+        j loop                          # Repeats loop
+    endLoop:
+    mv a0, t0                           # Moves t0 to a0 to return result
+    ret
