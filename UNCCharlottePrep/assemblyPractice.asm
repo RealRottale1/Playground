@@ -189,7 +189,36 @@ sumArray:
     mv a0, t1
     ret
 
+# Takes a0, a1 params
+findMaxValue:
+    bnez a1, skipEarlyReturn
+        ret                             # Returns empty array of size 0
+    skipEarlyReturn:
 
+    li t1, 1
+    bne a1, t1, skipAnotherEarlyRetun   # Return 1st element in array of size 1
+        lw a0, 0(a0)
+        ret
+    skipAnotherEarlyRetun:
 
+    li t0, 1
+    lw t1, 0(a0)
+    loop:
+        mv t2, t0
+        sll t2, t2, 2
+        add t2, a0, t2
+
+        lw t2, 0(t2)
+        ble t2, t1, newBiggest
+            mv t1, t2
+        newBiggest:
+
+        addi t0, t0, 1
+        beq t0, a1, breakLoop
+        j loop
+
+    breakLoop:
+    mv a0, t1
+    ret
 
 
