@@ -221,4 +221,69 @@ findMaxValue:
     mv a0, t1
     ret
 
+# Take a0 params
+factorial:
+    bnez a0, skipBaseReturn
+        lit a0, 1
+        ret
+    skipBaseReturn:
 
+    mv t0, a0
+    addi sp, sp, -8
+    sw ra, 0(sp)
+    sw t0, 4(sp) 
+
+    addi a0, a0, -1
+    jal factorial
+
+    lw ra, 0(sp)
+    lw t0, 4(sp)
+    addi sp, sp 8
+    mul a0, a0, t0
+    ret
+
+# Takes a0, a1 params
+quickSort:
+    srl t0, a1, 1                       # Get split point
+    bnez t0, skipBaseReturn             # Base return case
+        ret
+    skipBaseReturn:
+
+    # Create left and right array
+    li t1, 0                            # Ensure t1 is 0
+    add t1, a0, t1                      # Get memory offset
+    lw t1, 0(t1)                        # Get split value
+
+    mv t3, t0                           # Establish left size variable
+    addi t3, t3, -1                     # Calculate left size
+
+    li t2, 4                            # Establish 4 bytes
+    mul a0, t2, t3                      # Multiply int size by array size
+    li a7, 9                            # Allocating memory
+    ecall                               # Allocating memory
+    mv s0, a0                           # Storing to s0
+
+    mv t3, a1                           # Establish right size variable
+    sub t3, t3, t0                      # Calculate right size
+
+    mul a0, t2, t3                      # Multiply int size by array size
+    li a7, 9                            # Allocating memory
+    ecall                               # Allocating memory
+    mv s1, a0                           # Storing to s1
+
+    li t4, 0
+    sortLoop:
+        beq t4, t0, skipAdd
+            mv t2, a0
+            mv t3, t4
+            slli t3, t3, 2
+            add t2, t2, t3
+            lw t5, 0(t2)
+            bgt t5, t1, greaterThan
+                
+            greaterThan:
+        skipAdd:
+        addi t4, t4, 1
+        beq t4, a1, endSort
+        j sortLoop
+    endSort:
