@@ -252,38 +252,31 @@ quickSort:
     # Create left and right array
     li t1, 0                            # Ensure t1 is 0
     add t1, a0, t1                      # Get memory offset
-    lw t1, 0(t1)                        # Get split value
+    lw t0, 0(t1)                        # Get split value
 
-    mv t3, t0                           # Establish left size variable
-    addi t3, t3, -1                     # Calculate left size
+    mv s11, a0                          # Save original array
 
-    li t2, 4                            # Establish 4 bytes
-    mul a0, t2, t3                      # Multiply int size by array size
-    li a7, 9                            # Allocating memory
-    ecall                               # Allocating memory
-    mv s0, a0                           # Storing to s0
+    slli t1, a1, 2                      # Get new array size
+    mv a0, t1                           # Memory allocation
+    li a7, 9                            # Memory allocation
+    ecall                               # Memory allocation
+    mv s0, a0                           # Saving left array to s0
 
-    mv t3, a1                           # Establish right size variable
-    sub t3, t3, t0                      # Calculate right size
+    mv a0, t1                           # Memory allocation
+    li a7, 9                            # Memory allocation
+    ecall                               # Memory allocation
+    mv s1, a0                           # Saving left array to s1
 
-    mul a0, t2, t3                      # Multiply int size by array size
-    li a7, 9                            # Allocating memory
-    ecall                               # Allocating memory
-    mv s1, a0                           # Storing to s1
-
-    li t4, 0
+    # Populate left and right array
+    li t1, 0
+    li t2, 0
+    li t3, 0
     sortLoop:
-        beq t4, t0, skipAdd
-            mv t2, a0
-            mv t3, t4
-            slli t3, t3, 2
-            add t2, t2, t3
-            lw t5, 0(t2)
-            bgt t5, t1, greaterThan
-                
-            greaterThan:
-        skipAdd:
-        addi t4, t4, 1
-        beq t4, a1, endSort
+        slli t4, t3, 2
+        add t4, t4, s11
+
+        addi t3, t3, 1
+        beq t3, a1, endSort
         j sortLoop
     endSort:
+
