@@ -244,17 +244,25 @@ factorial:
 
 # Takes a0, a1 params
 quickSort:
+    addi sp sp, -24
+    sw s0, 0(sp)                        # Left array
+    sw s1, 4(sp)                        # Right array
+    sw ra, 8(sp)                        # Return address
+    sw s9, 12(sp)                       # Split Value  
+    sw s10, 16(sp)                      # Left array size
+    sw s11, 20(sp)                      # Right array size
+
     srl t0, a1, 1                       # Get split point
     bnez t0, skipBaseReturn             # Base return case
         ret
     skipBaseReturn:
+    mv s9, t0                           # Save split point
+    mv t6, a0                           # Save original array
 
     # Create left and right array
     li t1, 0                            # Ensure t1 is 0
     add t1, a0, t1                      # Get memory offset
     lw t0, 0(t1)                        # Get split value
-
-    mv s11, a0                          # Save original array
 
     slli t1, a1, 2                      # Get new array size
     mv a0, t1                           # Memory allocation
@@ -265,18 +273,54 @@ quickSort:
     mv a0, t1                           # Memory allocation
     li a7, 9                            # Memory allocation
     ecall                               # Memory allocation
-    mv s1, a0                           # Saving left array to s1
+    mv s1, a0                           # Saving right array to s1
 
     # Populate left and right array
-    li t1, 0
-    li t2, 0
-    li t3, 0
+    li t1, 0                            # Left index
+    li t2, 0                            # Right index
+    li t3, 0                            # Parent index
     sortLoop:
-        slli t4, t3, 2
-        add t4, t4, s11
+        beq t3, s9, skipSelf            # Ignore split index
+            slli t4, t3, 2              # Multiply by 4
+            add t4, t4, t6              # Index array
+            lw t4, 0(t4)                # Access from memory
 
-        addi t3, t3, 1
-        beq t3, a1, endSort
-        j sortLoop
+            bgt t4, t0, lessThan        # Greater than
+                sll t5, t2, 2           # Multiply by 4
+                add t5, t5, s1          # Index right array
+                sw t4, 0(t5)            # Save to right array
+                addi t2, t2, 1          # Increment right index
+                j finally
+            lessThan:                   # Less than or equal to
+                sll t5, t2, 2           # Multiply by 4
+                add t5, t5, s0          # Index left array
+                sw t4, 0(t5)            # Save to left array
+                addi t1, t1, 1          # Increment left index
+            finally:
+
+        skipSelf:
+        addi t3, t3, 1                  # Increment parent index
+        beq t3, a1, endSort             # Break case
+        j sortLoop                      # Loops
     endSort:
+
+    mv s10, t1                          # Store left array size
+    mv s11, t2                          # Store right array size
+    mv s9, t0                           # Store split value
+
+    mv a0, s0                           # Load left array
+    mv a1, s10                          # Load left array size
+    jal ra, quickSort                   # Call func on left array
+
+    mv a0, s1                           # Load right array
+    mv a1, s11                          # Load right array size
+    jal ra, quickSort                   # Call func on right array
+
+    lw s0, 0(sp)                        # Left array
+    lw s1, 4(sp)                        # Right array
+    lw ra, 8(sp)                        # Return address
+    lw s9, 12(sp)                       # Split Value  
+    lw s10, 16(sp)                      # Left array size
+    lw s11, 20(sp)                      # Right array size
+    addi sp, sp, 24
 
