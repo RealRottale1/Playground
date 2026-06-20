@@ -244,21 +244,23 @@ factorial:
 
 # Takes a0, a1 params
 quickSort:
-    addi sp sp, -24
+    addi sp sp, -32
     sw s0, 0(sp)                        # Left array
     sw s1, 4(sp)                        # Right array
     sw ra, 8(sp)                        # Return address
-    sw s9, 12(sp)                       # Split Value  
-    sw s10, 16(sp)                      # Left array size
-    sw s11, 20(sp)                      # Right array size
+    sw s7, 12(sp)                       # Original array size
+    sw s8, 16(sp)                       # Original array
+    sw s9, 20(sp)                       # Split Value  
+    sw s10, 24(sp)                      # Left array size
+    sw s11, 28(sp)                      # Right array size
 
     srl t0, a1, 1                       # Get split point
     bnez t0, skipBaseReturn             # Base return case
         ret
     skipBaseReturn:
     mv s9, t0                           # Save split point
-    mv t6, a0                           # Save original array
-
+    mv s8, a0                           # Save original array
+                       
     # Create left and right array
     li t1, 0                            # Ensure t1 is 0
     add t1, a0, t1                      # Get memory offset
@@ -282,7 +284,7 @@ quickSort:
     sortLoop:
         beq t3, s9, skipSelf            # Ignore split index
             slli t4, t3, 2              # Multiply by 4
-            add t4, t4, t6              # Index array
+            add t4, t4, s8              # Index array
             lw t4, 0(t4)                # Access from memory
 
             bgt t4, t0, lessThan        # Greater than
@@ -319,8 +321,35 @@ quickSort:
     lw s0, 0(sp)                        # Left array
     lw s1, 4(sp)                        # Right array
     lw ra, 8(sp)                        # Return address
-    lw s9, 12(sp)                       # Split Value  
-    lw s10, 16(sp)                      # Left array size
-    lw s11, 20(sp)                      # Right array size
-    addi sp, sp, 24
+    lw s7, 12(sp)                       # Original array size
+    lw s8, 16(sp)                       # Original array
+    lw s9, 20(sp)                       # Split Value  
+    lw s10, 24(sp)                      # Left array size
+    lw s11, 28(sp)                      # Right array size
+    addi sp, sp, 32                     # Free stack memory
+
+    li t0, 0
+    putFromLeft:
+        mv t1, t0                       # Clones index
+        sll t1, t1, 2                   # Multiplies by 4
+        mv t2, s0                       # Move to temp reg
+        mv t3, s8                       # Move to temp reg
+        add t2, t2, t1                  # Add index offset
+        add t3, t3, t1                  # Add index offset
+        sw t2, 0(t3)                    # Save left value to original array
+        addi t0, t0, 1                  # Increment index
+        beq t0, s10, endPutFromLeft     # Break condition
+        j putFromLeft                   # Loop
+    endPutFromLeft:
+
+    # Redundent but I already did it
+    mv t1, t0                           # Clones index
+    sll t1, t1, 2                       # Multiplies by 4
+    mv t3, s8                           # Move to temp reg
+    add t3, t3, t1                      # Add index offset
+    sw s9, 0(t3)                        # Save split value to original array
+    add t0, t0, 1                       # Increment index
+
+    li t0, 0
+
 
