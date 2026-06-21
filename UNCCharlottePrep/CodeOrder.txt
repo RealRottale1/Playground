@@ -15,3 +15,5 @@
                              Binary Break
                            Assembly Hell!
 1. Assembly Practice                 .asm
+                         Advanced Studies
+1. Weird Sorts                      .java

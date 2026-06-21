@@ -306,6 +306,7 @@ quickSort:
         j sortLoop                      # Loops
     endSort:
 
+    # Recursive function call
     mv s10, t1                          # Store left array size
     mv s11, t2                          # Store right array size
     mv s9, t0                           # Store split value
@@ -318,16 +319,7 @@ quickSort:
     mv a1, s11                          # Load right array size
     jal ra, quickSort                   # Call func on right array
 
-    lw s0, 0(sp)                        # Left array
-    lw s1, 4(sp)                        # Right array
-    lw ra, 8(sp)                        # Return address
-    lw s7, 12(sp)                       # Original array size
-    lw s8, 16(sp)                       # Original array
-    lw s9, 20(sp)                       # Split Value  
-    lw s10, 24(sp)                      # Left array size
-    lw s11, 28(sp)                      # Right array size
-    addi sp, sp, 32                     # Free stack memory
-
+    # Combine left, right, and middle into single array
     li t0, 0
     putFromLeft:
         mv t1, t0                       # Clones index
@@ -336,6 +328,7 @@ quickSort:
         mv t3, s8                       # Move to temp reg
         add t2, t2, t1                  # Add index offset
         add t3, t3, t1                  # Add index offset
+        lw t3, 0(t3)                    # Load left value
         sw t2, 0(t3)                    # Save left value to original array
         addi t0, t0, 1                  # Increment index
         beq t0, s10, endPutFromLeft     # Break condition
@@ -350,6 +343,39 @@ quickSort:
     sw s9, 0(t3)                        # Save split value to original array
     add t0, t0, 1                       # Increment index
 
-    li t0, 0
+    li t6, 0                            # Right index
+    putFromRight:
+        mv t1, t6                       # Clones right index
+        sll t1, t1, 2                   # Multiplies by 4
+        mv t2, s1                       # Move to temp reg
+        add t2, t2, t1                  # Add index offset
+        lw t5, 0(t2)                    # Stores right index value
 
+        mv t3, t0                       # Clones index
+        sll t3, t3, 2                   # Multiplies by 4
+        mv t4, s8                       # Move to temp reg
+        add t4, t4, t3                  # Add index offset
+        sw t5, 0(t4)                    # Save right index value to original array
+
+        addi t6, t6, 1                  # Increment right index
+        addi t0, t0, 1                  # Increment index
+        beq t6, s11, endPutFromRight    # Break condition
+        j putFromRight                  # Loop
+    endPutFromRight:
+
+    mv a0, s8                           # Sets return value
+    mv a1, s7                           # Sets return value
+
+    # Load prior state
+    lw s0, 0(sp)                        # Left array
+    lw s1, 4(sp)                        # Right array
+    lw ra, 8(sp)                        # Return address
+    lw s7, 12(sp)                       # Original array size
+    lw s8, 16(sp)                       # Original array
+    lw s9, 20(sp)                       # Split Value  
+    lw s10, 24(sp)                      # Left array size
+    lw s11, 28(sp)                      # Right array size
+    addi sp, sp, 32                     # Free stack memory
+
+    ret
 
