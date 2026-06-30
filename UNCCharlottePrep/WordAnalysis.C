@@ -17,6 +17,8 @@ struct Node* createNode() {
     return newNode;
 }
 
+
+
 int main() {
     
     int fd = open(".txt", O_RDONLY);
@@ -71,12 +73,14 @@ int main() {
     }
     free(buffer);
 
-    // Sort by lowest to highest frequency;
-
     /*
     Array of Array storing string using mutex to expand when full of size 1 to currentLongest-1
     Frequency strored in HashMap of int, string
     */
 
     return 0;
+}
+
+void sortData(int size, struct Node* currentNode) {
+    
 }
