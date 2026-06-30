@@ -2,8 +2,23 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+struct Node {
+    int count;
+    struct Node* children[26];
+}
+struct Node* createNode() {
+    struct Node newNode = (struct Node*)malloc(sizeof(struct Node));
+    newNode->count = 0;
+    for (int i = 0; i < 26; i++) {
+        newNode->children[i] = NULL;
+    }
+    return newNode;
+}
 
 int main() {
+    
     int fd = open(".txt", O_RDONLY);
     if (fd < 0) {return 1;}
 
@@ -23,20 +38,45 @@ int main() {
     }
     close(fd);
 
-    // To lower case and count chars
+    // Create TriNode map
+    struct Node rootNode = createNode();
+    struct Node* currentNode = rootNode;
+    int currentLongest = 0; // Max word size
+    int iterativeLongest = 0;
+    int totalUniqueWords = 0; // Max total words
     for (int i = 0; i < bufferSize; i++) {
         char c = buffer[i];
-        if (c >= 'A' && c <= 'Z') {
-            c += 32;
-            buffer[i] = c;
+        if (c >= 'A' && c <= 'Z') {c += 32;}
+
+        if (c >= 'a' && c <= 'z') {
+            c -= 97;
+            if (currentNode->children[c] == NULL) {
+                struct Node* nextNode = currentNode();
+                currentNode->children[c] = nextNode;
+                currentNode = nextNode;
+                iterativeLongest++;
+            } else {
+                currentNode = currentNode->children[c];
+                iterativeLongest++;
+            }
+        } else {
+            if (currentNode->count == 0) {totalUniqueWords++;}
+            currentNode->count++;
+            currentNode = rootNode;
+            if (currentLongest < iterativeLongest) {
+                currentLongest = iterativeLongest;
+            }
+            iterativeLongest = 0;
         }
-
     }
-
-    // Add words to hashmap
-
-
-
     free(buffer);
+
+    // Sort by lowest to highest frequency;
+
+    /*
+    Array of Array storing string using mutex to expand when full of size 1 to currentLongest-1
+    Frequency strored in HashMap of int, string
+    */
+
     return 0;
 }
