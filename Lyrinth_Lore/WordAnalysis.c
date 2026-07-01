@@ -61,28 +61,30 @@ void printStringHolderLG(struct StringHolder* current) {
     struct StringHolder* next = current;
     while (next != NULL) {
         printf("%s, ", next->str);
-        next = current->next;
+        next = next->next;
     }
+    printf("\n");
 }
 void printStringHolderGL(struct StringHolder* current) {
     struct StringHolder* prior = current;
     while (prior != NULL) {
         printf("%s, ", prior->str);
-        prior = current->prior;
+        prior = prior->prior;
     }
+    printf("\n");
 }
 
 struct WordHolder {
     char* str;
     int count;
 };
-struct WordHolder* createWordHolder(struct WordHolder* current) {
+struct WordHolder* createWordHolder(struct Node* current) {
     struct WordHolder* newWordHolder = (struct WordHolder*)malloc(sizeof(struct WordHolder));
     newWordHolder->str = current->str;
     newWordHolder->count = current->count;
     return newWordHolder;
 }
-void sortWordHolder(struct WordHolder* current, int start, int end) {
+void sortWordHolder(struct WordHolder** current, int start, int end) {
     if (start < end) {
         struct WordHolder* splitHolder = current[end];
         int splitValue = splitHolder->count;
@@ -103,24 +105,35 @@ void sortWordHolder(struct WordHolder* current, int start, int end) {
         sortWordHolder(current, i + 2, end);
     }
 }
+void printWordHolder(struct WordHolder** current, int start, int size, int mover) {
+    int i = start;
+    while (i >= 0 && i < size) {
+        printf("%s: %i, ", current[i]->str, current[i]->count);
+        i+=mover;
+    }
+    printf("\n");
+}
 
 
 int main() {
-    
-    int fd = open(".txt", O_RDONLY);
-    if (fd < 0) {return 1;}
-
+    printf("RUNNING WORD ANALYSIS!\n");
+    int fd = open(".\\LyrinthBible.txt", O_RDONLY);
+    if (fd < 0) {
+        printf("FAILED TO READ FILE!");
+        return 1;
+    }
+ 
     // Read from file
     int bufferSize = 4096;
-    char* buffer = malloc(bufferSize * sizeof(char));
+    char* buffer = (char*)malloc(bufferSize * sizeof(char));
     int totalRead = 0;
     ssize_t bytesRead;
     while ((bytesRead = read(fd, buffer + totalRead, bufferSize - totalRead))) {
         totalRead += bytesRead;
         if (totalRead >= bufferSize * 0.75) {
             bufferSize *= 2;
-            char* temp = realloc(buffer, bufferSize);
-            if (temp == NULL) {free(buffer); close(fd); return 1;}
+            char* temp = (char*)realloc(buffer, bufferSize);
+            if (temp == NULL) {free(buffer); close(fd); printf("FAILED TO ALLOCATE MEMORY FOR BUFFER"); return 1;}
             buffer = temp;
         }
     }
@@ -150,11 +163,11 @@ int main() {
                 iterativeLongest++;
             }
         } else {
-            if (currentNode->count == 0) {
+            if (currentNode->count == 0 && iterativeLongest > 0) {
                 totalUniqueWords++;
 
                 // Reconstruct the word
-                char* str = malloc(iterativeLongest + 1);
+                char* str = (char*)malloc(iterativeLongest + 1);
                 str[iterativeLongest] = '\0';
                 struct Node* useNode = currentNode;
                 do {
@@ -183,7 +196,7 @@ int main() {
     struct NodeHolder* currentNodeHolder = NULL;
     struct StringHolder* firstStringHolder = NULL;
     struct StringHolder* lastStringHolder = NULL;
-    struct WordHolder* frequencyArray = malloc(totalUniqueWords * sizeof(struct WordHolder));
+    struct WordHolder** frequencyArray = (struct WordHolder**)malloc(totalUniqueWords * sizeof(struct WordHolder));
     int frequencyIndex = 0;
     do {
         struct NodeHolder* iNodeHolder = rootNodeHolder;
@@ -200,7 +213,7 @@ int main() {
                         currentNodeHolder->next = newNodeHolder;
                         currentNodeHolder = newNodeHolder;
                     }
-                    
+                     
                     if (currentNode->str != 0) {
                         struct StringHolder* newStringHolder = createStringHolder(currentNode);
                         if (firstStringHolder == NULL) {
@@ -238,11 +251,17 @@ int main() {
     sortWordHolder(frequencyArray, 0, totalUniqueWords - 1);
 
     // Output Analysis
-    printf("L to G:");
+    printf("L to G Length:\n");
     printStringHolderLG(firstStringHolder);
 
-    printf("G to L:");
-    printStringHolderGL(lastStringHolder);
+    // printf("G to L Length:\n");
+    // printStringHolderGL(lastStringHolder);
+
+    printf("L to G Frequency:\n");
+    printWordHolder(frequencyArray, totalUniqueWords-1, totalUniqueWords, -1);
+
+    // printf("G to L Frequency:\n");
+    // printWordHolder(frequencyArray, 0, totalUniqueWords, 1);
 
     // Free String Holder
     struct StringHolder* currentStringHolder = firstStringHolder;
@@ -252,7 +271,7 @@ int main() {
         currentStringHolder = nextStringHolder;
     } while (currentStringHolder != NULL);
     firstStringHolder = NULL;
-    lastStringHolder = NULL:
+    lastStringHolder = NULL;
 
     // Free Word Holder
     for (int i = 0; i < totalUniqueWords; i++) {
@@ -264,5 +283,7 @@ int main() {
     freeTrieNode(rootNode);    
     rootNode = NULL;
     currentNode = NULL;
+
+    printf("PROGRAM FINISHED!");
     return 0;
 }
