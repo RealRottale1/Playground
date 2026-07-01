@@ -23,6 +23,16 @@ struct Node* createNode() {
     newNode->value = 0;
     return newNode;
 }
+void freeTrieNode(struct Node* current) {
+    free(current->str);
+    for (int i = 0; i < 26; i++) {
+        if (current->children[i] != NULL) {
+            freeTrieNode(current->children[i]);
+        }
+    }
+    free(current);
+    return;
+}
 
 struct NodeHolder {
     struct Node* data;
@@ -47,7 +57,52 @@ struct StringHolder* createStringHolder(struct Node* current) {
     newStringHolder->prior = NULL;
     return newStringHolder;
 }
+void printStringHolderLG(struct StringHolder* current) {
+    struct StringHolder* next = current;
+    while (next != NULL) {
+        printf("%s, ", next->str);
+        next = current->next;
+    }
+}
+void printStringHolderGL(struct StringHolder* current) {
+    struct StringHolder* prior = current;
+    while (prior != NULL) {
+        printf("%s, ", prior->str);
+        prior = current->prior;
+    }
+}
 
+struct WordHolder {
+    char* str;
+    int count;
+};
+struct WordHolder* createWordHolder(struct WordHolder* current) {
+    struct WordHolder* newWordHolder = (struct WordHolder*)malloc(sizeof(struct WordHolder));
+    newWordHolder->str = current->str;
+    newWordHolder->count = current->count;
+    return newWordHolder;
+}
+void sortWordHolder(struct WordHolder* current, int start, int end) {
+    if (start < end) {
+        struct WordHolder* splitHolder = current[end];
+        int splitValue = splitHolder->count;
+
+        int i = start - 1;
+        for (int j = start; j < end; j++) {
+            if (current[j]->count > splitValue) {
+                i++;
+                struct WordHolder* tempHolder = current[i];
+                current[i] = current[j];
+                current[j] = tempHolder;
+            }
+        }
+        struct WordHolder* tempHolder = current[i + 1];
+        current[i + 1] = current[end];
+        current[end] = tempHolder;
+        sortWordHolder(current, start, i);
+        sortWordHolder(current, i + 2, end);
+    }
+}
 
 
 int main() {
@@ -122,12 +177,14 @@ int main() {
     }
     free(buffer);
 
-    // Analysis
+    // Generate Size Analysis
     struct NodeHolder* rootNodeHolder = createNodeHolder(rootNode);
     struct NodeHolder* nextNodeHolder = NULL;
     struct NodeHolder* currentNodeHolder = NULL;
     struct StringHolder* firstStringHolder = NULL;
     struct StringHolder* lastStringHolder = NULL;
+    struct WordHolder* frequencyArray = malloc(totalUniqueWords * sizeof(struct WordHolder));
+    int frequencyIndex = 0;
     do {
         struct NodeHolder* iNodeHolder = rootNodeHolder;
         do {
@@ -153,7 +210,11 @@ int main() {
                             lastStringHolder->next = newStringHolder;
                             newStringHolder->prior = lastStringHolder;
                             lastStringHolder = newStringHolder; 
-                        }   
+                        }
+
+                        struct WordHolder* newWordHolder = createWordHolder(currentNode);
+                        frequencyArray[frequencyIndex] = newWordHolder;
+                        frequencyIndex++; 
                     }
                 }
             }
@@ -173,8 +234,35 @@ int main() {
         currentNodeHolder = NULL;
     } while (rootNodeHolder != NULL);
 
+    // Generate Frequency Analysis
+    sortWordHolder(frequencyArray, 0, totalUniqueWords - 1);
+
+    // Output Analysis
+    printf("L to G:");
+    printStringHolderLG(firstStringHolder);
+
+    printf("G to L:");
+    printStringHolderGL(lastStringHolder);
 
     // Free String Holder
-    // Free trieNode when done
+    struct StringHolder* currentStringHolder = firstStringHolder;
+    do {
+        struct StringHolder* nextStringHolder = currentStringHolder->next;
+        free(currentStringHolder);
+        currentStringHolder = nextStringHolder;
+    } while (currentStringHolder != NULL);
+    firstStringHolder = NULL;
+    lastStringHolder = NULL:
+
+    // Free Word Holder
+    for (int i = 0; i < totalUniqueWords; i++) {
+        free(frequencyArray[i]);
+        frequencyArray[i] = NULL;
+    }
+
+    // Free trieNode
+    freeTrieNode(rootNode);    
+    rootNode = NULL;
+    currentNode = NULL;
     return 0;
 }
