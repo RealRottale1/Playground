@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recursion Tree Simulator</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="controlDiv">
+        <p id="mainTitle">Controls</p>
+        <div class="spacer">
+            <p class="settingDesc">Max Per Branch</p>
+            <input class="settingInput" id="maxBranch" type="number" value="5">
+        </div>
+        <div class="spacer">
+            <p class="settingDesc">Min Per Branch</p>
+            <input class="settingInput" id="minBranch" type="number" value="2">
+        </div>
+        <div class="spacer">
+            <p class="settingDesc">Max Depth</p>
+            <input class="settingInput" id="maxDepth" type="number" value="7">
+        </div>
+        <div class="spacer">
+            <p class="settingDesc">Min Depth</p>
+            <input class="settingInput" id="minDepth" type="number" value="5">
+        </div>
+        <div class="spacer">
+            <p class="settingDesc">Depth Exit Percent</p>
+            <input class="settingInput" id="depthExitPercent" type="number" value="0">
+        </div>
+        <div class="spacer">
+            <p class="settingDesc">Width Retention Percent</p>
+            <input class="settingInput" id="widthRetention" type="number" value="75">
+        </div>
+        <div class="spacer">
+            <p class="settingDesc">Length Retention Percent</p>
+            <input class="settingInput" id="lengthRetention" type="number" value="75">
+        </div>
+        <div class="spacer">
+            <p class="settingDesc">Leaf Size</p>
+            <input class="settingInput" id="leafSize" type="number" value="15">
+        </div>
+        <div class="spacer">
+            <p class="settingDesc">Leaf Min Percent</p>
+            <input class="settingInput" id="leafMin" type="number" value="50">
+        </div>
+        <div class="spacer">
+            <p class="settingDesc">Leaf Max Percent</p>
+            <input class="settingInput" id="leafMax" type="number" value="125">
+        </div>
+        <div class="spacerAligned">
+            <button id="regenButton">Generate</button>
+        </div>
+    </div>
+    <canvas id="mainCanvas"></canvas>
+    <script src="main.js"></script>
+</body>
+</html>
