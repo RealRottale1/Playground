@@ -9,50 +9,59 @@
 </head>
 <body>
     <div id="controlDiv">
+        <button id="removeControlDiv"><</button>
         <p id="mainTitle">Controls</p>
         <div class="spacer">
             <p class="settingDesc">Max Per Branch</p>
-            <input class="settingInput" id="maxBranch" type="number" value="5">
+            <input class="settingInput" id="maxBranch" type="number" value="5" min="1" max="12">
         </div>
         <div class="spacer">
             <p class="settingDesc">Min Per Branch</p>
-            <input class="settingInput" id="minBranch" type="number" value="2">
+            <input class="settingInput" id="minBranch" type="number" value="2" min="1" max="12">
         </div>
         <div class="spacer">
             <p class="settingDesc">Max Depth</p>
-            <input class="settingInput" id="maxDepth" type="number" value="7">
+            <input class="settingInput" id="maxDepth" type="number" value="7" min="1" max="12">
         </div>
         <div class="spacer">
             <p class="settingDesc">Min Depth</p>
-            <input class="settingInput" id="minDepth" type="number" value="5">
+            <input class="settingInput" id="minDepth" type="number" value="5"  min="1" max="12">
         </div>
         <div class="spacer">
             <p class="settingDesc">Depth Exit Percent</p>
-            <input class="settingInput" id="depthExitPercent" type="number" value="0">
+            <input class="settingInput" id="depthExitPercent" type="number" value="0"  min="0" max="100">
+        </div>
+        <div class="spacer">
+            <p class="settingDesc">Spread</p>
+            <input class="settingInput" id="spreadAmount" type="number" value="6"  min="1" max="32">
         </div>
         <div class="spacer">
             <p class="settingDesc">Width Retention Percent</p>
-            <input class="settingInput" id="widthRetention" type="number" value="75">
+            <input class="settingInput" id="widthRetention" type="number" value="75"  min="0" max="200">
         </div>
         <div class="spacer">
             <p class="settingDesc">Length Retention Percent</p>
-            <input class="settingInput" id="lengthRetention" type="number" value="75">
+            <input class="settingInput" id="lengthRetention" type="number" value="75"  min="0" max="200">
         </div>
         <div class="spacer">
             <p class="settingDesc">Leaf Size</p>
-            <input class="settingInput" id="leafSize" type="number" value="15">
+            <input class="settingInput" id="leafSize" type="number" value="15"  min="0" max="50">
         </div>
         <div class="spacer">
             <p class="settingDesc">Leaf Min Percent</p>
-            <input class="settingInput" id="leafMin" type="number" value="50">
+            <input class="settingInput" id="leafMin" type="number" value="50" min="0" max="200">
         </div>
         <div class="spacer">
             <p class="settingDesc">Leaf Max Percent</p>
-            <input class="settingInput" id="leafMax" type="number" value="125">
+            <input class="settingInput" id="leafMax" type="number" value="125" min="0" max="200">
         </div>
         <div class="spacerAligned">
             <button id="regenButton">Generate</button>
         </div>
+    </div>
+    <div id="completeDiv">
+        <button id="removeCompleteText">X</button>
+        <p id="completeText">Complete</p>
     </div>
     <canvas id="mainCanvas"></canvas>
     <script src="main.js"></script>

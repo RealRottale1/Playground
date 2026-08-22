@@ -25,6 +25,8 @@ const CANVAS_HANDLER = {
 }
 
 CANVAS_HANDLER.setCanvasSize();
+let menuOpen = true;
+let openingMenu = false;
 let generating = false;
 const delayTime = 1;
 const delayPercentage = 4;
@@ -85,7 +87,7 @@ class TREE {
         let earlyExit = false;
         if (currentDepth < TREE.maxDepth) {
             if (currentDepth >= TREE.minDepth) {
-                if (Math.floor(Math.random() * 11) <= TREE.depthExitPercent) {
+                if (Math.random() < TREE.depthExitPercent) {
                     earlyExit = true;
                 }
             }
@@ -100,7 +102,12 @@ class TREE {
         }
         
         if (currentDepth >= TREE.maxDepth || earlyExit) {
-            this.leaf = new LEAVES();
+            if (LEAVES.size != 0) {
+                if (LEAVES.maxSizePercent == 0 && LEAVES.maxSizePercent == LEAVES.minSizePercent) {
+                    return;
+                }
+                this.leaf = new LEAVES();
+            }
         }
     }
 
@@ -154,20 +161,26 @@ async function generateTree() {
     generating = false;
 }
 
+const menuDiv = document.getElementById("controlDiv");
 const generateButton = document.getElementById("regenButton");
 const maxBranchInput = document.getElementById("maxBranch");
 const minBranchInput = document.getElementById("minBranch");
 const maxDepthInput = document.getElementById("maxDepth");
 const minDepthInput = document.getElementById("minDepth");
 const minDepthExitInput = document.getElementById("depthExitPercent");
+const spreadInput = document.getElementById("spreadAmount");
 const widthRetentionInput = document.getElementById("widthRetention");
 const lengthRetentionInput = document.getElementById("lengthRetention");
 const leafSizeInput = document.getElementById("leafSize");
 const leafMinInput = document.getElementById("leafMin");
 const leafMaxInput = document.getElementById("leafMax");
+const completeDiv = document.getElementById("completeDiv");
+const removeCompleteDiv = document.getElementById("removeCompleteText");
+const removeControlDiv = document.getElementById("removeControlDiv");
 
-generateButton.addEventListener("click", () => {
+generateButton.addEventListener("click", async function() {
     if (generating) {return};
+    completeDiv.style.display = 'none';
     generating = true;
     TREE.root = null;
     LEAVES.leaves = [];
@@ -175,16 +188,37 @@ generateButton.addEventListener("click", () => {
     TREE.minPerBranch = Math.max(Math.min(parseInt(minBranchInput.value), 12), 1);
     TREE.maxDepth = Math.max(Math.min(parseInt(maxDepthInput.value), 12), 1);
     TREE.minDepth = Math.max(Math.min(parseInt(minDepthInput.value), 12), 1);
-    TREE.depthExitPercent = Math.max(Math.min(parseInt(minDepthExitInput.value), 100), 0) / 10;
+    TREE.depthExitPercent = Math.max(Math.min(parseInt(minDepthExitInput.value), 100), 0) / 100;
+    TREE.spread = Math.PI / Math.max(Math.min(parseInt(spreadInput.value), 32), 1);
     TREE.widthRetention = Math.max(Math.min(parseInt(widthRetentionInput.value), 200), 0) / 100;
     TREE.lengthRetention = Math.max(Math.min(parseInt(lengthRetentionInput.value), 200), 0) / 100;
     LEAVES.size = Math.max(Math.min(parseInt(leafSizeInput.value), 50), 0);
     LEAVES.minSizePercent = Math.max(Math.min(parseInt(leafMinInput.value), 200), 0) / 100;
     LEAVES.maxSizePercent = Math.max(Math.min(parseInt(leafMaxInput.value), 200), 0) / 100;
-    console.log(LEAVES.size, LEAVES.maxSizePercent, LEAVES.minSizePercent);
-    generateTree();
+    console.log(TREE.depthExitPercent)
+    await generateTree();
+    completeDiv.style.display = 'block';
 });
 
 TEXTURES.background.onload = () => {
     generateBackground();
 }
+
+removeCompleteDiv.addEventListener("click", ()=> {
+    completeDiv.style.display = 'none';
+});
+
+removeControlDiv.addEventListener("click", async ()=> {
+    if (openingMenu) {return;}
+    openingMenu = true;
+    menuOpen = !menuOpen;
+    if (menuOpen) {
+        menuDiv.classList.remove("close");
+        removeControlDiv.textContent = "<";
+    } else {
+        menuDiv.classList.add("close");
+        removeControlDiv.textContent = ">";
+    }
+    await wait(1000);
+    openingMenu = false;
+});
