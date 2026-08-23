@@ -1,4 +1,4 @@
-/* Project 1 */
+
 module motion_detector (
     input sensor_a;
     input sensor_b;
@@ -38,5 +38,3 @@ always @(posedge clk) begin
 end
 
 endmodule
-
-/* Project 2 */
