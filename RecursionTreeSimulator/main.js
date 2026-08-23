@@ -26,7 +26,9 @@ const CANVAS_HANDLER = {
 
 CANVAS_HANDLER.setCanvasSize();
 let menuOpen = true;
+let cosmeticOpen = true;
 let openingMenu = false;
+let openingCosmetic = false;
 let generating = false;
 const delayTime = 1;
 const delayPercentage = 4;
@@ -36,6 +38,7 @@ class LEAVES {
     static size = 15;
     static minSizePercent = 0.5;
     static maxSizePercent = 1.25;
+    static R; static G; static B; static A;
     x = 0;
     y = 0;
     sizePercent = 1;
@@ -47,10 +50,10 @@ class LEAVES {
     static async render() {
         for (let i = 0; i < LEAVES.leaves.length; i++) {
             const leaf = LEAVES.leaves[i];
-            ctx.fillStyle = "green";
+            ctx.fillStyle = `rgb(${LEAVES.R}, ${LEAVES.G}, ${LEAVES.B})`;
             ctx.save();
+            ctx.globalAlpha = LEAVES.A;
             ctx.beginPath();
-            //ctx.globalAlpha = 0.5;
             ctx.arc(leaf.x, leaf.y, LEAVES.size * leaf.sizePercent, 0, Math.PI * 2);
             ctx.fill();
             ctx.restore();
@@ -72,14 +75,15 @@ class TREE {
     static widthRetention = 0.75;
     static lengthRetention = 0.75;
 
+    static R; static G; static B; static A;
+
     static root = null;
     children = [];
     leaf = null;
-    rot = 0; len = 0; wid = 0; color = "black";
+    rot = 0; len = 0; wid = 0;
 
-    constructor(rot, len, wid, color, currentDepth) {
+    constructor(rot, len, wid, currentDepth) {
         this.rot = rot; this.len = len; this.wid = wid;
-        this.color = color;
         if (TREE.root === null) {
             TREE.root = this;
         }
@@ -95,7 +99,7 @@ class TREE {
                 const childrenCount = Math.floor(Math.random() * (TREE.maxPerBranch+1-TREE.minPerBranch)) + TREE.minPerBranch;
                 for (let i = 0; i < childrenCount; i++) {
                     const childRot = (i - (childrenCount - 1) / 2) * TREE.spread;
-                    const child = new TREE(childRot, Math.min(this.len * TREE.lengthRetention, -50), this.wid * TREE.widthRetention, this.color, currentDepth + 1);
+                    const child = new TREE(childRot, Math.min(this.len * TREE.lengthRetention, -50), this.wid * TREE.widthRetention, currentDepth + 1);
                     this.children.push(child);
                 }
             }
@@ -113,8 +117,10 @@ class TREE {
 
 
     async render(x, y, rot, depth) {
-        ctx.fillStyle = this.color;
+        if (TREE.A == 0) {return;}
+        ctx.fillStyle = `rgb(${TREE.R}, ${TREE.G}, ${TREE.B})`;
         ctx.save();
+        ctx.globalAlpha = TREE.A;
         ctx.translate(x, y);
         ctx.rotate(this.rot + rot);
         const offX = Math.cos(this.rot + rot) * this.len;
@@ -136,15 +142,18 @@ class TREE {
         }
 
         if (depth == 0) {
+            if (LEAVES.A == 0) {return;}
             await LEAVES.render();
         }
     }
 }
 
+let backgroundR; let backgroundG; let backgroundB; let backgroundA;
 function generateBackground() {
-    ctx.fillStyle = "rgb(255, 0, 191)";
-    ctx.fillRect(0, 0, CANVAS_HANDLER.width, CANVAS_HANDLER.height);
+    ctx.fillStyle = `rgb(${backgroundR}, ${backgroundG}, ${backgroundB})`;
     ctx.save();
+    ctx.globalAlpha = backgroundA;
+    ctx.fillRect(0, 0, CANVAS_HANDLER.width, CANVAS_HANDLER.height);
     ctx.drawImage(
         TEXTURES.background,
         0,0,
@@ -156,12 +165,13 @@ function generateBackground() {
 
 async function generateTree() {
     generateBackground();
-    a = new TREE(Math.PI/2, -200, 50, "brown", 0);
+    a = new TREE(Math.PI/2, -200, 50, 0);
     await TREE.root.render(CANVAS_HANDLER.center(0), CANVAS_HANDLER.bottom(0), 0, 0);
     generating = false;
 }
 
 const menuDiv = document.getElementById("controlDiv");
+const colorDiv = document.getElementById("cosmeticDiv");
 const generateButton = document.getElementById("regenButton");
 const maxBranchInput = document.getElementById("maxBranch");
 const minBranchInput = document.getElementById("minBranch");
@@ -177,7 +187,24 @@ const leafMaxInput = document.getElementById("leafMax");
 const completeDiv = document.getElementById("completeDiv");
 const removeCompleteDiv = document.getElementById("removeCompleteText");
 const removeControlDiv = document.getElementById("removeControlDiv");
+const removeCosmeticDiv = document.getElementById("removeCosmeticDiv");
+const branchRInput = document.getElementById("branchR");
+const branchGInput = document.getElementById("branchG");
+const branchBInput = document.getElementById("branchB");
+const branchAInput = document.getElementById("branchA");
+const leavesRInput = document.getElementById("leafR");
+const leavesGInput = document.getElementById("leafG");
+const leavesBInput = document.getElementById("leafB");
+const leavesAInput = document.getElementById("leafA");
+const backgroundRInput = document.getElementById("backR");
+const backgroundGInput = document.getElementById("backG");
+const backgroundBInput = document.getElementById("backB");
+const backgroundAInput = document.getElementById("backA");
 
+backgroundR = Math.max(Math.min(parseInt(backgroundRInput.value), 255), 0);
+backgroundG = Math.max(Math.min(parseInt(backgroundGInput.value), 255), 0);
+backgroundB = Math.max(Math.min(parseInt(backgroundBInput.value), 255), 0);
+backgroundA = Math.max(Math.min(parseInt(backgroundAInput.value), 100), 0) / 100;
 generateButton.addEventListener("click", async function() {
     if (generating) {return};
     completeDiv.style.display = 'none';
@@ -189,12 +216,24 @@ generateButton.addEventListener("click", async function() {
     TREE.maxDepth = Math.max(Math.min(parseInt(maxDepthInput.value), 12), 1);
     TREE.minDepth = Math.max(Math.min(parseInt(minDepthInput.value), 12), 1);
     TREE.depthExitPercent = Math.max(Math.min(parseInt(minDepthExitInput.value), 100), 0) / 100;
-    TREE.spread = Math.PI / Math.max(Math.min(parseInt(spreadInput.value), 32), 1);
+    TREE.spread = Math.PI / (Math.max(Math.min(parseInt(spreadInput.value), 320), 1) / 10);
     TREE.widthRetention = Math.max(Math.min(parseInt(widthRetentionInput.value), 200), 0) / 100;
     TREE.lengthRetention = Math.max(Math.min(parseInt(lengthRetentionInput.value), 200), 0) / 100;
     LEAVES.size = Math.max(Math.min(parseInt(leafSizeInput.value), 50), 0);
     LEAVES.minSizePercent = Math.max(Math.min(parseInt(leafMinInput.value), 200), 0) / 100;
     LEAVES.maxSizePercent = Math.max(Math.min(parseInt(leafMaxInput.value), 200), 0) / 100;
+    LEAVES.R = Math.max(Math.min(parseInt(leavesRInput.value), 255), 0);
+    LEAVES.G = Math.max(Math.min(parseInt(leavesGInput.value), 255), 0);
+    LEAVES.B = Math.max(Math.min(parseInt(leavesBInput.value), 255), 0);
+    LEAVES.A = Math.max(Math.min(parseInt(leavesAInput.value), 100), 0) / 100;
+    TREE.R = Math.max(Math.min(parseInt(branchRInput.value), 255), 0);
+    TREE.G = Math.max(Math.min(parseInt(branchGInput.value), 255), 0);
+    TREE.B = Math.max(Math.min(parseInt(branchBInput.value), 255), 0);
+    TREE.A = Math.max(Math.min(parseInt(branchAInput.value), 100), 0) / 100;
+    backgroundR = Math.max(Math.min(parseInt(backgroundRInput.value), 255), 0);
+    backgroundG = Math.max(Math.min(parseInt(backgroundGInput.value), 255), 0);
+    backgroundB = Math.max(Math.min(parseInt(backgroundBInput.value), 255), 0);
+    backgroundA = Math.max(Math.min(parseInt(backgroundAInput.value), 100), 0) / 100;
     console.log(TREE.depthExitPercent)
     await generateTree();
     completeDiv.style.display = 'block';
@@ -207,6 +246,7 @@ TEXTURES.background.onload = () => {
 removeCompleteDiv.addEventListener("click", ()=> {
     completeDiv.style.display = 'none';
 });
+
 
 removeControlDiv.addEventListener("click", async ()=> {
     if (openingMenu) {return;}
@@ -221,4 +261,20 @@ removeControlDiv.addEventListener("click", async ()=> {
     }
     await wait(1000);
     openingMenu = false;
+});
+
+
+removeCosmeticDiv.addEventListener("click", async ()=> {
+    if (openingCosmetic) {return;}
+    openingCosmetic = true;
+    cosmeticOpen = !cosmeticOpen;
+    if (cosmeticOpen) {
+        colorDiv.classList.remove("close");
+        removeCosmeticDiv.textContent = ">";
+    } else {
+        colorDiv.classList.add("close");
+        removeCosmeticDiv.textContent = "<";
+    }
+    await wait(1000);
+    openingCosmetic = false;
 });

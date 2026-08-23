@@ -33,7 +33,7 @@
         </div>
         <div class="spacer">
             <p class="settingDesc">Spread</p>
-            <input class="settingInput" id="spreadAmount" type="number" value="6"  min="1" max="32">
+            <input class="settingInput" id="spreadAmount" type="number" value="60"  min="1" max="320">
         </div>
         <div class="spacer">
             <p class="settingDesc">Width Retention Percent</p>
@@ -62,6 +62,31 @@
     <div id="completeDiv">
         <button id="removeCompleteText">X</button>
         <p id="completeText">Complete</p>
+    </div>
+    <div id="cosmeticDiv">
+        <button id="removeCosmeticDiv">></button>
+        <p id="mainTitle">Colors</p>
+        <div class="spacer">
+            <p class="settingDesc">Branch Color</p>
+            <input class="colorInput" id="branchR" type="number" value="161" min="0" max="255">
+            <input class="colorInput" id="branchG" type="number" value="68" min="0" max="255">
+            <input class="colorInput" id="branchB" type="number" value="7" min="0" max="255">
+            <input class="colorInput" id="branchA" type="number" value="100" min="0" max="100">
+        </div>
+        <div class="spacer">
+            <p class="settingDesc">Leaf Color</p>
+            <input class="colorInput" id="leafR" type="number" value="11" min="0" max="255">
+            <input class="colorInput" id="leafG" type="number" value="168" min="0" max="255">
+            <input class="colorInput" id="leafB" type="number" value="19" min="0" max="255">
+            <input class="colorInput" id="leafA" type="number" value="100" min="0" max="100">
+        </div>
+        <div class="spacer">
+            <p class="settingDesc">Background Color</p>
+            <input class="colorInput" id="backR" type="number" value="255" min="0" max="255">
+            <input class="colorInput" id="backG" type="number" value="0" min="0" max="255">
+            <input class="colorInput" id="backB" type="number" value="231" min="0" max="255">
+            <input class="colorInput" id="backA" type="number" value="100" min="0" max="100">
+        </div>
     </div>
     <canvas id="mainCanvas"></canvas>
     <script src="main.js"></script>
