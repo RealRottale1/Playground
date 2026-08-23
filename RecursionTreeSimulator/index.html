@@ -65,7 +65,7 @@
     </div>
     <div id="cosmeticDiv">
         <button id="removeCosmeticDiv">></button>
-        <p id="mainTitle">Colors</p>
+        <p id="mainTitle">Render</p>
         <div class="spacer">
             <p class="settingDesc">Branch Color</p>
             <input class="colorInput" id="branchR" type="number" value="161" min="0" max="255">
@@ -87,6 +87,15 @@
             <input class="colorInput" id="backB" type="number" value="231" min="0" max="255">
             <input class="colorInput" id="backA" type="number" value="100" min="0" max="100">
         </div>
+        <div class="spacer">
+            <p class="settingDesc">Delay Ticks</p>
+            <input class="settingInput" id="delayTime" type="number" value="96" min="0" max="100">
+        </div>
+    </div>
+    <div id="loadingDiv">
+        <div id="loadingBar">
+        </div>
+        <p id="loadingText">PlaceHolder</p>
     </div>
     <canvas id="mainCanvas"></canvas>
     <script src="main.js"></script>

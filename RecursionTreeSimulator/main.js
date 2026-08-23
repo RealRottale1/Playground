@@ -1,4 +1,7 @@
 const mainWindow = document.getElementById("mainCanvas");
+const loadingBarDiv = document.getElementById("loadingDiv");
+const loadingBar = document.getElementById("loadingBar");
+const loadingText = document.getElementById("loadingText");
 const ctx = mainWindow.getContext("2d");
 
 async function wait(duration) { return new Promise((complete) => { setTimeout(() => { complete(); }, duration); }) }
@@ -31,7 +34,8 @@ let openingMenu = false;
 let openingCosmetic = false;
 let generating = false;
 const delayTime = 1;
-const delayPercentage = 4;
+let delayPercentage = 4;
+let loadingPercent = 0;
 
 class LEAVES {
     static leaves = [];
@@ -49,6 +53,9 @@ class LEAVES {
 
     static async render() {
         for (let i = 0; i < LEAVES.leaves.length; i++) {
+            loadingPercent = 25 + (i / LEAVES.leaves.length) * 75;
+            loadingBar.style.width = `${loadingPercent}%`;
+            loadingText.textContent = `Rendering Branches ${i+1}/${LEAVES.leaves.length}`;
             const leaf = LEAVES.leaves[i];
             ctx.fillStyle = `rgb(${LEAVES.R}, ${LEAVES.G}, ${LEAVES.B})`;
             ctx.save();
@@ -57,7 +64,7 @@ class LEAVES {
             ctx.arc(leaf.x, leaf.y, LEAVES.size * leaf.sizePercent, 0, Math.PI * 2);
             ctx.fill();
             ctx.restore();
-            if (i % delayPercentage == 0) {
+            if (i % delayPercentage*2 == 0) {
                 await wait(delayTime);
             }
         }
@@ -70,6 +77,7 @@ class TREE {
     static maxDepth = 7;
     static minDepth = 5;
     static depthExitPercent = 0;
+    static maxBranches = 0;
 
     static spread = Math.PI / 6;
     static widthRetention = 0.75;
@@ -83,6 +91,7 @@ class TREE {
     rot = 0; len = 0; wid = 0;
 
     constructor(rot, len, wid, currentDepth) {
+        TREE.maxBranches++;
         this.rot = rot; this.len = len; this.wid = wid;
         if (TREE.root === null) {
             TREE.root = this;
@@ -128,10 +137,15 @@ class TREE {
         ctx.fillRect(0, -this.wid/2, this.len, this.wid);
         ctx.restore();
 
-
+        loadingPercent++;
         for (const child of this.children) {
             await child.render(x + offX, y + offY, this.rot + rot, depth + 1);
         }
+        if (this.children.length == 0) {
+            loadingBar.style.width = `${(loadingPercent / TREE.maxBranches) * 25}%`;
+            loadingText.textContent = `Rendering Branches ${loadingPercent}/${TREE.maxBranches}`;
+        }
+
         if (depth % delayPercentage == 0) {
             await wait(delayTime);
         }
@@ -143,6 +157,7 @@ class TREE {
 
         if (depth == 0) {
             if (LEAVES.A == 0) {return;}
+            loadingText.textContent = "Rendering Leaves";
             await LEAVES.render();
         }
     }
@@ -165,7 +180,9 @@ function generateBackground() {
 
 async function generateTree() {
     generateBackground();
+    loadingText.textContent = "Backend Computing";
     a = new TREE(Math.PI/2, -200, 50, 0);
+    loadingText.textContent = "Rendering Branches";
     await TREE.root.render(CANVAS_HANDLER.center(0), CANVAS_HANDLER.bottom(0), 0, 0);
     generating = false;
 }
@@ -200,6 +217,7 @@ const backgroundRInput = document.getElementById("backR");
 const backgroundGInput = document.getElementById("backG");
 const backgroundBInput = document.getElementById("backB");
 const backgroundAInput = document.getElementById("backA");
+const delayInput = document.getElementById("delayTime");
 
 backgroundR = Math.max(Math.min(parseInt(backgroundRInput.value), 255), 0);
 backgroundG = Math.max(Math.min(parseInt(backgroundGInput.value), 255), 0);
@@ -207,6 +225,9 @@ backgroundB = Math.max(Math.min(parseInt(backgroundBInput.value), 255), 0);
 backgroundA = Math.max(Math.min(parseInt(backgroundAInput.value), 100), 0) / 100;
 generateButton.addEventListener("click", async function() {
     if (generating) {return};
+    loadingPercent = 0;
+    loadingBar.style.width = "0%";
+    loadingBarDiv.style.display = 'block';
     completeDiv.style.display = 'none';
     generating = true;
     TREE.root = null;
@@ -234,9 +255,11 @@ generateButton.addEventListener("click", async function() {
     backgroundG = Math.max(Math.min(parseInt(backgroundGInput.value), 255), 0);
     backgroundB = Math.max(Math.min(parseInt(backgroundBInput.value), 255), 0);
     backgroundA = Math.max(Math.min(parseInt(backgroundAInput.value), 100), 0) / 100;
-    console.log(TREE.depthExitPercent)
+    delayPercentage = 100 - Math.max(Math.min(parseInt(delayInput.value), 100), 0);
+    TREE.maxBranches = 0;
     await generateTree();
     completeDiv.style.display = 'block';
+    loadingBarDiv.style.display = 'none';
 });
 
 TEXTURES.background.onload = () => {
