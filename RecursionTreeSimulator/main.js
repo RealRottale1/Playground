@@ -1,8 +1,11 @@
-const mainWindow = document.getElementById("mainCanvas");
+let mainWindow = document.getElementById("mainCanvas");
+const ctx = mainWindow.getContext("2d");
+let sideWindow = document.createElement("canvas");
+const sidectx = sideWindow.getContext("2d");
 const loadingBarDiv = document.getElementById("loadingDiv");
 const loadingBar = document.getElementById("loadingBar");
 const loadingText = document.getElementById("loadingText");
-const ctx = mainWindow.getContext("2d");
+const backgroundImage = document.getElementById("backgroundImage");
 
 async function wait(duration) { return new Promise((complete) => { setTimeout(() => { complete(); }, duration); }) }
 function makeImage(url) { const image = new Image(); try { image.src = ("textures/" + url + ".png"); } catch { image.src = 'textures/missing.png'; } return image; };
@@ -15,24 +18,60 @@ const TEXTURES = {
 const CANVAS_HANDLER = {
     width: 0,
     height: 0,
-    setCanvasSize: function() {
-        this.width = window.innerWidth;
-        this.height = window.innerHeight;
-        mainWindow.width = this.width;
-        mainWindow.height = this.height;
+    x: 0,
+    y: 0,
+    downX: 0,
+    downY: 0,
+    changeX: 0,
+    changeY: 0,
+    wentDown: false,
+    wentUp: false,
+    setCanvasSize: function(w) {
+        this.width = window.innerWidth*2;
+        this.height = window.innerHeight*2;
+        w.width = this.width;
+        w.height = this.height;
     },
     right(x) {return this.width - x;},
     bottom(y) {return this.height - y;},
     center(x) {return this.width / 2 - x / 2;},
-    middle(y) {return this.height / 2 - y / 2;}
+    middle(y) {return this.height / 2 - y / 2;},
+    mouseMove: function(event) {
+        const rect = mainWindow.getBoundingClientRect();
+        const scaleX = mainWindow.width / rect.width;
+        const scaleY = mainWindow.height / rect.height;
+
+        CANVAS_HANDLER.x = (event.clientX - rect.left) * scaleX;
+        CANVAS_HANDLER.y = (event.clientY - rect.top) * scaleY;
+    },
+    mouseDown: function(event) {
+        const rect = mainWindow.getBoundingClientRect();
+        const scaleX = mainWindow.width / rect.width;
+        const scaleY = mainWindow.height / rect.height;
+
+        CANVAS_HANDLER.x = (event.clientX - rect.left) * scaleX;
+        CANVAS_HANDLER.y = (event.clientY - rect.top) * scaleY;
+
+        CANVAS_HANDLER.downX = CANVAS_HANDLER.x;
+        CANVAS_HANDLER.downY = CANVAS_HANDLER.y;
+        CANVAS_HANDLER.changeX = CANVAS_HANDLER.x;
+        CANVAS_HANDLER.changeY = CANVAS_HANDLER.y;
+        CANVAS_HANDLER.wentDown = true;
+    },
+    mouseUp: function(event) {
+        CANVAS_HANDLER.wentUp = true;
+    }
 }
 
-CANVAS_HANDLER.setCanvasSize();
+CANVAS_HANDLER.setCanvasSize(mainWindow);
+let mouseX = CANVAS_HANDLER.middle(0);
+let mouseY = CANVAS_HANDLER.center(0);
 let menuOpen = true;
 let cosmeticOpen = true;
 let openingMenu = false;
 let openingCosmetic = false;
-let generating = false;
+let generating = true;
+let generated = false;
 const delayTime = 1;
 let delayPercentage = 4;
 let loadingPercent = 0;
@@ -61,10 +100,11 @@ class LEAVES {
             ctx.save();
             ctx.globalAlpha = LEAVES.A;
             ctx.beginPath();
+            //ctx.fillRect(leaf.x - LEAVES.size/2 * leaf.sizePercent, leaf.y - LEAVES.size/2 * leaf.sizePercent, LEAVES.size * leaf.sizePercent, LEAVES.size * leaf.sizePercent);
             ctx.arc(leaf.x, leaf.y, LEAVES.size * leaf.sizePercent, 0, Math.PI * 2);
             ctx.fill();
             ctx.restore();
-            if (i % delayPercentage*2 == 0) {
+            if (i % delayPercentage == 0) {
                 await wait(delayTime);
             }
         }
@@ -164,26 +204,15 @@ class TREE {
 }
 
 let backgroundR; let backgroundG; let backgroundB; let backgroundA;
-function generateBackground() {
-    ctx.fillStyle = `rgb(${backgroundR}, ${backgroundG}, ${backgroundB})`;
-    ctx.save();
-    ctx.globalAlpha = backgroundA;
-    ctx.fillRect(0, 0, CANVAS_HANDLER.width, CANVAS_HANDLER.height);
-    ctx.drawImage(
-        TEXTURES.background,
-        0,0,
-        CANVAS_HANDLER.width,
-        CANVAS_HANDLER.height
-    );
-    ctx.restore();
-}
-
 async function generateTree() {
-    generateBackground();
+    backgroundImage.style.backgroundColor = `rgba(${backgroundR}, ${backgroundG}, ${backgroundB}, ${backgroundA})`;
     loadingText.textContent = "Backend Computing";
     a = new TREE(Math.PI/2, -200, 50, 0);
     loadingText.textContent = "Rendering Branches";
-    await TREE.root.render(CANVAS_HANDLER.center(0), CANVAS_HANDLER.bottom(0), 0, 0);
+    ctx.clearRect(0, 0, mainWindow.width, mainWindow.height);
+    await TREE.root.render(CANVAS_HANDLER.center(0), CANVAS_HANDLER.bottom(250), 0, 0, false);
+    CANVAS_HANDLER.setCanvasSize(sideWindow);
+    sidectx.drawImage(mainWindow, 0, 0);
     generating = false;
 }
 
@@ -225,6 +254,9 @@ backgroundB = Math.max(Math.min(parseInt(backgroundBInput.value), 255), 0);
 backgroundA = Math.max(Math.min(parseInt(backgroundAInput.value), 100), 0) / 100;
 generateButton.addEventListener("click", async function() {
     if (generating) {return};
+    mouseX = CANVAS_HANDLER.middle(0);
+    mouseY = CANVAS_HANDLER.center(0);
+    generated = false;
     loadingPercent = 0;
     loadingBar.style.width = "0%";
     loadingBarDiv.style.display = 'block';
@@ -260,10 +292,12 @@ generateButton.addEventListener("click", async function() {
     await generateTree();
     completeDiv.style.display = 'block';
     loadingBarDiv.style.display = 'none';
+    generated = true;
 });
 
 TEXTURES.background.onload = () => {
-    generateBackground();
+    generating = false;
+    backgroundImage.style.backgroundColor = `rgba(${backgroundR}, ${backgroundG}, ${backgroundB}, ${backgroundA})`;
 }
 
 removeCompleteDiv.addEventListener("click", ()=> {
@@ -301,3 +335,41 @@ removeCosmeticDiv.addEventListener("click", async ()=> {
     await wait(1000);
     openingCosmetic = false;
 });
+
+async function mainLoop() {
+    mainWindow.addEventListener("mousemove", CANVAS_HANDLER.mouseMove);
+    mainWindow.addEventListener("mousedown", CANVAS_HANDLER.mouseDown);
+    mainWindow.addEventListener("mouseup", CANVAS_HANDLER.mouseUp);
+    while (true) {
+        if (generated) {
+            ctx.save();
+            ctx.clearRect(0, 0, mainWindow.width, mainWindow.height);
+            ctx.drawImage(sideWindow, mouseX-CANVAS_HANDLER.middle(0), mouseY-CANVAS_HANDLER.center(0));
+            ctx.restore();
+        }
+        console.log(CANVAS_HANDLER.x)
+        if (CANVAS_HANDLER.wentDown) {
+            CANVAS_HANDLER.wentDown = false;
+            CANVAS_HANDLER.initialTarget = null;
+        }
+        if (CANVAS_HANDLER.downX != 0 && CANVAS_HANDLER.downY != 0) {
+            const downXPixels = CANVAS_HANDLER.x - CANVAS_HANDLER.changeX;
+            const downYPixels = CANVAS_HANDLER.y - CANVAS_HANDLER.changeY;
+            if (downXPixels != 0 || downYPixels != 0) {
+                mouseX -= downXPixels;
+                mouseY -= downYPixels;
+                CANVAS_HANDLER.changeX = CANVAS_HANDLER.x;
+                CANVAS_HANDLER.changeY = CANVAS_HANDLER.y;
+            }
+        }
+        if (CANVAS_HANDLER.wentUp) {
+            CANVAS_HANDLER.wentUp = false;
+            CANVAS_HANDLER.downX = 0;
+            CANVAS_HANDLER.downY = 0;
+            CANVAS_HANDLER.changeX = 0;
+            CANVAS_HANDLER.changeY = 0;
+        }
+        await wait(10);
+    }
+}
+mainLoop();

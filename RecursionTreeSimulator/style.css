@@ -1,4 +1,6 @@
 body {
+    position: absolute;
+    z-index: -2;
     margin: 0%;
     padding: 0%;
     background-color: bisque;
@@ -8,9 +10,11 @@ body {
 }
 
 #mainCanvas {
+    position: absolute;
+    z-index: -1;
     margin: 0%;
     padding: 0%;
-    background-color: rgb(255, 0, 191);
+    background-color: rgba(255, 0, 191, 0);
     height: 100vh;
     width: 100vw;
 }
@@ -183,4 +187,18 @@ body {
     color: red;
     outline: 0px solid black;
     border: 0px solid black;
+}
+
+#backgroundImage {
+    position: absolute;
+    z-index: -2;
+    margin: 0%;
+    padding: 0%;
+    background-color: rgb(255, 255, 255);
+    height: 100vh;
+    width: 100vw;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-user-drag: none;
 }
