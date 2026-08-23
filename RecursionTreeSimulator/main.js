@@ -55,7 +55,7 @@ class LEAVES {
         for (let i = 0; i < LEAVES.leaves.length; i++) {
             loadingPercent = 25 + (i / LEAVES.leaves.length) * 75;
             loadingBar.style.width = `${loadingPercent}%`;
-            loadingText.textContent = `Rendering Branches ${i+1}/${LEAVES.leaves.length}`;
+            loadingText.textContent = `Rendering Leaves ${i+1}/${LEAVES.leaves.length}`;
             const leaf = LEAVES.leaves[i];
             ctx.fillStyle = `rgb(${LEAVES.R}, ${LEAVES.G}, ${LEAVES.B})`;
             ctx.save();
