@@ -1,8 +1,8 @@
 
 module motion_detector (
-    input sensor_a;
-    input sensor_b;
-    output motion_active;
+    input sensor_a,
+    input sensor_b,
+    output motion_active,
 );
 
 assign motion_active = sensor_a | sensor_b;
@@ -32,7 +32,7 @@ always @(posedge clk) begin
         alarm_light <= 0;
         active_time <= 0;
     end else if (movement_detected == 1) begin
-        alarm_light = 1;
+        alarm_light <= 1;
         active_time <= active_time + 1;
     end
 end
