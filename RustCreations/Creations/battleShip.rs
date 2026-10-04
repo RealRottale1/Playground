@@ -278,7 +278,7 @@ fn handleGame() -> () {
         placeAt.clear();
         println!("-<>-[Player Board]-<>-");
         displayBoard(&playerShipBoard);
-        println!("Place {} piece ship from _ to _ (Ex: A2A{}): ", currentShipSize, 2+currentShipSize);
+        println!("Place {} piece ship from _ to _ (Ex: A2A{}): ", currentShipSize, 1+currentShipSize);
         std::io::stdin()
           .read_line(&mut placeAt)
           .expect("placeAt unable to read line!");
